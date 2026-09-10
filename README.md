@@ -21,7 +21,7 @@ like the right word.
 
 `localconfig.vdf` only lists apps this Steam client has a local record of. That is not
 your library. Anything you own but have never launched on this machine leaves no local
-trace at all, so **every count here is a floor, not a total** — and the page says so
+trace at all, so **every count here is a floor, not a total** - and the page says so
 rather than presenting a confident number it has no basis for.
 
 A game with no manifest is still a row: playtime with no install is a game you played and

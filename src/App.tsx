@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import { readLocalConfig, readManifest, buildLibrary, summarise, hours, gb, type Game } from "./lib/library.js";
 import { SAMPLE_CONFIG, SAMPLE_MANIFESTS } from "./lib/sample.js";
+import { Ticker, stagger } from "./lib/motion.js";
 
 type Manifest = NonNullable<ReturnType<typeof readManifest>>;
 
@@ -87,61 +88,24 @@ export default function App() {
         What your Steam library actually gets played, read from the files already on your
         machine. Nothing is uploaded, nothing is fetched, and no key is needed.
       </p>
-
-      <section className="panel">
-        <h2>Your files</h2>
-        <div
-          className={over ? "drop over" : "drop"}
-          onDragOver={(e) => { e.preventDefault(); setOver(true); }}
-          onDragLeave={() => setOver(false)}
-          onDrop={(e) => { e.preventDefault(); setOver(false); void accept([...e.dataTransfer.files]); }}
-        >
-          Drop <code>localconfig.vdf</code> and your <code>appmanifest_*.acf</code> files here
-        </div>
-        <div className="row" style={{ marginTop: 14, display: "flex", gap: 10 }}>
-          <button onClick={() => picker.current?.click()}>Choose files</button>
-          <button onClick={() => { setError(null); setLoaded(SAMPLE); }}>Back to the sample</button>
-          <input
-            ref={picker}
-            type="file"
-            multiple
-            hidden
-            onChange={(e) => void accept([...(e.target.files ?? [])])}
-          />
-        </div>
-        <p className="note prose">
-          <b>localconfig.vdf</b> is in <code>userdata/&lt;id&gt;/config/</code>, and the
-          <b> appmanifest</b> files are in <code>steamapps/</code>. The first knows your hours,
-          the second knows the names and sizes. Either alone still works, with less to show.
-        </p>
-        {loaded.skipped > 0 && (
-          <p className="note">{loaded.skipped} file{loaded.skipped === 1 ? "" : "s"} skipped: not a manifest.</p>
-        )}
-        {error && <p className="err">{error}</p>}
-        <p className="note">Reading <b>{loaded.source}</b>.</p>
-      </section>
+      {/* Whose library this is has to be settled before the first number is read, so it
+          sits with the headline rather than down beside the file picker. */}
+      <p className="note source">Reading <b>{loaded.source}</b>.</p>
 
       <section className="panel">
         <h2>The shelf</h2>
         <div className="grid">
-          <div className="metric"><b>{stats.games}</b><span>games here</span></div>
-          <div className="metric"><b>{hours(stats.totalMinutes).toLocaleString()}</b><span>hours played</span></div>
-          <div className="metric warn"><b>{stats.neverPlayed}</b><span>never launched</span></div>
-          <div className="metric"><b>{gb(stats.installedBytes)} GB</b><span>installed</span></div>
-          <div className="metric warn"><b>{gb(stats.unplayedBytes)} GB</b><span>held by unplayed</span></div>
+          <div className="metric"><b><Ticker value={stats.games} /></b><span>games here</span></div>
+          <div className="metric"><b><Ticker value={hours(stats.totalMinutes)} decimals={1} /></b><span>hours played</span></div>
+          <div className="metric warn"><b><Ticker value={stats.neverPlayed} /></b><span>never launched</span></div>
+          <div className="metric"><b><Ticker value={gb(stats.installedBytes)} decimals={1} suffix=" GB" /></b><span>installed</span></div>
+          <div className="metric warn"><b><Ticker value={gb(stats.unplayedBytes)} decimals={1} suffix=" GB" /></b><span>held by unplayed</span></div>
           <div className="metric">
-            <b>{stats.halfOfHoursIn}</b>
+            <b><Ticker value={stats.halfOfHoursIn} /></b>
             <span>{stats.halfOfHoursIn === 1 ? "title is" : "titles are"} half your hours</span>
           </div>
         </div>
         <p className="note prose">
-          {stats.halfOfHoursIn > 0 && stats.games > 0 && (
-            <>
-              <b>{stats.halfOfHoursIn}</b> of your <b>{stats.games}</b> titles{" "}
-              {stats.halfOfHoursIn === 1 ? "accounts" : "account"} for half the time you have spent,
-              and <b>{gb(stats.unplayedBytes)} GB</b> is sitting on disk unplayed.{" "}
-            </>
-          )}
           These are the apps this client has a record of, which is not the same as everything
           you own. A library you have never launched on this machine leaves no local trace at
           all, so treat every count here as a floor.
@@ -154,14 +118,17 @@ export default function App() {
       </section>
 
       {tiles.length > 0 && (
-        <section className="panel">
+        <section className="panel figure">
           <h2>Disk, by game</h2>
           <div className="tree">
-            {tiles.map(({ g, share }) => (
+            {tiles.map(({ g, share }, i) => (
               <div
                 key={g.appid}
-                className={g.minutes === 0 ? "tile cold" : "tile"}
-                style={{ flex: `${Math.max(share, 0.02)} 1 ${Math.max(90, share * 900)}px`, minHeight: 54 }}
+                className={g.minutes === 0 ? "tile cold rise" : "tile rise"}
+                style={{
+                  flex: `${Math.max(share, 0.02)} 1 ${Math.max(90, share * 900)}px`,
+                  ...stagger(i),
+                }}
                 title={`${g.name ?? g.appid} - ${gb(g.bytes ?? 0)} GB, ${hours(g.minutes)}h`}
               >
                 {g.name ?? g.appid}
@@ -170,10 +137,10 @@ export default function App() {
             ))}
           </div>
           <div className="legend">
-            <span><i style={{ background: "color-mix(in srgb, var(--accent-2) 22%, var(--raised))" }} />played</span>
-            <span><i style={{ background: "color-mix(in srgb, var(--warn) 26%, var(--raised))" }} />never launched</span>
+            <span><i className="lit" />played</span>
+            <span><i className="unlit" />never launched</span>
           </div>
-          <p className="note">Area is space on disk. Only installed games have a size, so only they appear.</p>
+          <p className="note">Only installed games have a size, so only they appear.</p>
         </section>
       )}
 
@@ -191,6 +158,39 @@ export default function App() {
             </div>
           ))}
         </div>
+      </section>
+
+      {/* The picker comes last on purpose. The page already has a library on screen, so the
+          first thing a visitor meets should be the answer, not an empty box to fill. */}
+      <section className="panel">
+        <div
+          className={over ? "drop over" : "drop"}
+          onDragOver={(e) => { e.preventDefault(); setOver(true); }}
+          onDragLeave={() => setOver(false)}
+          onDrop={(e) => { e.preventDefault(); setOver(false); void accept([...e.dataTransfer.files]); }}
+        >
+          Drop <code>localconfig.vdf</code> and your <code>appmanifest_*.acf</code> files here
+        </div>
+        <div className="actions">
+          <button onClick={() => picker.current?.click()}>Choose files</button>
+          <button onClick={() => { setError(null); setLoaded(SAMPLE); }}>Back to the sample</button>
+          <input
+            ref={picker}
+            type="file"
+            multiple
+            hidden
+            onChange={(e) => void accept([...(e.target.files ?? [])])}
+          />
+        </div>
+        {error && <p className="err">{error}</p>}
+        {loaded.skipped > 0 && (
+          <p className="note">{loaded.skipped} file{loaded.skipped === 1 ? "" : "s"} skipped: not a manifest.</p>
+        )}
+        <p className="note prose">
+          <b>localconfig.vdf</b> is in <code>userdata/&lt;id&gt;/config/</code>, and the
+          <b> appmanifest</b> files are in <code>steamapps/</code>. The first knows your hours,
+          the second knows the names and sizes. Either alone still works, with less to show.
+        </p>
       </section>
     </div>
   );

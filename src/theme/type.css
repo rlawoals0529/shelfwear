@@ -1,19 +1,19 @@
-/* Night Terminal — Archivo + JetBrains Mono.
+/* Paper Lantern - Instrument Serif + Instrument Sans.
 
-   For a tool whose screen is mostly numbers. Archivo is a grotesque with even colour and
-   unambiguous figures; JetBrains Mono carries every quantity, so columns line up and a
-   changing value does not shift its neighbours sideways.
+   A serif headline over a sans body. This is the pairing to reach for first, because
+   all-sans is the single loudest tell that nobody chose the type: a page where the
+   heading and the paragraph are the same face at different sizes reads as a default.
+   Two families give contrast that size alone cannot.
 
-   Archivo rather than Space Grotesk, which turns up in roughly one in ten published
-   pairings and has become a default in its own right.
-
-   Load: https://fonts.googleapis.com/css2?family=Archivo:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap */
+   Load: https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap */
 :root {
-  --font-display: "Archivo", "Segoe UI Variable Display", "Segoe UI", system-ui, sans-serif;
-  --font-body: "Archivo", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+  --font-display: "Instrument Serif", "Iowan Old Style", Georgia, "Times New Roman", serif;
+  --font-body: "Instrument Sans", "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
 
-  --display-weight: 700;
-  --display-tracking: -0.6px;
-  --display-leading: 1.05;
+  /* A serif at display size carries its own weight, so it does not need a heavy cut. */
+  --display-weight: 400;
+  /* Large serif text is already tight. Negative tracking here would close it up too far. */
+  --display-tracking: 0px;
+  --display-leading: 1.08;
 }

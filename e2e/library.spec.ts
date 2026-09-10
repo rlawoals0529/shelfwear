@@ -57,8 +57,10 @@ test("never launched is counted, and its disk is counted separately", async ({ p
   // 900 is installed at 50 GB and has never been launched. Separating that from the
   // 60 GB total is the number the whole page exists to show.
   await expect(metric(page, "never launched")).toHaveText("1");
-  await expect(metric(page, "installed")).toHaveText("60 GB");
-  await expect(metric(page, "held by unplayed")).toHaveText("50 GB");
+  // One decimal, because the headline figures count up to their value and hold their
+  // width while they do it. Same numbers, written the way the page writes them.
+  await expect(metric(page, "installed")).toHaveText("60.0 GB");
+  await expect(metric(page, "held by unplayed")).toHaveText("50.0 GB");
 });
 
 test("a file that is not a manifest is reported, not silently dropped", async ({ page }) => {
