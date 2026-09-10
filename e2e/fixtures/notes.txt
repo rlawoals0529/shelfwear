@@ -1,0 +1,1 @@
+Not a manifest. Dropping it should be counted as skipped, not silently ignored.

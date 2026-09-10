@@ -1,0 +1,10 @@
+"AppState"
+{
+	"appid"		"700"
+	"name"		"Fixture Alpha"
+	"SizeOnDisk"	"10737418240"
+	"InstalledDepots"
+	{
+		"701"	{ "manifest" "123" }
+	}
+}

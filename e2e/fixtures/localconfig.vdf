@@ -1,0 +1,30 @@
+"UserLocalConfigStore"
+{
+	"Software"
+	{
+		"Valve"
+		{
+			"Steam"
+			{
+				"Apps"
+				{
+					"700"
+					{
+						"playTime"		"6000"
+						"LastPlayed"	"1735689600"
+						"LaunchOptions"	"-novid"
+					}
+					"800"
+					{
+						"playtime"		"30"
+						"LastPlayed"	"1700000000"
+					}
+					"900"
+					{
+						"LastPlayed"	"0"
+					}
+				}
+			}
+		}
+	}
+}

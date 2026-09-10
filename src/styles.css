@@ -1,0 +1,48 @@
+@import "./theme/palette.css";
+@import "./theme/base.css";
+@import "./theme/type.css";
+@import "./theme/texture.css";
+
+h1 span { color: var(--accent); }
+.tagline { color: var(--dim); margin-top: 10px; }
+
+.drop {
+  border: 1px dashed var(--edge);
+  border-radius: var(--radius);
+  padding: 34px 22px;
+  text-align: center;
+  color: var(--dim);
+  transition: border-color 140ms ease-out, color 140ms ease-out;
+}
+.drop.over { border-color: var(--accent); color: var(--fg); }
+
+/* The headline figures. Tabular numerals come from base.css, so a value that changes
+   does not shove its neighbours sideways. */
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 18px; }
+.metric b { display: block; font-size: 25px; letter-spacing: -.5px; }
+.metric span { font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: .6px; }
+.metric.warn b { color: var(--warn); }
+
+/* Treemap. Area is disk, colour says whether it has ever been launched. */
+.tree { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 6px; }
+.tile {
+  position: relative; overflow: hidden;
+  border-radius: 4px; padding: 7px 9px;
+  font-size: 11.5px; line-height: 1.25;
+  background: color-mix(in srgb, var(--accent-2) 22%, var(--raised));
+  color: var(--fg);
+}
+.tile.cold { background: color-mix(in srgb, var(--warn) 26%, var(--raised)); }
+.tile small { display: block; color: var(--dim); font-size: 10.5px; margin-top: 2px; }
+
+.rows { max-height: 460px; overflow-y: auto; margin-top: 6px; }
+.row { display: flex; gap: 12px; align-items: baseline; padding: 7px 0; font-size: 13px; }
+.row + .row { border-top: 1px solid var(--edge); }
+.row .hrs { min-width: 76px; color: var(--dim); font-size: 11.5px; }
+.row .sz { margin-left: auto; color: var(--dim); font-size: 11.5px; }
+.row.cold .name { color: var(--dim); }
+
+.err { color: var(--err); }
+.note { color: var(--dim); font-size: 12.5px; margin-top: 12px; }
+.legend { display: flex; gap: 16px; margin-top: 12px; font-size: 11.5px; color: var(--dim); }
+.legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; }
