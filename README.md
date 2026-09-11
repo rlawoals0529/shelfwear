@@ -17,7 +17,7 @@ like the right word.
 - How few titles make up half of all the hours you have spent. It is usually a much
   smaller number than people expect.
 
-## What it cannot tell you
+## Limitations
 
 `localconfig.vdf` only lists apps this Steam client has a local record of. That is not
 your library. Anything you own but have never launched on this machine leaves no local
