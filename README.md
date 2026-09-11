@@ -10,6 +10,10 @@ is fetched, and no API key is involved, because everything it needs is already o
 *Shelfwear* is the trade term for the damage stock takes from sitting unsold. It seemed
 like the right word.
 
+## Try it
+
+**[rlawoals0529.github.io/shelfwear](https://rlawoals0529.github.io/shelfwear/)** - drop in your Steam files, nothing is uploaded
+
 ## What it tells you
 
 - How many titles this client has a record of, and how many have **never been launched**.
