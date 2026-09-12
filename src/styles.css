@@ -18,7 +18,7 @@
    layout-flat wants a headline to be. The wordmark is the only thing on the page allowed
    to be loud, so it is sized here rather than left at the smaller of the two. */
 h1.display { font-size: clamp(52px, 9vw, 96px); line-height: .94; }
-h1 span { color: var(--accent); }
+h1 span { color: var(--accent-text, var(--accent)); }
 .tagline { color: var(--dim); margin-top: 10px; }
 
 /* Which library is on screen has to be settled before the first number is read, so this
@@ -65,7 +65,9 @@ h1 span { color: var(--accent); }
 @media (max-width: 620px) { .grid { grid-template-columns: repeat(2, 1fr); } }
 .metric b { display: block; font-size: 29px; letter-spacing: -.6px; line-height: 1.1; }
 .metric span { display: block; margin-top: 4px; font-size: 11px; color: var(--dim); text-transform: uppercase; letter-spacing: .6px; }
-.metric.warn b { color: var(--accent); }
+/* --accent-text, not --accent: this is a figure to read, and the accent is a fill colour.
+   At 29px it needs 3:1 and measured 2.11 on the palest palette. */
+.metric.warn b { color: var(--accent-text, var(--accent)); }
 
 /* Treemap. Area is disk, colour says whether it has ever been launched. */
 .tree { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
@@ -80,9 +82,12 @@ h1 span { color: var(--accent); }
   color: var(--fg);
 }
 .tile.cold { background: var(--unlit); }
-/* A fixed dim grey is legible over one tile colour and muddy over the other. Fading the
-   foreground instead keeps the same contrast on both. */
-.tile small { display: block; color: color-mix(in srgb, var(--fg) 62%, transparent); font-size: 11px; margin-top: 3px; }
+/* A fixed dim grey is legible over one tile colour and muddy over the other, and --dim is
+   guaranteed against the three surfaces the design system knows about, which --lit is not.
+   Fading the foreground keeps the same contrast on both - but 62% was too far a fade: it
+   measured 2.50:1 on the worst palette. 78% is the nearest step that clears 4.5 on both
+   tile colours in all fifteen. */
+.tile small { display: block; color: color-mix(in srgb, var(--fg) 78%, transparent); font-size: 11px; margin-top: 3px; }
 
 .legend { display: flex; gap: 20px; margin-top: 14px; font-size: 11.5px; color: var(--dim); }
 .legend i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 7px; }
@@ -109,7 +114,7 @@ h1 span { color: var(--accent); }
 .row .sz { color: var(--dim); font-size: 12px; }
 .row.cold .name { color: var(--dim); }
 /* The same red as the treemap, held back so seven of them in a column do not shout. */
-.row.cold .hrs { color: color-mix(in srgb, var(--accent) 60%, var(--dim)); }
+.row.cold .hrs { color: color-mix(in srgb, var(--accent-text, var(--accent)) 60%, var(--dim)); }
 
 .err { color: var(--err); }
 .note { color: var(--dim); font-size: 12.5px; margin-top: 14px; }
@@ -137,7 +142,12 @@ h1 span { color: var(--accent); }
   background: var(--accent); border: 1px solid var(--edge); flex: none;
 }
 
-.palette-list { margin-top: 0.8rem; display: grid; gap: 0.9rem; }
+/* `display` on a class beats the user agent's `[hidden] { display: none }`, because author
+   styles win over the UA sheet whatever the specificity. So this list was permanently open:
+   the button said aria-expanded="false" over fifteen visible, tabbable options. Guarding the
+   rule is the fix; `[hidden] { display: none !important }` would work too and would hide the
+   next bug of this shape instead of failing on it. */
+.palette-list:not([hidden]) { margin-top: 0.8rem; display: grid; gap: 0.9rem; }
 .palette-list fieldset { border: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 0.4rem; }
 .palette-list legend {
   font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase;
