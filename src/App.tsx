@@ -2,7 +2,8 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { readLocalConfig, readManifest, buildLibrary, summarise, hours, gb, type Game } from "./lib/library.js";
 import { SAMPLE_CONFIG, SAMPLE_MANIFESTS } from "./lib/sample.js";
 import { Ticker, stagger } from "./lib/motion.js";
-import { Palette } from "./Palette";
+import { Palette } from "./lib/palette.js";
+import palettes from "./theme/palettes.json";
 
 type Manifest = NonNullable<ReturnType<typeof readManifest>>;
 
@@ -193,7 +194,7 @@ export default function App() {
           the second knows the names and sizes. Either alone still works, with less to show.
         </p>
       </section>
-      <Palette />
+      <Palette themes={palettes} storageKey="shelfwear:theme" />
     </div>
   );
 }
