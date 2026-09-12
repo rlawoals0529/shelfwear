@@ -90,3 +90,94 @@ test("the counts are described as a floor, because they are", async ({ page }) =
   await expect(page.getByText(/treat every count here as a floor/)).toBeVisible();
   await expect(page.getByText(/not the same as everything you own/)).toBeVisible();
 });
+
+test("the games you never launched are the first shelf, and it says what they cost", async ({ page }) => {
+  const shelves = page.locator(".shelf");
+  // Untouched first, because they are the point. A run sorted by size with the untouched
+  // scattered through it says nothing at a glance.
+  await expect(shelves.first().locator(".shelf-label")).toContainText(/never launched, holding [\d.]+ GB/);
+  await expect(shelves.nth(1).locator(".shelf-label")).toContainText(/played$/);
+
+  // Every spine on the first shelf is one that has never run, and none on the second is.
+  const first = shelves.first().locator(".spine");
+  expect(await first.count()).toBeGreaterThan(0);
+  expect(await first.evaluateAll((els) => els.every((e) => e.classList.contains("worn")))).toBe(true);
+  expect(
+    await shelves.nth(1).locator(".spine").evaluateAll((els) => els.every((e) => !e.classList.contains("worn"))),
+  ).toBe(true);
+});
+
+test("a spine is as wide as the game is big", async ({ page }) => {
+  const spines = page.locator(".shelf").first().locator(".spine");
+  const seen = await spines.evaluateAll((els) =>
+    els.map((e) => ({
+      width: Math.round(e.getBoundingClientRect().width),
+      gb: Number(e.querySelector(".spine-size")!.textContent),
+    })),
+  );
+
+  expect(seen.length).toBeGreaterThan(2);
+  // Sorted biggest first, and width has to fall with it or the picture is decoration.
+  for (let i = 1; i < seen.length; i++) {
+    expect(seen[i]!.gb, `${seen[i]!.gb} GB after ${seen[i - 1]!.gb} GB`).toBeLessThanOrEqual(seen[i - 1]!.gb);
+    expect(seen[i]!.width).toBeLessThanOrEqual(seen[i - 1]!.width);
+  }
+  // And a real difference in size is a visible difference in width.
+  expect(seen[0]!.width).toBeGreaterThan(seen[seen.length - 1]!.width);
+});
+
+test("every row of spines stands on a plank, even once the shelf wraps", async ({ page }) => {
+  // Narrow enough that the first shelf has to wrap. A border under the run draws one line at
+  // the foot of the box, so the moment it wrapped the top row was standing on nothing.
+  await page.setViewportSize({ width: 390, height: 1000 });
+  // The spines arrive with a 6px rise. Measuring through it reads every foot up to 6px off
+  // its own plank, which is a failure about the entrance rather than about the layout.
+  const settled = () => page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== "running"));
+  const measure = async () => {
+    await settled();
+    return page.locator(".shelf").first().locator(".shelf-run").evaluate((run) => {
+      const box = run.getBoundingClientRect();
+      const cs = getComputedStyle(run);
+      const spineH = parseFloat(cs.getPropertyValue("--spine-h"));
+      const pitch = spineH + parseFloat(cs.getPropertyValue("--row-gap"));
+      const feet = [...run.querySelectorAll(".spine")].map((e) => Math.round(e.getBoundingClientRect().bottom - box.top));
+
+      /*
+       * Where the plank is PAINTED, read off the computed background.
+       *
+       * The first version of this test compared the feet against the row pitch, which is a
+       * property of the layout and not of the plank at all: it passed unchanged after the
+       * repeating background was swapped back for the single border that caused the bug.
+       * The stops are the only place the paint can be read without sampling pixels.
+       */
+      const stops = [...cs.backgroundImage.matchAll(/([\d.]+)px/g)].map((m) => Number(m[1]));
+      return {
+        rows: new Set(feet).size,
+        feet,
+        spineH,
+        pitch,
+        repeats: cs.backgroundImage.startsWith("repeating-linear-gradient"),
+        // The band repeats at the row pitch, and the line inside it starts at the spine's foot.
+        period: stops.length ? Math.max(...stops) : null,
+        plankAt: stops.length ? stops.find((s) => s > 0) ?? null : null,
+      };
+    });
+  };
+
+  // Polled, not slept on: a resize does not reflow before the next evaluate, and a fixed
+  // wait is a guess that passes on this machine and flakes on a slower one.
+  await expect.poll(async () => (await measure()).rows, {
+    message: "the shelf never wrapped, so this proves nothing",
+  }).toBeGreaterThan(1);
+  const seen = await measure();
+
+  // The plank repeats, at the row pitch, with its line at the spines' feet. A border-bottom
+  // draws one line at the foot of the whole box, so the moment the run wrapped the top row
+  // was standing on nothing - and that is what this has to be able to tell apart.
+  expect(seen.repeats, "the plank is not a repeating one, so only the last row has one").toBe(true);
+  expect(seen.period).toBe(seen.pitch);
+  expect(seen.plankAt).toBe(seen.spineH);
+
+  // And every row of spines really does land on one of those lines.
+  expect(seen.feet.every((f) => Math.abs((f - seen.spineH) % seen.pitch) < 1.5)).toBe(true);
+});

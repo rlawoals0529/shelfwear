@@ -127,3 +127,43 @@ export function summarise(games: Game[]): Stats {
 
 export const hours = (minutes: number): number => Math.round((minutes / 60) * 10) / 10;
 export const gb = (bytes: number): number => Math.round((bytes / 1_073_741_824) * 10) / 10;
+
+/** One game as it stands on the shelf: how wide its spine is, and whether it has ever run. */
+export interface Spine {
+  game: Game;
+  /** Spine width in pixels. Width is disk, which is the only thing a spine can honestly be. */
+  width: number;
+  untouched: boolean;
+}
+
+/**
+ * The shelf, in two runs: never launched, then played.
+ *
+ * Two runs rather than one sorted list, because the untouched games are the point and a
+ * block of them is the only arrangement that survives wrapping - a bracket under a single
+ * row stops meaning anything the moment the row breaks.
+ *
+ * Only installed games can stand on it. A game with playtime and no install is a fact worth
+ * keeping, and it is kept in the full list below, but it has no size and so no spine.
+ */
+export function shelve(games: Game[], min = 26, max = 116): { untouched: Spine[]; played: Spine[] } {
+  const sized = games.filter((g) => g.installed && (g.bytes ?? 0) > 0);
+  const biggest = Math.max(1, ...sized.map((g) => g.bytes ?? 0));
+
+  const run = (list: Game[]): Spine[] =>
+    [...list]
+      // Biggest first inside each run, so the heaviest thing you have never opened leads.
+      .sort((a, b) => (b.bytes ?? 0) - (a.bytes ?? 0))
+      .map((game) => ({
+        game,
+        // Linear in bytes, floored so the smallest game is still a spine you can see and
+        // click rather than a hairline.
+        width: Math.round(min + (max - min) * ((game.bytes ?? 0) / biggest)),
+        untouched: game.minutes === 0,
+      }));
+
+  return {
+    untouched: run(sized.filter((g) => g.minutes === 0)),
+    played: run(sized.filter((g) => g.minutes > 0)),
+  };
+}

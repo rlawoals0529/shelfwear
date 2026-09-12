@@ -16,6 +16,9 @@ like the right word.
 
 ## What it tells you
 
+- **The shelf.** Every installed game as a spine, as wide as it is big on disk, with the ones
+  you have never launched stood on their own shelf above the rest. *Shelfwear* is what stock
+  takes from sitting unsold, so the untouched ones are the ones wearing it.
 - How many titles this client has a record of, and how many have **never been launched**.
 - **How much disk the unplayed ones are holding.** This is the number that stings.
 - How few titles make up half of all the hours you have spent. It is usually a much

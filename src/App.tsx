@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from "react";
-import { readLocalConfig, readManifest, buildLibrary, summarise, hours, gb, type Game } from "./lib/library.js";
+import { readLocalConfig, readManifest, buildLibrary, summarise, shelve, hours, gb, type Game, type Spine } from "./lib/library.js";
 import { SAMPLE_CONFIG, SAMPLE_MANIFESTS } from "./lib/sample.js";
 import { Ticker, stagger } from "./lib/motion.js";
 import { Palette } from "./lib/palette.js";
@@ -74,14 +74,10 @@ export default function App() {
 
   const stats = useMemo(() => summarise(loaded.games), [loaded]);
 
-  // Area is disk. Only installed games have a size, so only they can be tiles.
-  const tiles = useMemo(() => {
-    const sized = loaded.games.filter((g) => g.installed && (g.bytes ?? 0) > 0);
-    const total = sized.reduce((n, g) => n + (g.bytes ?? 0), 0) || 1;
-    return sized
-      .sort((a, b) => (b.bytes ?? 0) - (a.bytes ?? 0))
-      .map((g) => ({ g, share: (g.bytes ?? 0) / total }));
-  }, [loaded]);
+  const shelf = useMemo(() => shelve(loaded.games), [loaded]);
+
+  /** What a shelf of untouched games is holding, said once, under the shelf itself. */
+  const untouchedBytes = shelf.untouched.reduce((n, s) => n + (s.game.bytes ?? 0), 0);
 
   return (
     <div className="wrap rhythm">
@@ -94,8 +90,36 @@ export default function App() {
           sits with the headline rather than down beside the file picker. */}
       <p className="note source">Reading <b>{loaded.source}</b>.</p>
 
+      {(shelf.untouched.length > 0 || shelf.played.length > 0) && (
+        <section className="panel figure">
+          <h2>The shelf</h2>
+          {/* Two shelves, untouched on top. Shelfwear is the trade term for what stock takes
+              from sitting unsold, so the games that have never run are the ones wearing it:
+              faded, with dust along the top edge. The played ones are clean because they
+              have been handled. */}
+          {shelf.untouched.length > 0 && (
+            <Shelf
+              spines={shelf.untouched}
+              label={
+                <>
+                  <b>{shelf.untouched.length}</b> never launched, holding{" "}
+                  <b>{gb(untouchedBytes)} GB</b>
+                </>
+              }
+            />
+          )}
+          {shelf.played.length > 0 && (
+            <Shelf spines={shelf.played} label={<><b>{shelf.played.length}</b> played</>} />
+          )}
+          <p className="note">
+            Spine width is disk, and the figure at the foot of each is gigabytes. Only
+            installed games have a size, so only they stand here.
+          </p>
+        </section>
+      )}
+
       <section className="panel">
-        <h2>The shelf</h2>
+        <h2>What it adds up to</h2>
         <div className="grid">
           <div className="metric"><b><Ticker value={stats.games} /></b><span>games here</span></div>
           <div className="metric"><b><Ticker value={hours(stats.totalMinutes)} decimals={1} /></b><span>hours played</span></div>
@@ -118,33 +142,6 @@ export default function App() {
           )}
         </p>
       </section>
-
-      {tiles.length > 0 && (
-        <section className="panel figure">
-          <h2>Disk, by game</h2>
-          <div className="tree">
-            {tiles.map(({ g, share }, i) => (
-              <div
-                key={g.appid}
-                className={g.minutes === 0 ? "tile cold rise" : "tile rise"}
-                style={{
-                  flex: `${Math.max(share, 0.02)} 1 ${Math.max(90, share * 900)}px`,
-                  ...stagger(i),
-                }}
-                title={`${g.name ?? g.appid} - ${gb(g.bytes ?? 0)} GB, ${hours(g.minutes)}h`}
-              >
-                {g.name ?? g.appid}
-                <small>{gb(g.bytes ?? 0)} GB · {hours(g.minutes)}h</small>
-              </div>
-            ))}
-          </div>
-          <div className="legend">
-            <span><i className="lit" />played</span>
-            <span><i className="unlit" />never launched</span>
-          </div>
-          <p className="note">Only installed games have a size, so only they appear.</p>
-        </section>
-      )}
 
       <section className="panel">
         <h2>Everything ({loaded.games.length})</h2>
@@ -195,6 +192,33 @@ export default function App() {
         </p>
       </section>
       <Palette themes={palettes} storageKey="shelfwear:theme" />
+    </div>
+  );
+}
+
+/**
+ * One shelf: a run of spines stood on a plank, with a label under it.
+ *
+ * The title runs up the spine because that is the thing that makes a spine read as a spine,
+ * and it is free - a rotated line of text needs no illustration and no image.
+ */
+function Shelf({ spines, label }: { spines: Spine[]; label: React.ReactNode }) {
+  return (
+    <div className="shelf">
+      <div className="shelf-run">
+        {spines.map(({ game, width, untouched }, i) => (
+          <div
+            key={game.appid}
+            className={untouched ? "spine worn rise" : "spine rise"}
+            style={{ width, ...stagger(i) }}
+            title={`${game.name ?? game.appid} - ${gb(game.bytes ?? 0)} GB, ${hours(game.minutes)}h`}
+          >
+            <span className="spine-title">{game.name ?? `app ${game.appid}`}</span>
+            <span className="spine-size">{gb(game.bytes ?? 0)}</span>
+          </div>
+        ))}
+      </div>
+      <p className="shelf-label">{label}</p>
     </div>
   );
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { readLocalConfig, readManifest, buildLibrary, summarise, hours, gb } from "./library.js";
+import { readLocalConfig, readManifest, buildLibrary, summarise, hours, gb, shelve, type Game } from "./library.js";
 
 const config = (apps: string) => `
 "UserLocalConfigStore" { "Software" { "Valve" { "Steam" { "apps" { ${apps} } } } } }`;
@@ -143,5 +143,54 @@ describe("units", () => {
     expect(hours(1)).toBe(0);
     expect(gb(1_073_741_824)).toBe(1);
     expect(gb(1_610_612_736)).toBe(1.5);
+  });
+});
+
+describe("shelve", () => {
+  const game = (appid: string, bytes: number | null, minutes: number, installed = true): Game => ({
+    appid,
+    name: `game ${appid}`,
+    minutes,
+    lastPlayed: null,
+    bytes,
+    installed,
+  });
+
+  it("puts the never launched on their own shelf, biggest first", () => {
+    const { untouched, played } = shelve([
+      game("1", 10e9, 60),
+      game("2", 5e9, 0),
+      game("3", 40e9, 0),
+    ]);
+    expect(untouched.map((s) => s.game.appid)).toEqual(["3", "2"]);
+    expect(played.map((s) => s.game.appid)).toEqual(["1"]);
+    expect(untouched.every((s) => s.untouched)).toBe(true);
+  });
+
+  it("makes the spine as wide as the game is big", () => {
+    const { played } = shelve([game("1", 100e9, 60), game("2", 50e9, 60)], 20, 120);
+    expect(played[0]!.width).toBe(120);
+    // Half the bytes, half the way between the floor and the ceiling.
+    expect(played[1]!.width).toBe(70);
+  });
+
+  it("gives the smallest game a spine you can still see", () => {
+    const { played } = shelve([game("1", 100e9, 60), game("2", 1, 60)], 26, 116);
+    // Not a hairline: a floor, or the tail of a real library is unclickable.
+    expect(played[1]!.width).toBe(26);
+  });
+
+  it("leaves off anything with no size, because a spine is made of disk", () => {
+    const { untouched, played } = shelve([
+      game("1", null, 0, true),
+      game("2", null, 60, false),
+      game("3", 0, 0, true),
+    ]);
+    expect(untouched).toEqual([]);
+    expect(played).toEqual([]);
+  });
+
+  it("survives a library with nothing installed", () => {
+    expect(shelve([])).toEqual({ untouched: [], played: [] });
   });
 });
