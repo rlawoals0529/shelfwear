@@ -561,6 +561,11 @@ export default function App() {
                     alt=""
                     loading="lazy"
                     decoding="async"
+                    onLoad={(event) => {
+                      const image = event.currentTarget;
+                      const ratio = image.naturalWidth / Math.max(1, image.naturalHeight);
+                      if (ratio >= 0.82 && ratio <= 1.18) image.dataset.fallback = "icon";
+                    }}
                     onError={(event) => {
                       const image = event.currentTarget;
                       if (!image.dataset.fallback) {
