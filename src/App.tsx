@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from "react";
-import { readLocalConfig, readManifest, buildLibrary, summarise, shelve, hours, gb, type Game, type Spine } from "./lib/library.js";
+import { readLocalConfig, readManifest, buildLibrary, summarise, shelve, hours, gb, type Game, type Spine, type Stats } from "./lib/library.js";
+import { analyticsFor, type LibraryAnalytics } from "./lib/analytics.js";
 import { familiarFor, steamCover, steamHeader, topNine } from "./lib/profile.js";
 import { compareLibraries, type LibraryComparison } from "./lib/compare.js";
 import { downloadBlob, proxiedSteamCover, renderShareCard, shareCardFilename } from "./lib/share-card.js";
@@ -96,7 +97,8 @@ type CuteIconName =
   | "download"
   | "copy"
   | "share"
-  | "heart";
+  | "heart"
+  | "chart";
 
 function CuteIcon({ name, className = "" }: { name: CuteIconName; className?: string }) {
   const common = {
@@ -137,6 +139,8 @@ function CuteIcon({ name, className = "" }: { name: CuteIconName; className?: st
       return <svg {...common}><circle cx="6" cy="12" r="2"/><circle cx="17.5" cy="6" r="2"/><circle cx="17.5" cy="18" r="2"/><path d="m7.8 11 7.9-4M7.8 13l7.9 4"/></svg>;
     case "heart":
       return <svg {...common}><path d="M12 20s-7-4.2-7-9.4A3.9 3.9 0 0 1 12 8a3.9 3.9 0 0 1 7 2.6C19 15.8 12 20 12 20Z"/></svg>;
+    case "chart":
+      return <svg {...common}><path d="M5 19V11M10 19V5M15 19v-8M20 19V8"/><path d="M3.5 19.5h18"/></svg>;
   }
 }
 
@@ -192,6 +196,7 @@ export default function App() {
   const [compareError, setCompareError] = useState<string | null>(null);
   const [comparison, setComparison] = useState<Compared | null>(null);
   const [compareCopied, setCompareCopied] = useState(false);
+  const [view, setView] = useState<"shelf" | "analytics">("shelf");
   const picker = useRef<HTMLInputElement>(null);
 
   const accept = useCallback(async (list: File[]) => {
@@ -257,6 +262,7 @@ export default function App() {
   const shelf = useMemo(() => shelve(loaded.games), [loaded]);
   const nine = useMemo(() => topNine(loaded.games), [loaded]);
   const familiar = useMemo(() => familiarFor(loaded.games), [loaded]);
+  const analytics = useMemo(() => analyticsFor(loaded.games), [loaded]);
 
   /** What a shelf of untouched games is holding, said once, under the shelf itself. */
   const untouchedBytes = shelf.untouched.reduce((n, s) => n + (s.game.bytes ?? 0), 0);
@@ -334,6 +340,17 @@ export default function App() {
         </div>
       </header>
 
+      <nav className="view-tabs" aria-label="Shelfwear views">
+        <button className={view === "shelf" ? "active" : ""} aria-pressed={view === "shelf"} onClick={() => setView("shelf")}>
+          <CuteIcon name="shelf" className="button-icon" /> Shelf
+        </button>
+        <button className={view === "analytics" ? "active" : ""} aria-pressed={view === "analytics"} onClick={() => setView("analytics")}>
+          <CuteIcon name="chart" className="button-icon" /> Analytics
+        </button>
+      </nav>
+
+      {view === "shelf" ? (
+        <>
       <section className="panel import-panel" id="steam">
         <div className="import-layout">
           <div className="import-copy">
@@ -613,8 +630,137 @@ export default function App() {
           ))}
         </div>
       </section>
+        </>
+      ) : (
+        <AnalyticsPage analytics={analytics} stats={stats} kind={loaded.kind} source={loaded.source} />
+      )}
       <Palette themes={palettes} storageKey="shelfwear:theme:cozy-v2" initial="cherry-blossom-dusk" />
     </div>
+  );
+}
+
+
+function AnalyticsPage({
+  analytics,
+  stats,
+  kind,
+  source,
+}: {
+  analytics: LibraryAnalytics;
+  stats: Stats;
+  kind: SourceKind;
+  source: string;
+}) {
+  const maxBucket = Math.max(1, ...analytics.playtimeBuckets.map((bucket) => bucket.count));
+  const maxTopShare = Math.max(1, ...analytics.topGames.map((game) => game.sharePercent));
+
+  return (
+    <main className="analytics-page">
+      <section className="panel analytics-intro">
+        <SectionTitle
+          icon="chart"
+          eyebrow="A closer look"
+          note="Calculated only from the library currently loaded into Shelfwear."
+        >
+          Library analytics
+        </SectionTitle>
+        <div className="analytics-summary">
+          <div className="analytics-donut-wrap">
+            <div
+              className="analytics-donut"
+              aria-hidden="true"
+              style={{ background: `conic-gradient(var(--accent) 0 ${analytics.utilizationPercent}%, var(--raised) ${analytics.utilizationPercent}% 100%)` }}
+            >
+              <div><b>{analytics.utilizationPercent}%</b><span>played</span></div>
+            </div>
+          </div>
+          <div className="analytics-lead">
+            <p className="eyebrow">Library use</p>
+            <h3>{stats.played} of {stats.games} games have recorded playtime</h3>
+            <p>
+              {analytics.untouchedPercent}% of this library has no recorded playtime.
+              {stats.totalMinutes > 0 && <> The most-played game accounts for <b>{analytics.topGameSharePercent}%</b> of all recorded hours.</>}
+            </p>
+            <p className="note">Reading {source}. This describes the data Shelfwear can see, not your tastes or personality.</p>
+          </div>
+        </div>
+      </section>
+
+      <section className="panel analytics-kpis">
+        <SectionTitle icon="sparkles" eyebrow="At a glance">The shape of the shelf</SectionTitle>
+        <div className="analytics-kpi-grid">
+          <div className="analytics-kpi"><span>Played</span><b>{analytics.utilizationPercent}%</b><small>{stats.played} titles</small></div>
+          <div className="analytics-kpi"><span>Untouched</span><b>{analytics.untouchedPercent}%</b><small>{stats.neverPlayed} titles</small></div>
+          <div className="analytics-kpi"><span>Median played game</span><b>{analytics.medianPlayedHours}h</b><small>among games with time</small></div>
+          <div className="analytics-kpi"><span>Half your hours</span><b>{stats.halfOfHoursIn}</b><small>{stats.halfOfHoursIn === 1 ? "title" : "titles"}</small></div>
+        </div>
+      </section>
+
+      <section className="panel analytics-distribution">
+        <SectionTitle icon="clock" eyebrow="Playtime">How deep the library goes</SectionTitle>
+        <div className="analytics-bars">
+          {analytics.playtimeBuckets.map((bucket) => (
+            <div className="analytics-bar-row" key={bucket.label}>
+              <span>{bucket.label}</span>
+              <div className="analytics-bar-track"><i style={{ width: `${(bucket.count / maxBucket) * 100}%` }} /></div>
+              <b>{bucket.count}</b>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      <section className="panel analytics-hours">
+        <SectionTitle icon="chart" eyebrow="Concentration">Where the hours go</SectionTitle>
+        <div className="concentration-grid">
+          <div><span>Top game</span><b>{analytics.topGameSharePercent}%</b></div>
+          <div><span>Top 3 games</span><b>{analytics.topThreeSharePercent}%</b></div>
+          <div><span>Top 9 games</span><b>{analytics.topNineSharePercent}%</b></div>
+        </div>
+        <div className="top-games-analytics">
+          {analytics.topGames.map((game, index) => (
+            <div className="top-game-row" key={game.appid}>
+              <span className="top-game-rank">{index + 1}</span>
+              <div className="top-game-copy">
+                <b>{game.name ?? `app ${game.appid}`}</b>
+                <div className="top-game-track"><i style={{ width: `${(game.sharePercent / maxTopShare) * 100}%` }} /></div>
+              </div>
+              <span className="top-game-hours">{game.hours}h</span>
+              <span className="top-game-share">{game.sharePercent}%</span>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {(analytics.knownDiskShareUntouchedPercent !== null || analytics.recentActivity) && (
+        <section className="panel analytics-local">
+          <SectionTitle icon="folder" eyebrow="Local-only detail">What your files add</SectionTitle>
+          <div className="analytics-local-grid">
+            {analytics.knownDiskShareUntouchedPercent !== null && (
+              <div className="local-insight">
+                <span>Known installed space held by unplayed games</span>
+                <b>{analytics.knownDiskShareUntouchedPercent}%</b>
+                <small>{stats.sizeIsPartial ? "Known-size games only; this is a floor." : "Based on installed-size records."}</small>
+              </div>
+            )}
+            {analytics.recentActivity && (
+              <div className="activity-insight">
+                <span>Played games by last recorded launch</span>
+                <div className="activity-chips">
+                  {analytics.recentActivity.map((bucket) => <span key={bucket.label}><b>{bucket.count}</b>{bucket.label}</span>)}
+                </div>
+              </div>
+            )}
+          </div>
+        </section>
+      )}
+
+      {kind === "steam" && (
+        <section className="analytics-footnote">
+          <CuteIcon name="steam" />
+          <p>Public Steam imports include owned games and lifetime playtime. Steam does not provide Shelfwear with local disk size or last-played timestamps through this import, so those analytics stay hidden rather than guessed.</p>
+        </section>
+      )}
+    </main>
   );
 }
 

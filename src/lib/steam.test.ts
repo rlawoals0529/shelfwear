@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { STEAM_PROFILE_PREFIX, comparisonShareUrl, hasSteamProfileInput, normaliseSteamProfileInput, sharedComparisonFromSearch, sharedSteamFromSearch, steamShareUrl } from "./steam.js";
+import { SHELFWEAR_WORKER_ORIGIN, STEAM_PROFILE_PREFIX, comparisonShareUrl, hasSteamProfileInput, normaliseSteamProfileInput, sharedComparisonFromSearch, sharedSteamFromSearch, steamApiUrl, steamShareUrl } from "./steam.js";
 
 describe("Steam share URLs", () => {
   it("creates a single-shelf link without retaining unrelated query data", () => {
@@ -34,5 +34,20 @@ describe("Steam profile input", () => {
   it("does not treat the prefix by itself as a complete profile", () => {
     expect(hasSteamProfileInput(STEAM_PROFILE_PREFIX)).toBe(false);
     expect(hasSteamProfileInput(`${STEAM_PROFILE_PREFIX}cozyplayer`)).toBe(true);
+  });
+});
+
+
+describe("Steam API routing", () => {
+  it("uses the Cloudflare Worker when the frontend is on GitHub Pages", () => {
+    expect(steamApiUrl("/api/steam/library?profile=x", "rlawoals0529.github.io"))
+      .toBe(`${SHELFWEAR_WORKER_ORIGIN}/api/steam/library?profile=x`);
+  });
+
+  it("keeps API requests same-origin on the Worker and local development", () => {
+    expect(steamApiUrl("/api/steam/library?profile=x", "shelfwear.rlawoals0529.workers.dev"))
+      .toBe("/api/steam/library?profile=x");
+    expect(steamApiUrl("/api/steam/library?profile=x", "localhost"))
+      .toBe("/api/steam/library?profile=x");
   });
 });
