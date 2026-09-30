@@ -86,6 +86,14 @@ jobs:
           grep -qi '^access-control-allow-origin: https://rlawoals0529.github.io' /tmp/shelfwear-api-headers.txt
           grep -q '"error"' /tmp/shelfwear-api-body.json
 
+          # Blue Protocol: Star Resonance uses Steam's newer hashed artwork layout. Keep one
+          # real release in the smoke test so a future CDN-path regression cannot silently
+          # turn its top-nine card back into a blank tile.
+          curl --fail --silent --show-error --retry 4 --retry-delay 2             --header 'Origin: https://rlawoals0529.github.io'             --dump-header /tmp/shelfwear-cover-headers.txt             --output /tmp/shelfwear-cover.bin             "$DEPLOYMENT_URL/api/steam/cover/3681810"
+          grep -qi '^content-type: image/' /tmp/shelfwear-cover-headers.txt
+          grep -qi '^access-control-allow-origin: https://rlawoals0529.github.io' /tmp/shelfwear-cover-headers.txt
+          test -s /tmp/shelfwear-cover.bin
+
       - name: Record deployment URL
         env:
           DEPLOYMENT_URL: ${{ steps.deploy.outputs.deployment-url }}
