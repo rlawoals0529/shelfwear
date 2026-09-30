@@ -7,10 +7,12 @@ import { comparisonCardFilename, curatedCardFilename, downloadBlob, familiarCard
 import {
   comparisonShareUrl,
   fetchPublicSteamLibrary,
+  inviteShareUrl,
   hasSteamProfileInput,
   normaliseSteamProfileInput,
   STEAM_PROFILE_PREFIX,
   sharedComparisonFromSearch,
+  sharedInviteFromSearch,
   sharedSteamFromSearch,
   steamShareUrl,
   type PublicSteamLibrary,
@@ -277,6 +279,7 @@ export default function App() {
   const shared = useMemo(() => ({
     steam: sharedSteamFromSearch(window.location.search),
     compare: sharedComparisonFromSearch(window.location.search),
+    invite: sharedInviteFromSearch(window.location.search),
     top: curatedFromSearch(window.location.search),
   }), []);
 
@@ -293,12 +296,13 @@ export default function App() {
   const [familiarRendering, setFamiliarRendering] = useState(false);
   const [familiarError, setFamiliarError] = useState<string | null>(null);
   const [familiarCopied, setFamiliarCopied] = useState(false);
-  const [compareLeft, setCompareLeft] = useState(shared.compare?.[0] ?? STEAM_PROFILE_PREFIX);
+  const [compareLeft, setCompareLeft] = useState(shared.compare?.[0] ?? shared.invite ?? STEAM_PROFILE_PREFIX);
   const [compareRight, setCompareRight] = useState(shared.compare?.[1] ?? STEAM_PROFILE_PREFIX);
   const [comparing, setComparing] = useState(false);
   const [compareError, setCompareError] = useState<string | null>(null);
   const [comparison, setComparison] = useState<Compared | null>(null);
   const [compareCopied, setCompareCopied] = useState(false);
+  const [inviteCopied, setInviteCopied] = useState(false);
   const [compareCardRendering, setCompareCardRendering] = useState(false);
   const [compareCardError, setCompareCardError] = useState<string | null>(null);
   const [view, setView] = useState<"shelf" | "analytics" | "top">(shared.top ? "top" : "shelf");
@@ -350,12 +354,15 @@ export default function App() {
         profile: data.profile,
         games: data.games,
       });
+      if (shared.invite && !hasSteamProfileInput(compareRight)) {
+        setCompareRight(data.steamid);
+      }
     } catch (e) {
       setSteamError(e instanceof Error ? e.message : String(e));
     } finally {
       setImporting(false);
     }
-  }, [steamProfile]);
+  }, [compareRight, shared.invite, steamProfile]);
 
   const runComparison = useCallback(async () => {
     setCompareError(null);
@@ -500,6 +507,13 @@ export default function App() {
     setCompareCopied(true);
     window.setTimeout(() => setCompareCopied(false), 1600);
   }, [comparison]);
+
+  const copyInviteLink = useCallback(async () => {
+    if (loaded.kind !== "steam" || !loaded.steamid) return;
+    await navigator.clipboard.writeText(inviteShareUrl(window.location.href, loaded.steamid));
+    setInviteCopied(true);
+    window.setTimeout(() => setInviteCopied(false), 1600);
+  }, [loaded.kind, loaded.steamid]);
 
   const downloadComparisonCard = useCallback(async () => {
     if (!comparison) return;
@@ -770,13 +784,42 @@ export default function App() {
           the combined unique library; played-together counts only games with recorded time on both profiles.
         </p>
         {shared.compare && <p className="share-hint">This comparison came from a stateless link. Load it to rebuild both public libraries live.</p>}
-        <div className="compare-form">
-          <input value={compareLeft} onChange={(e) => setCompareLeft(e.target.value)} placeholder={`${STEAM_PROFILE_PREFIX}first-user`} aria-label="First Steam profile" />
+        {shared.invite && (
+          <p className="share-hint compare-invite-hint">
+            A friend invited you to compare shelves. Their public SteamID is already filled in; add your public Steam profile on the right.
+          </p>
+        )}
+        {loaded.kind === "steam" && loaded.steamid && !shared.invite && (
+          <div className="compare-invite">
+            <div>
+              <p className="eyebrow">Compare with me</p>
+              <b>Send your shelf to a friend</b>
+              <span>They open one stateless link, add their public Steam profile, and Shelfwear builds the comparison live.</span>
+            </div>
+            <button type="button" onClick={() => void copyInviteLink()}>
+              <CuteIcon name="share" className="button-icon" />
+              {inviteCopied ? "Invite link copied" : "Copy invite link"}
+            </button>
+          </div>
+        )}
+        <div className={shared.invite ? "compare-form invited" : "compare-form"}>
+          <input
+            value={compareLeft}
+            onChange={(e) => setCompareLeft(e.target.value)}
+            readOnly={Boolean(shared.invite)}
+            placeholder={`${STEAM_PROFILE_PREFIX}first-user`}
+            aria-label={shared.invite ? "Inviter Steam profile" : "First Steam profile"}
+          />
           <span aria-hidden="true">×</span>
-          <input value={compareRight} onChange={(e) => setCompareRight(e.target.value)} placeholder={`${STEAM_PROFILE_PREFIX}second-user`} aria-label="Second Steam profile" />
+          <input
+            value={compareRight}
+            onChange={(e) => setCompareRight(e.target.value)}
+            placeholder={`${STEAM_PROFILE_PREFIX}second-user`}
+            aria-label={shared.invite ? "Your Steam profile for comparison" : "Second Steam profile"}
+          />
           <button disabled={comparing || !hasSteamProfileInput(compareLeft) || !hasSteamProfileInput(compareRight)} onClick={() => void runComparison()}>
             <CuteIcon name="friends" className="button-icon" />
-            {comparing ? "Comparing…" : shared.compare ? "Load comparison" : "Compare"}
+            {comparing ? "Comparing…" : shared.compare ? "Load comparison" : shared.invite ? "Compare with friend" : "Compare"}
           </button>
         </div>
         {compareError && <p className="err">{compareError}</p>}

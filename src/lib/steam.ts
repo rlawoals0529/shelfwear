@@ -96,6 +96,13 @@ export function comparisonShareUrl(current: string, leftSteamId: string, rightSt
   return url.toString();
 }
 
+export function inviteShareUrl(current: string, inviterSteamId: string): string {
+  const url = cleanBase(current);
+  url.searchParams.set("invite", inviterSteamId);
+  url.hash = "compare";
+  return url.toString();
+}
+
 export function sharedSteamFromSearch(search: string): string | null {
   const value = new URLSearchParams(search).get("steam");
   return value && /^\d{17}$/.test(value) ? value : null;
@@ -107,4 +114,9 @@ export function sharedComparisonFromSearch(search: string): [string, string] | n
   const [left, right, extra] = value.split(",");
   if (extra || !left || !right || !/^\d{17}$/.test(left) || !/^\d{17}$/.test(right)) return null;
   return [left, right];
+}
+
+export function sharedInviteFromSearch(search: string): string | null {
+  const value = new URLSearchParams(search).get("invite");
+  return value && /^\d{17}$/.test(value) ? value : null;
 }
