@@ -19,6 +19,8 @@ function load(files: { name: string; text: string }[]): Loaded {
   for (const f of files) {
     const looksLikeConfig = /localconfig\.vdf$/i.test(f.name);
     if (looksLikeConfig) {
+      // A malformed localconfig is the one file whose failure is worth stopping for:
+      // without it every game reads as never played, which is a believable lie.
       play = readLocalConfig(f.text);
       continue;
     }
@@ -67,6 +69,7 @@ export default function App() {
       const files = await Promise.all(list.map(async (f) => ({ name: f.name, text: await f.text() })));
       const next = load(files);
       if (!next.games.length) {
+        // Rendering an empty library as a result is the failure: it looks like an answer.
         setError("No games in those files. Drop localconfig.vdf, or the appmanifest_*.acf files from steamapps.");
         return;
       }
@@ -87,6 +90,8 @@ export default function App() {
         games?: { appid: string; name: string | null; minutes: number }[];
       } | null;
       if (!data) {
+        // GitHub Pages has no Worker route. Keep the old deployment useful while Cloudflare
+        // is still optional instead of exposing an HTML-as-JSON parsing error to the visitor.
         throw new Error("Public Steam import needs the Cloudflare Workers deployment. The local-file reader still works here.");
       }
       if (!response.ok || !data.games || !data.steamid) throw new Error(data.error ?? "Steam import failed.");
@@ -107,10 +112,16 @@ export default function App() {
   const shelf = useMemo(() => shelve(loaded.games), [loaded]);
   const nine = useMemo(() => topNine(loaded.games), [loaded]);
   const familiar = useMemo(() => familiarFor(loaded.games), [loaded]);
+
+  /** What a shelf of untouched games is holding, said once, under the shelf itself. */
   const untouchedBytes = shelf.untouched.reduce((n, s) => n + (s.game.bytes ?? 0), 0);
 
   const copyNine = useCallback(async () => {
-    const text = [`My Shelfwear nine:`, ...nine.map((game, i) => `${i + 1}. ${game.name} — ${hours(game.minutes)}h`), `Shelf familiar: ${familiar.name}`].join("\n");
+    const text = [
+      "My Shelfwear nine:",
+      ...nine.map((game, i) => `${i + 1}. ${game.name} — ${hours(game.minutes)}h`),
+      `Shelf familiar: ${familiar.name}`,
+    ].join("\n");
     await navigator.clipboard.writeText(text);
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1600);
@@ -120,19 +131,39 @@ export default function App() {
     <div className="wrap rhythm">
       <h1 className="display">shelf<span>wear</span></h1>
       <p className="tagline prose">
-        See what your Steam library actually gets played, then turn the shape of it into something worth sharing.
-        Local-file mode stays in this browser: nothing is uploaded and nothing is fetched.
+        See what your Steam library actually gets played, then turn the shape of it into
+        something worth sharing. Local-file mode stays in this browser: nothing is uploaded
+        and nothing is fetched.
       </p>
+      {/* Whose library this is has to be settled before the first number is read, so it
+          sits with the headline rather than down beside either import method. */}
       <p className="note source">Reading <b>{loaded.source}</b>.</p>
 
       {(shelf.untouched.length > 0 || shelf.played.length > 0) && (
         <section className="panel figure">
           <h2>The shelf</h2>
+          {/* Two shelves, untouched on top. Shelfwear is the trade term for what stock takes
+              from sitting unsold, so the games that have never run are the ones wearing it:
+              faded, with dust along the top edge. The played ones are clean because they
+              have been handled. */}
           {shelf.untouched.length > 0 && (
-            <Shelf spines={shelf.untouched} label={<><b>{shelf.untouched.length}</b> never launched, holding <b>{gb(untouchedBytes)} GB</b></>} />
+            <Shelf
+              spines={shelf.untouched}
+              label={
+                <>
+                  <b>{shelf.untouched.length}</b> never launched, holding{" "}
+                  <b>{gb(untouchedBytes)} GB</b>
+                </>
+              }
+            />
           )}
-          {shelf.played.length > 0 && <Shelf spines={shelf.played} label={<><b>{shelf.played.length}</b> played</>} />}
-          <p className="note">Spine width is disk. Only installed games have a size, so only local-file imports can stand here.</p>
+          {shelf.played.length > 0 && (
+            <Shelf spines={shelf.played} label={<><b>{shelf.played.length}</b> played</>} />
+          )}
+          <p className="note">
+            Spine width is disk, and the figure at the foot of each is gigabytes. Only
+            installed games have a size, so only local-file imports can stand here.
+          </p>
         </section>
       )}
 
@@ -142,17 +173,36 @@ export default function App() {
           <div className="metric"><b><Ticker value={stats.games} /></b><span>games here</span></div>
           <div className="metric"><b><Ticker value={hours(stats.totalMinutes)} decimals={1} /></b><span>hours played</span></div>
           <div className="metric warn"><b><Ticker value={stats.neverPlayed} /></b><span>never launched</span></div>
-          <div className="metric"><b><Ticker value={gb(stats.installedBytes)} decimals={1} suffix=" GB" /></b><span>installed known here</span></div>
-          <div className="metric warn"><b><Ticker value={gb(stats.unplayedBytes)} decimals={1} suffix=" GB" /></b><span>held by unplayed</span></div>
-          <div className="metric"><b><Ticker value={stats.halfOfHoursIn} /></b><span>{stats.halfOfHoursIn === 1 ? "title is" : "titles are"} half your hours</span></div>
+          {loaded.kind === "steam" ? (
+            <>
+              <div className="metric"><b>—</b><span>disk data unavailable</span></div>
+              <div className="metric"><b>—</b><span>unplayed disk unavailable</span></div>
+            </>
+          ) : (
+            <>
+              <div className="metric"><b><Ticker value={gb(stats.installedBytes)} decimals={1} suffix=" GB" /></b><span>installed</span></div>
+              <div className="metric warn"><b><Ticker value={gb(stats.unplayedBytes)} decimals={1} suffix=" GB" /></b><span>held by unplayed</span></div>
+            </>
+          )}
+          <div className="metric">
+            <b><Ticker value={stats.halfOfHoursIn} /></b>
+            <span>{stats.halfOfHoursIn === 1 ? "title is" : "titles are"} half your hours</span>
+          </div>
         </div>
         <p className="note prose">
           {loaded.kind === "steam" ? (
-            <>Steam mode reflects the games Steam returned for this public profile. Disk size and last-played are not exposed by this import.</>
+            <>Steam mode reflects the games Steam returned for this public profile. Steam does not expose local disk size or last-played timestamps through this import.</>
           ) : (
             <>
-              Local-file mode only knows apps this client has a record of, which is not the same as everything you own, so treat every count here as a floor rather than an account total.
-              {loaded.kind === "sample" && <> This screen is synthetic sample data so the page has something to show before you load a library.</>}
+              These are the apps this client has a record of, which is not the same as everything
+              you own. A library you have never launched on this machine leaves no local trace at
+              all, so treat every count here as a floor.
+              {stats.sizeIsPartial && (
+                <> <b>{stats.unknownSize}</b> installed game
+                  {stats.unknownSize === 1 ? " reports" : "s report"} no size, so the disk figures
+                  are a floor rather than a total.</>
+              )}
+              {loaded.kind === "sample" && <> This screen uses synthetic sample data.</>}
             </>
           )}
         </p>
@@ -161,7 +211,10 @@ export default function App() {
       {nine.length > 0 && (
         <section className="panel social-panel">
           <div className="social-heading">
-            <div><h2>Your nine</h2><p className="note">The nine games with the most recorded playtime.</p></div>
+            <div>
+              <h2>Your nine</h2>
+              <p className="note">The nine games with the most recorded playtime.</p>
+            </div>
             <button onClick={() => void copyNine()}>{copied ? "Copied" : "Copy summary"}</button>
           </div>
           <div className="nine-grid" aria-label="Top nine games by recorded playtime">
@@ -176,34 +229,72 @@ export default function App() {
           </div>
           <div className="familiar">
             <span className="familiar-mark" aria-hidden="true">{familiar.animal}</span>
-            <div><p className="eyebrow">Shelf familiar</p><h3>{familiar.name}</h3><p>{familiar.description}</p><p className="note">{familiar.evidence} A playful description of the library pattern, not a personality test.</p></div>
+            <div>
+              <p className="eyebrow">Shelf familiar</p>
+              <h3>{familiar.name}</h3>
+              <p>{familiar.description}</p>
+              <p className="note">{familiar.evidence} A playful description of the library pattern, not a personality test.</p>
+            </div>
           </div>
         </section>
       )}
 
       <section className="panel import-panel">
         <h2>Bring in a Steam library</h2>
-        <p className="prose">Paste a public Steam profile URL or 64-bit SteamID. The Worker asks Steam for public game/playtime data; your Steam password is never requested.</p>
+        <p className="prose">
+          Paste a public Steam profile URL or 64-bit SteamID. The Worker asks Steam for public
+          game/playtime data; your Steam password is never requested.
+        </p>
         <div className="profile-form">
-          <input value={steamProfile} onChange={(e) => setSteamProfile(e.target.value)} placeholder="https://steamcommunity.com/id/..." aria-label="Steam profile URL or SteamID" />
-          <button disabled={importing || !steamProfile.trim()} onClick={() => void importSteam()}>{importing ? "Reading…" : "Read public profile"}</button>
+          <input
+            value={steamProfile}
+            onChange={(e) => setSteamProfile(e.target.value)}
+            placeholder="https://steamcommunity.com/id/..."
+            aria-label="Steam profile URL or SteamID"
+          />
+          <button disabled={importing || !steamProfile.trim()} onClick={() => void importSteam()}>
+            {importing ? "Reading…" : "Read public profile"}
+          </button>
         </div>
-        <p className="note">If Steam says the library is unavailable, set Profile → Privacy Settings → Game details to Public, or use the local-file method below.</p>
+        <p className="note">
+          If Steam says the library is unavailable, set Profile → Privacy Settings → Game
+          details to Public, or use the local-file method below.
+        </p>
       </section>
 
+      {/* The local picker remains available even after the Worker path exists. It is the only
+          mode that can say anything about the machine's disk, and it sends nothing away. */}
       <section className="panel">
         <h2>Or keep it completely local</h2>
-        <div className={over ? "drop over" : "drop"} onDragOver={(e) => { e.preventDefault(); setOver(true); }} onDragLeave={() => setOver(false)} onDrop={(e) => { e.preventDefault(); setOver(false); void accept([...e.dataTransfer.files]); }}>
+        <div
+          className={over ? "drop over" : "drop"}
+          onDragOver={(e) => { e.preventDefault(); setOver(true); }}
+          onDragLeave={() => setOver(false)}
+          onDrop={(e) => { e.preventDefault(); setOver(false); void accept([...e.dataTransfer.files]); }}
+        >
           Drop <code>localconfig.vdf</code> and your <code>appmanifest_*.acf</code> files here
         </div>
         <div className="actions">
           <button onClick={() => picker.current?.click()}>Choose files</button>
           <button onClick={() => { setError(null); setLoaded(SAMPLE); }}>Back to the sample</button>
-          <input ref={picker} type="file" multiple hidden onChange={(e) => void accept([...(e.target.files ?? [])])} />
+          <input
+            ref={picker}
+            type="file"
+            multiple
+            hidden
+            onChange={(e) => void accept([...(e.target.files ?? [])])}
+          />
         </div>
         {error && <p className="err">{error}</p>}
-        {loaded.skipped > 0 && <p className="note">{loaded.skipped} file{loaded.skipped === 1 ? "" : "s"} skipped: not a manifest.</p>}
-        <p className="note prose"><b>localconfig.vdf</b> is in <code>userdata/&lt;id&gt;/config/</code>, and the <b>appmanifest</b> files are in <code>steamapps/</code>. These files are parsed only in this browser.</p>
+        {loaded.skipped > 0 && (
+          <p className="note">{loaded.skipped} file{loaded.skipped === 1 ? "" : "s"} skipped: not a manifest.</p>
+        )}
+        <p className="note prose">
+          <b>localconfig.vdf</b> is in <code>userdata/&lt;id&gt;/config/</code>, and the
+          <b> appmanifest</b> files are in <code>steamapps/</code>. The first knows your hours,
+          the second knows the names and sizes. Either alone still works, with less to show.
+          These files are parsed only in this browser.
+        </p>
       </section>
 
       <section className="panel">
@@ -213,7 +304,12 @@ export default function App() {
             <div className={g.minutes === 0 ? "row cold" : "row"} key={g.appid}>
               <span className="hrs">{hours(g.minutes)}h</span>
               <span className="name">{g.name ?? <em>app {g.appid}</em>}</span>
-              <span className="sz">{g.bytes === null ? (g.installed ? "size unknown" : loaded.kind === "steam" ? "Steam profile" : "not installed") : `${gb(g.bytes)} GB`}{g.lastPlayed !== null ? ` · ${ago(g.lastPlayed)}` : ""}</span>
+              <span className="sz">
+                {g.bytes === null
+                  ? (g.installed ? "size unknown" : loaded.kind === "steam" ? "Steam profile" : "not installed")
+                  : `${gb(g.bytes)} GB`}
+                {loaded.kind !== "steam" ? ` · ${ago(g.lastPlayed)}` : ""}
+              </span>
             </div>
           ))}
         </div>
@@ -223,13 +319,25 @@ export default function App() {
   );
 }
 
+/**
+ * One shelf: a run of spines stood on a plank, with a label under it.
+ *
+ * The title runs up the spine because that is the thing that makes a spine read as a spine,
+ * and it is free - a rotated line of text needs no illustration and no image.
+ */
 function Shelf({ spines, label }: { spines: Spine[]; label: React.ReactNode }) {
   return (
     <div className="shelf">
       <div className="shelf-run">
         {spines.map(({ game, width, untouched }, i) => (
-          <div key={game.appid} className={untouched ? "spine worn rise" : "spine rise"} style={{ width, ...stagger(i) }} title={`${game.name ?? game.appid} - ${gb(game.bytes ?? 0)} GB, ${hours(game.minutes)}h`}>
-            <span className="spine-title">{game.name ?? `app ${game.appid}`}</span><span className="spine-size">{gb(game.bytes ?? 0)}</span>
+          <div
+            key={game.appid}
+            className={untouched ? "spine worn rise" : "spine rise"}
+            style={{ width, ...stagger(i) }}
+            title={`${game.name ?? game.appid} - ${gb(game.bytes ?? 0)} GB, ${hours(game.minutes)}h`}
+          >
+            <span className="spine-title">{game.name ?? `app ${game.appid}`}</span>
+            <span className="spine-size">{gb(game.bytes ?? 0)}</span>
           </div>
         ))}
       </div>
