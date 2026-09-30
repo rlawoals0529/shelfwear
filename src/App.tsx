@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { readLocalConfig, readManifest, buildLibrary, summarise, shelve, hours, gb, type Game, type Spine, type Stats } from "./lib/library.js";
 import { analyticsFor, type LibraryAnalytics } from "./lib/analytics.js";
 import { familiarFor, steamCover, steamHeader, steamIcon, topNine } from "./lib/profile.js";
@@ -27,6 +27,29 @@ type SourceKind = "sample" | "local" | "steam";
 type LibrarySort = "most-played" | "least-played" | "name-az" | "name-za" | "recent" | "largest";
 type LibraryFilter = "all" | "played" | "unplayed" | "installed";
 type LibraryDensity = "cozy" | "compact";
+
+const LIBRARY_SORT_KEY = "shelfwear:library-sort";
+const LIBRARY_DENSITY_KEY = "shelfwear:library-density";
+const LIBRARY_SORT_VALUES: LibrarySort[] = ["most-played", "least-played", "name-az", "name-za", "recent", "largest"];
+const LIBRARY_DENSITY_VALUES: LibraryDensity[] = ["cozy", "compact"];
+
+function readLocalPreference<T extends string>(key: string, allowed: readonly T[], fallback: T): T {
+  try {
+    const stored = window.localStorage.getItem(key);
+    return stored && allowed.includes(stored as T) ? stored as T : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function writeLocalPreference(key: string, value: string): void {
+  try {
+    window.localStorage.setItem(key, value);
+  } catch {
+    // Storage can be unavailable in hardened/private browser contexts. The UI
+    // should still work normally; persistence is a convenience, not a dependency.
+  }
+}
 
 interface Loaded {
   games: Game[];
@@ -278,10 +301,22 @@ export default function App() {
   const [compareCopied, setCompareCopied] = useState(false);
   const [view, setView] = useState<"shelf" | "analytics" | "top">(shared.top ? "top" : "shelf");
   const [libraryQuery, setLibraryQuery] = useState("");
-  const [librarySort, setLibrarySort] = useState<LibrarySort>("most-played");
+  const [librarySort, setLibrarySort] = useState<LibrarySort>(() =>
+    readLocalPreference(LIBRARY_SORT_KEY, LIBRARY_SORT_VALUES, "most-played"),
+  );
   const [libraryFilter, setLibraryFilter] = useState<LibraryFilter>("all");
-  const [libraryDensity, setLibraryDensity] = useState<LibraryDensity>("cozy");
+  const [libraryDensity, setLibraryDensity] = useState<LibraryDensity>(() =>
+    readLocalPreference(LIBRARY_DENSITY_KEY, LIBRARY_DENSITY_VALUES, "cozy"),
+  );
   const picker = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    writeLocalPreference(LIBRARY_SORT_KEY, librarySort);
+  }, [librarySort]);
+
+  useEffect(() => {
+    writeLocalPreference(LIBRARY_DENSITY_KEY, libraryDensity);
+  }, [libraryDensity]);
 
   const accept = useCallback(async (list: File[]) => {
     setError(null);
