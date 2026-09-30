@@ -17,7 +17,7 @@ import {
   type SteamProfileSummary,
 } from "./lib/steam.js";
 import { SAMPLE_CONFIG, SAMPLE_MANIFESTS } from "./lib/sample.js";
-import { curatedFromSearch, curatedShareUrl, normaliseCuratedTopGames, steamAppIdFromInput, type CuratedTopGames } from "./lib/top-games.js";
+import { curatedFromSearch, curatedShareUrl, steamAppIdFromInput, type CuratedTopGames } from "./lib/top-games.js";
 import { Ticker, stagger } from "./lib/motion.js";
 import { Palette } from "./lib/palette.js";
 import palettes from "./theme/palettes.json";
@@ -711,7 +711,8 @@ function TopGamesPage({ loadedGames, initial }: { loadedGames: Game[]; initial: 
   }, [draftName, list.games, loadedGames]);
 
   const setMeta = (field: "title" | "caption", value: string) => {
-    setList((current) => normaliseCuratedTopGames({ ...current, [field]: value }));
+    const max = field === "title" ? 48 : 120;
+    setList((current) => ({ ...current, [field]: value.slice(0, max) }));
   };
 
   const add = (name = draftName, appidInput = draftApp) => {
@@ -736,15 +737,14 @@ function TopGamesPage({ loadedGames, initial }: { loadedGames: Game[]; initial: 
       return;
     }
     const appid = suppliedAppid ?? exactLibraryGame?.appid ?? null;
-    const next = normaliseCuratedTopGames({
-      ...list,
-      games: [...list.games, { name: cleanName, appid }],
-    });
-    if (next.games.length === list.games.length) {
+    const duplicate = list.games.some((game) =>
+      game.name.toLowerCase() === cleanName.toLowerCase() && game.appid === appid
+    );
+    if (duplicate) {
       setFormError("That game is already on this card.");
       return;
     }
-    setList(next);
+    setList((current) => ({ ...current, games: [...current.games, { name: cleanName.slice(0, 80), appid }].slice(0, 9) }));
     setDraftName("");
     setDraftApp("");
     nameInput.current?.focus();
@@ -771,7 +771,7 @@ function TopGamesPage({ loadedGames, initial }: { loadedGames: Game[]; initial: 
 
   const useCurrentNine = () => {
     const games = topNine(loadedGames).map((game) => ({ name: game.name ?? `app ${game.appid}`, appid: game.appid }));
-    setList((current) => normaliseCuratedTopGames({ ...current, games }));
+    setList((current) => ({ ...current, games: games.slice(0, 9) }));
     setFormError(null);
   };
 
