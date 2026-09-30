@@ -1,0 +1,590 @@
+/* Cute/cozy finish.
+   All decoration in this layer is local: rounded system fonts, inline SVG doodles, emoji and
+   kaomoji. That keeps local-file mode honest - loading Shelfwear still makes no third-party
+   font/icon requests. */
+
+:root {
+  --font-soft: "Trebuchet MS", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-round: ui-rounded, "SF Pro Rounded", "Arial Rounded MT Bold", "Trebuchet MS", "Segoe UI", sans-serif;
+  --font-hand: "Segoe Print", "Bradley Hand", "Comic Sans MS", cursive;
+  --cute-ring: color-mix(in srgb, var(--accent) 28%, var(--edge));
+  --cute-wash: color-mix(in srgb, var(--accent) 7%, var(--panel));
+  --cute-wash-2: color-mix(in srgb, var(--accent-2) 7%, var(--panel));
+}
+
+body,
+button,
+input {
+  font-family: var(--font-soft);
+}
+
+h1.display,
+.panel h2,
+.familiar h3,
+.metric b,
+.steam-person b {
+  font-family: var(--font-round);
+}
+
+.hero-kicker,
+.eyebrow {
+  font-family: var(--font-hand);
+  font-weight: 700;
+  letter-spacing: .015em;
+  text-transform: none;
+}
+
+.hero {
+  max-width: 940px;
+  min-height: 295px;
+  padding-right: 210px;
+}
+
+.hero::after {
+  display: none;
+}
+
+.hero-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 12px 7px;
+  border-radius: 999px;
+  background: var(--panel);
+  border-color: var(--cute-ring);
+  box-shadow: 0 8px 22px color-mix(in srgb, var(--fg) 5%, transparent);
+}
+
+.hero-kicker .cute-icon {
+  width: 15px;
+  height: 15px;
+  color: var(--accent-text);
+}
+
+h1.display {
+  letter-spacing: -.045em;
+}
+
+h1.display span {
+  display: inline-block;
+  transform: rotate(-2deg);
+}
+
+.hero-charm {
+  position: absolute;
+  right: 5px;
+  top: 46px;
+  z-index: 1;
+  width: 174px;
+  min-height: 150px;
+  display: grid;
+  place-items: center;
+  align-content: center;
+  gap: 3px;
+  padding: 22px 14px 16px;
+  border: 1px solid var(--cute-ring);
+  border-radius: 42% 58% 46% 54% / 55% 45% 55% 45%;
+  background:
+    radial-gradient(circle at 30% 22%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 32%),
+    linear-gradient(145deg, var(--panel), var(--cute-wash-2));
+  box-shadow: 0 18px 40px color-mix(in srgb, var(--fg) 8%, transparent);
+  transform: rotate(2deg);
+}
+
+.hero-charm-spark {
+  position: absolute;
+  top: 13px;
+  right: 20px;
+  color: var(--accent-text);
+  font-size: 17px;
+}
+
+.hero-charm-face {
+  white-space: nowrap;
+  font-family: var(--font-soft);
+  color: var(--fg);
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -.02em;
+}
+
+.hero-charm-label {
+  font-family: var(--font-hand);
+  color: var(--fg);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.hero-meta {
+  align-items: stretch;
+}
+
+.source,
+.steam-identity {
+  display: inline-flex;
+  align-items: center;
+  min-height: 38px;
+  padding: 8px 12px;
+  border: 1px solid color-mix(in srgb, var(--edge) 78%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--panel) 92%, transparent);
+}
+
+.steam-identity img {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+
+/* One heading system for every panel keeps all of the content visually aligned. */
+.section-title {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr);
+  align-items: start;
+  gap: 13px;
+  width: 100%;
+  margin: 0 0 18px;
+}
+
+.section-title-copy {
+  min-width: 0;
+}
+
+.section-title .eyebrow {
+  margin: 0 0 3px;
+  color: var(--accent-text);
+  font-size: 11px;
+}
+
+.section-title h2 {
+  margin: 0;
+}
+
+.section-title .note {
+  margin: 5px 0 0;
+  max-width: 56ch;
+}
+
+.section-icon {
+  width: 46px;
+  height: 46px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--cute-ring);
+  border-radius: 15px 18px 14px 19px;
+  background:
+    radial-gradient(circle at 30% 20%, color-mix(in srgb, var(--accent) 13%, transparent), transparent 48%),
+    var(--panel);
+  color: var(--accent-text);
+  box-shadow: 0 7px 18px color-mix(in srgb, var(--fg) 5%, transparent);
+  transform: rotate(-1.5deg);
+}
+
+.section-icon .cute-icon {
+  width: 23px;
+  height: 23px;
+}
+
+.cute-icon {
+  display: block;
+  flex: 0 0 auto;
+}
+
+.button-icon {
+  width: 16px;
+  height: 16px;
+}
+
+button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  font-family: var(--font-round);
+  font-weight: 750;
+  letter-spacing: -.01em;
+}
+
+button:not(:disabled):active {
+  transform: translateY(0) scale(.985);
+}
+
+.panel {
+  border-radius: 28px 24px 29px 23px;
+}
+
+.import-panel {
+  background:
+    radial-gradient(circle at 8% 92%, color-mix(in srgb, var(--accent-2) 8%, transparent), transparent 17rem),
+    radial-gradient(circle at 95% 5%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 18rem),
+    linear-gradient(150deg, color-mix(in srgb, var(--panel) 99%, transparent), color-mix(in srgb, var(--accent) 4%, var(--panel)));
+}
+
+.import-copy .section-title {
+  margin-bottom: 13px;
+}
+
+.import-action {
+  border-radius: 24px 20px 25px 19px;
+  box-shadow: 0 9px 24px color-mix(in srgb, var(--fg) 5%, transparent);
+}
+
+.profile-form input,
+.compare-form input {
+  font-family: var(--font-soft);
+  border-radius: 14px;
+  transition: box-shadow .16s ease, border-color .16s ease, transform .16s ease;
+}
+
+.profile-form input:focus,
+.compare-form input:focus {
+  transform: translateY(-1px);
+  box-shadow:
+    0 0 0 3px color-mix(in srgb, var(--accent) 15%, transparent),
+    inset 0 0 0 1px var(--accent);
+}
+
+.stats-panel .section-title,
+.shelf-panel .section-title,
+.compare-panel .section-title,
+.local-panel .section-title,
+.library-panel .section-title {
+  max-width: 900px;
+}
+
+.metric {
+  position: relative;
+  overflow: hidden;
+  padding-top: 20px;
+  border-color: color-mix(in srgb, var(--edge) 72%, transparent);
+  background:
+    linear-gradient(150deg, color-mix(in srgb, var(--panel) 92%, var(--raised)), var(--panel));
+}
+
+.metric:nth-child(2n) {
+  background:
+    linear-gradient(150deg, color-mix(in srgb, var(--accent-2) 5%, var(--panel)), var(--panel));
+}
+
+.metric.warn {
+  background:
+    linear-gradient(150deg, color-mix(in srgb, var(--accent) 6%, var(--panel)), var(--panel));
+}
+
+.metric-icon {
+  position: absolute;
+  right: 12px;
+  top: 11px;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--edge) 72%, transparent);
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--panel) 92%, transparent);
+  color: var(--accent-text);
+}
+
+.metric-icon .cute-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.metric b {
+  letter-spacing: -.04em;
+}
+
+.social-panel {
+  background:
+    radial-gradient(circle at 90% 8%, color-mix(in srgb, var(--accent) 9%, transparent), transparent 20rem),
+    radial-gradient(circle at 8% 98%, color-mix(in srgb, var(--accent-2) 7%, transparent), transparent 22rem),
+    var(--panel);
+}
+
+.social-heading {
+  align-items: center;
+  gap: 20px;
+}
+
+.social-heading .section-title {
+  flex: 1 1 440px;
+  margin-bottom: 0;
+}
+
+.social-actions {
+  align-items: center;
+}
+
+.nine-grid {
+  gap: 12px;
+}
+
+.nine-tile {
+  border-radius: 18px 15px 18px 14px;
+  border-color: color-mix(in srgb, var(--edge) 76%, transparent);
+}
+
+.nine-tile:nth-child(3n + 1) {
+  transform: rotate(-.35deg);
+}
+
+.nine-tile:nth-child(3n) {
+  transform: rotate(.35deg);
+}
+
+.nine-tile:hover,
+.nine-tile:nth-child(2n):hover,
+.nine-tile:nth-child(3n + 1):hover,
+.nine-tile:nth-child(3n):hover {
+  transform: translateY(-4px) rotate(0);
+}
+
+.nine-rank {
+  font-family: var(--font-round);
+  border-radius: 50%;
+}
+
+.nine-copy {
+  border-radius: 11px 9px 11px 8px;
+}
+
+.familiar {
+  align-items: center;
+  border-radius: 24px 20px 25px 19px;
+  box-shadow: 0 10px 24px color-mix(in srgb, var(--fg) 5%, transparent);
+}
+
+.familiar-cute {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  border: 1px solid var(--cute-ring);
+  background:
+    radial-gradient(circle at 35% 27%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 42%),
+    var(--panel);
+  color: var(--fg);
+  transform: rotate(-2deg);
+}
+
+.familiar-emoji {
+  font-size: 34px;
+  line-height: 1;
+}
+
+.familiar-kaomoji {
+  position: absolute;
+  right: 8px;
+  bottom: 7px;
+  color: var(--accent-text);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.familiar .eyebrow {
+  color: var(--accent-text);
+}
+
+.compare-panel {
+  background:
+    radial-gradient(circle at 4% 8%, color-mix(in srgb, var(--accent-2) 7%, transparent), transparent 18rem),
+    var(--panel);
+}
+
+.compare-form {
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--raised) 44%, var(--panel));
+}
+
+.compare-form > span {
+  font-family: var(--font-round);
+  color: var(--accent-text);
+  font-weight: 800;
+}
+
+.compare-heading button {
+  white-space: nowrap;
+}
+
+.shared-games h3 {
+  font-family: var(--font-round);
+}
+
+.local-panel .drop {
+  position: relative;
+  border-style: dashed;
+  border-width: 1.5px;
+  background:
+    radial-gradient(circle at 92% 20%, color-mix(in srgb, var(--accent) 7%, transparent), transparent 13rem),
+    color-mix(in srgb, var(--panel) 92%, var(--raised));
+}
+
+.local-panel .drop::before {
+  content: "૮ ˶ᵔ ᵕ ᵔ˶ ა";
+  display: block;
+  margin-bottom: 8px;
+  font-family: var(--font-soft);
+  color: var(--accent-text);
+  font-weight: 800;
+}
+
+.library-panel .rows {
+  gap: 7px;
+}
+
+.row {
+  align-items: center;
+  border: 1px solid color-mix(in srgb, var(--edge) 54%, transparent);
+  background: color-mix(in srgb, var(--panel) 82%, var(--raised));
+}
+
+.row:nth-child(2n) {
+  background: color-mix(in srgb, var(--accent-2) 3%, var(--panel));
+}
+
+.row .hrs {
+  font-family: var(--font-round);
+  font-weight: 800;
+  color: var(--accent-text);
+}
+
+.palette {
+  border-radius: 18px;
+}
+
+@media (max-width: 860px) {
+  .hero {
+    min-height: 0;
+    padding-right: 0;
+  }
+
+  .hero-charm {
+    position: static;
+    width: fit-content;
+    min-height: 0;
+    grid-template-columns: auto auto;
+    column-gap: 8px;
+    padding: 10px 13px;
+    margin: 18px 0 4px;
+    border-radius: 18px 22px 17px 21px;
+    transform: rotate(-1deg);
+  }
+
+  .hero-charm-spark {
+    position: static;
+    grid-row: 1 / 3;
+    font-size: 15px;
+  }
+
+  .hero-charm-face {
+    font-size: 14px;
+  }
+
+  .hero-charm-label {
+    font-size: 10px;
+  }
+
+  .social-heading .section-title {
+    flex-basis: auto;
+  }
+}
+
+@media (max-width: 620px) {
+  .section-title {
+    grid-template-columns: 40px minmax(0, 1fr);
+    gap: 11px;
+    margin-bottom: 15px;
+  }
+
+  .section-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 13px 16px 12px 15px;
+  }
+
+  .section-icon .cute-icon {
+    width: 20px;
+    height: 20px;
+  }
+
+  .section-title .eyebrow {
+    font-size: 10px;
+  }
+
+  .hero-kicker {
+    font-family: var(--font-soft);
+    font-size: 10px;
+  }
+
+  .profile-form button,
+  .compare-form button {
+    min-height: 46px;
+  }
+
+  .metric-icon {
+    width: 23px;
+    height: 23px;
+    right: 9px;
+    top: 9px;
+  }
+
+  .metric-icon .cute-icon {
+    width: 12px;
+    height: 12px;
+  }
+
+  .nine-grid {
+    gap: 7px;
+  }
+
+  .nine-tile:nth-child(3n + 1),
+  .nine-tile:nth-child(3n) {
+    transform: none;
+  }
+
+  .familiar-emoji {
+    font-size: 28px;
+  }
+
+  .social-actions button {
+    min-height: 42px;
+  }
+
+  .row .hrs {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 420px) {
+  .hero-charm {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .section-title {
+    grid-template-columns: 36px minmax(0, 1fr);
+  }
+
+  .section-icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .section-icon .cute-icon {
+    width: 18px;
+    height: 18px;
+  }
+
+  .social-actions button {
+    flex: 1 1 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-charm,
+  .nine-tile:nth-child(3n + 1),
+  .nine-tile:nth-child(3n) {
+    transform: none;
+  }
+}
