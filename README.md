@@ -19,6 +19,7 @@ The interface uses original inline SVG doodles, emoji/kaomoji accents, and syste
 For sharing, Shelfwear can make:
 
 - **Your nine** — the nine titles with the most recorded playtime, in a 3×3 grid.
+- **Shelf Stories** — prompt-driven, hand-picked collections such as Games that shaped me, comfort games, and multiplayer memories.
 - **Download card** — a 1080×1350 PNG rendered in the current Shelfwear palette. Local/sample mode is fully browser-only; Steam mode asks Shelfwear's same-origin Worker cover endpoint for public artwork and falls back to typographic tiles when artwork is unavailable.
 - **Shelf familiar** — a deterministic, playful description based only on observable playtime/library patterns. It describes the library shape, not the person.
 - **Copy summary** — a text version of the nine for sharing anywhere.
