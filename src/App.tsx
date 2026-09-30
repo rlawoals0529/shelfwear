@@ -29,7 +29,7 @@ function load(files: { name: string; text: string }[]): Loaded {
 
   return {
     games: buildLibrary(play, manifests),
-    source: `${files.length} local file${files.length === 1 ? "" : "s"}`,
+    source: `${files.length} file${files.length === 1 ? "" : "s"}`,
     skipped,
     kind: "local",
   };
@@ -81,11 +81,14 @@ export default function App() {
     setImporting(true);
     try {
       const response = await fetch(`/api/steam/library?profile=${encodeURIComponent(steamProfile.trim())}`);
-      const data = await response.json() as {
+      const data = await response.json().catch(() => null) as {
         steamid?: string;
         error?: string;
         games?: { appid: string; name: string | null; minutes: number }[];
-      };
+      } | null;
+      if (!data) {
+        throw new Error("Public Steam import needs the Cloudflare Workers deployment. The local-file reader still works here.");
+      }
       if (!response.ok || !data.games || !data.steamid) throw new Error(data.error ?? "Steam import failed.");
       setLoaded({
         source: `public Steam library ${data.steamid}`,
@@ -118,7 +121,7 @@ export default function App() {
       <h1 className="display">shelf<span>wear</span></h1>
       <p className="tagline prose">
         See what your Steam library actually gets played, then turn the shape of it into something worth sharing.
-        Local files stay in your browser.
+        Local-file mode stays in this browser: nothing is uploaded and nothing is fetched.
       </p>
       <p className="note source">Reading <b>{loaded.source}</b>.</p>
 
@@ -144,11 +147,14 @@ export default function App() {
           <div className="metric"><b><Ticker value={stats.halfOfHoursIn} /></b><span>{stats.halfOfHoursIn === 1 ? "title is" : "titles are"} half your hours</span></div>
         </div>
         <p className="note prose">
-          {loaded.kind === "local"
-            ? <>Local mode only knows apps this client has a record of, so counts are floors rather than your complete account library.</>
-            : loaded.kind === "steam"
-              ? <>Steam mode reflects the games Steam returned for this public profile. Disk size and last-played are not exposed by this import.</>
-              : <>This is synthetic sample data so the page has something to show before you load a library.</>}
+          {loaded.kind === "steam" ? (
+            <>Steam mode reflects the games Steam returned for this public profile. Disk size and last-played are not exposed by this import.</>
+          ) : (
+            <>
+              Local-file mode only knows apps this client has a record of, which is not the same as everything you own, so treat every count here as a floor rather than an account total.
+              {loaded.kind === "sample" && <> This screen is synthetic sample data so the page has something to show before you load a library.</>}
+            </>
+          )}
         </p>
       </section>
 
