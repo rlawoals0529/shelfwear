@@ -47,11 +47,11 @@ The `/api/steam/cover/:appid` route is different: it is a tightly scoped proxy f
 
 The **Everything** section is interactive rather than a fixed dump of games. Visitors can search by title, sort by most/least played or alphabetically, and filter to played or never-played games. Only real local-file mode enables **Recently played on this PC**, **Largest installed**, and **Installed on this PC**. Public Steam imports never show those controls, and the built-in sample keeps its synthetic local data clearly marked as demo data instead of presenting it as a device fact. The list can switch between cozy and compact row density without changing the underlying data. Shelfwear remembers the selected row density and last sort choice in browser `localStorage`; no Steam library is persisted server-side for these preferences.
 
-## Hand-picked top games
+## Shelf Stories
 
-**My top games** is for the list you would pick yourself rather than the one playtime picks for you. Add titles manually or pull them from the loaded shelf, attach a Steam AppID or Store URL when you want official artwork, rank up to nine, then change the card title and caption.
+**Shelf Stories** turns the hand-picked card builder into a small prompt-driven collection maker. Start from **Games that shaped me**, **My comfort games**, **Currently obsessed**, **Childhood favorites**, **Multiplayer memories**, or **Play again for the first time**. Choosing a prompt sets a suggested title and caption without replacing games you already picked. You can then add titles manually or pull them from the loaded shelf, attach a Steam AppID or Store URL when you want official artwork, and order up to nine games.
 
-Sharing stays stateless. The share URL contains only the curated title, caption, selected game names, optional numeric Steam AppIDs, and public Steam icon hashes when a loaded library provides them. Shelfwear does not create an account or store the list. Opening a shared `?top=...` link goes directly to the editable top-games view.
+Sharing stays stateless. New share URLs use `?story=...` and contain only the story title, caption, selected game names, optional numeric Steam AppIDs, and public Steam icon hashes when a loaded library provides them. Shelfwear does not create an account or store the story. Existing `?top=...` links remain supported and open the same editable Shelf Stories view.
 
 The builder can export a 1080×1350 scrapbook-style PNG. Games with an AppID use the existing same-origin Steam artwork proxy. If Steam has no portrait, Shelfwear prefers the public icon hash from GetOwnedGames and otherwise letterboxes an official wide Steam asset rather than cropping it into a blurry square. Games without an AppID intentionally use a designed text tile rather than guessed artwork.
 
