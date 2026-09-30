@@ -175,17 +175,17 @@ test("builds a hand-picked top-games list with Steam art or cute fallbacks", asy
 
   await page.goto("/");
   await page.getByRole("button", { name: "My top games" }).click();
-  await expect(page.getByRole("heading", { name: "My top games" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "My top games", exact: true })).toBeVisible();
 
   await page.getByLabel("Game name to add").fill("Hades");
   await page.getByLabel("Optional Steam AppID or store link").fill("1145360");
-  await page.getByRole("button", { name: "Add game" }).click();
+  await page.getByRole("button", { name: "Add game", exact: true }).click();
 
   await expect(page.locator(".curated-game-tile img")).toHaveCount(1);
   await expect(page.locator(".curated-game-tile img")).toHaveAttribute("src", "/api/steam/cover/1145360");
 
   await page.getByLabel("Game name to add").fill("A tiny custom game");
-  await page.getByRole("button", { name: "Add game" }).click();
+  await page.getByRole("button", { name: "Add game", exact: true }).click();
   await expect(page.locator(".curated-fallback-letter")).toHaveText("A");
   await expect(page.getByText("2/9 picked")).toBeVisible();
 
