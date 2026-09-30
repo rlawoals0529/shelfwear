@@ -278,7 +278,7 @@ test("long Steam names truncate cleanly and the main view buttons stay aligned",
   expect(overflow).toBeLessThanOrEqual(1);
 
   const name = identity.locator(".steam-identity-name");
-  await expect(name).toHaveAttribute("title", /ridiculously-long/).catch(() => {});
+  await expect(identity).toHaveAttribute("title", /ridiculously-long/);
   const nameMetrics = await name.evaluate((element) => ({
     scroll: element.scrollWidth,
     client: element.clientWidth,
