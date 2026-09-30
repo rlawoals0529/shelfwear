@@ -90,3 +90,32 @@ test("cute decoration is aligned and does not add third-party font or icon reque
   await expect(page.getByRole("button", { name: "Read public profile" }).locator(".button-icon")).toBeVisible();
   expect(externalDecorRequests).toEqual([]);
 });
+
+
+test("analytics view is aligned, responsive, and derived from the loaded library", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Analytics" }).click();
+
+  await expect(page.getByRole("heading", { name: "Library analytics" })).toBeVisible();
+  await expect(page.getByText("75%")).toBeVisible();
+  await expect(page.getByText("How deep the library goes")).toBeVisible();
+  await expect(page.getByText("Where the hours go")).toBeVisible();
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(overflow).toBeLessThanOrEqual(1);
+});
+
+test("section icons are vertically centered with their title copy", async ({ page }) => {
+  await page.goto("/");
+  const title = page.locator(".library-panel .section-title");
+  const icon = title.locator(".section-icon");
+  const copy = title.locator(".section-title-copy");
+  const [iconBox, copyBox] = await Promise.all([icon.boundingBox(), copy.boundingBox()]);
+
+  expect(iconBox).not.toBeNull();
+  expect(copyBox).not.toBeNull();
+  const iconCenter = iconBox!.y + iconBox!.height / 2;
+  const copyCenter = copyBox!.y + copyBox!.height / 2;
+  expect(Math.abs(iconCenter - copyCenter)).toBeLessThanOrEqual(2);
+});
