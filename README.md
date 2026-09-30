@@ -45,6 +45,20 @@ The `/api/steam/cover/:appid` route is different: it is a tightly scoped proxy f
 
 The repository includes `worker/index.ts` and `wrangler.jsonc`. Static Vite output is served by the Worker and `/api/*` runs through the Worker first.
 
+### GitHub Actions — recommended
+
+`.github/workflows/cloudflare.yml` provides a manual production deployment so credentials stay in GitHub Actions secrets instead of the repository.
+
+Configure these repository secrets under **Settings → Secrets and variables → Actions**:
+
+- `CLOUDFLARE_API_TOKEN` — a Cloudflare API token permitted to deploy this Worker.
+- `CLOUDFLARE_ACCOUNT_ID` — the target Cloudflare account ID.
+- `STEAM_WEB_API_KEY` — the Steam Web API key bound to the Worker as a secret.
+
+Then open **Actions → Cloudflare deploy → Run workflow**. The workflow runs `npm ci`, builds the Vite assets, deploys with Wrangler, writes `STEAM_WEB_API_KEY` as a Worker secret, and records the returned deployment URL in the job summary. Do not commit any of these values.
+
+### Local deployment
+
 Build the app:
 
 ```bash
