@@ -24,7 +24,8 @@ For sharing, Shelfwear can make:
 - **Shelf familiar** — a deterministic mascot based only on observable library patterns, with three visible signals explaining why it was chosen and its own downloadable 1080×1350 card. It describes the library shape, not the person.
 - **Copy summary** — a text version of the nine for sharing anywhere.
 - **Share shelf** — a stateless URL containing only the resolved public SteamID. Opening it prefills the profile so Shelfwear can rebuild the result live; no library snapshot is stored.
-- **Compare two shelves** — ownership overlap, each shelf’s unique corner, games with recorded playtime on both profiles, “easy handoffs” where only one profile has recorded time in a jointly owned game, a shared-shelf signature, and a downloadable 1080×1350 friend comparison card. Comparison links likewise contain only the two public SteamIDs.
+- **Compare two shelves** — ownership overlap, each shelf’s unique corner, games with recorded playtime on both profiles, “easy handoffs” where only one profile has recorded time in a jointly owned game, a shared-shelf signature, and a downloadable 1080×1350 friend comparison card. Finished comparison links contain only the two public SteamIDs.
+- **Invite a friend** — after loading your own public shelf, copy a one-sided invite URL containing only your resolved public SteamID. The recipient lands in Compare with your side filled in and adds only their own public Steam profile.
 
 ## What it tells you
 
@@ -65,6 +66,8 @@ After loading two public profiles, Shelfwear can export a 1080×1350 comparison 
 The on-page comparison also shows **easy handoffs**: games owned by both profiles where exactly one side has recorded playtime. They are ordered by the recorded playtime on the side that has played them. This is only a visibility shortcut for shared ownership/playtime, not a recommendation score.
 
 The comparison card does **not** create a compatibility score or infer anything about the people. Its figures are the same observable public-library measures already shown on the comparison page. The existing share-comparison URL remains stateless and contains only the two resolved public SteamIDs.
+
+Friend invites are stateless too. An invite uses `?invite=<SteamID>#compare` and contains only the inviter's resolved 17-digit public SteamID. It does not contain either library, profile name, playtime, comparison result, or the eventual recipient. When the recipient submits their own public profile, Shelfwear fetches both public libraries live and creates the normal comparison.
 
 ## Analytics
 
