@@ -33,6 +33,52 @@ describe("familiarFor", () => {
     const games = [game("1", 100), ...Array.from({ length: 11 }, (_, i) => game(String(i + 2), 0))];
     expect(familiarFor(games).name).toBe("Lantern Moth");
   });
+
+  it("uses a distinct familiar for a concentrated three-game core", () => {
+    const result = familiarFor([
+      game("1", 300), game("2", 250), game("3", 200),
+      game("4", 70), game("5", 70), game("6", 70),
+    ]);
+    expect(result.name).toBe("Anchor Turtle");
+    expect(result.signals).toContainEqual({ label: "Top three", value: "78%" });
+  });
+
+  it("recognises large played archives without treating size as personality", () => {
+    const games = Array.from({ length: 200 }, (_, i) => game(String(i + 1), 180));
+    const result = familiarFor(games);
+    expect(result.name).toBe("Archive Dragon");
+    expect(result.evidence).toContain("200 games have recorded playtime");
+  });
+
+  it("recognises deep libraries by median played time", () => {
+    const games = Array.from({ length: 8 }, (_, i) => game(String(i + 1), 50 * 60));
+    const result = familiarFor(games);
+    expect(result.name).toBe("Deep-Dive Owl");
+    expect(result.signals).toContainEqual({ label: "Median played", value: "50h" });
+  });
+
+  it("recognises a long tail of short visits", () => {
+    const games = Array.from({ length: 12 }, (_, i) => game(String(i + 1), 60));
+    expect(familiarFor(games).name).toBe("Comet Hare");
+  });
+
+  it("keeps the broad balanced shelf as the magpie", () => {
+    const games = Array.from({ length: 24 }, (_, i) => game(String(i + 1), 180));
+    expect(familiarFor(games).name).toBe("Magpie");
+  });
+
+  it("uses a quiet familiar when nothing has recorded playtime", () => {
+    const result = familiarFor([game("1", 0), game("2", 0), game("3", 0)]);
+    expect(result.name).toBe("Quiet Dormouse");
+    expect(result.signals).toHaveLength(3);
+  });
+
+  it("returns three transparent signals for every familiar", () => {
+    const result = familiarFor(Array.from({ length: 10 }, (_, i) => game(String(i + 1), 180)));
+    expect(result.name).toBe("Library Fox");
+    expect(result.signals).toHaveLength(3);
+    expect(result.signals.every((signal) => signal.label && signal.value)).toBe(true);
+  });
 });
 
 describe("steamCover", () => {
