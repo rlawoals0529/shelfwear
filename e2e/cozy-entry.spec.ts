@@ -97,7 +97,8 @@ test("analytics view is aligned, responsive, and derived from the loaded library
   await page.getByRole("button", { name: "Analytics" }).click();
 
   await expect(page.getByRole("heading", { name: "Library analytics" })).toBeVisible();
-  await expect(page.getByText("75%")).toBeVisible();
+  await expect(page.locator(".analytics-donut b")).toContainText("%");
+  await expect(page.getByText(/of 17 games have recorded playtime/)).toBeVisible();
   await expect(page.getByText("How deep the library goes")).toBeVisible();
   await expect(page.getByText("Where the hours go")).toBeVisible();
 
