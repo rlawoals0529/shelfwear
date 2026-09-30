@@ -664,6 +664,204 @@ export async function renderFamiliarCard(input: FamiliarCardInput): Promise<Blob
   return canvasBlob(canvas);
 }
 
+
+const comparisonGlyph = (object: string): string =>
+  ({ bookends: "📚", campfire: "🔥", bookmarks: "🔖", shelves: "🪵" } as Record<string, string>)[object] ?? "♡";
+
+export function comparisonCardFilename(leftName: string, rightName: string): string {
+  const stem = (value: string) => value
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 24) || "player";
+  return "shelfwear-" + stem(leftName) + "-x-" + stem(rightName) + "-comparison.png";
+}
+
+export async function renderComparisonCard(input: ComparisonCardInput): Promise<Blob> {
+  if (typeof document === "undefined") throw new Error("Share cards require a browser.");
+  const theme = { ...DEFAULT_THEME, ...currentShareCardTheme(), ...input.theme };
+  const canvas = document.createElement("canvas");
+  canvas.width = WIDTH;
+  canvas.height = HEIGHT;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas is not available in this browser.");
+
+  ctx.fillStyle = theme.bg;
+  ctx.fillRect(0, 0, WIDTH, HEIGHT);
+
+  const wash = ctx.createLinearGradient(0, 0, WIDTH, HEIGHT);
+  wash.addColorStop(0, theme.panel);
+  wash.addColorStop(.48, theme.bg);
+  wash.addColorStop(1, theme.raised);
+  ctx.globalAlpha = .9;
+  ctx.fillStyle = wash;
+  ctx.fillRect(0, 0, WIDTH, HEIGHT);
+  ctx.globalAlpha = 1;
+
+  drawSparkle(ctx, WIDTH - 92, 72, 17, theme.accent);
+  drawSparkle(ctx, 90, HEIGHT - 91, 11, theme.accent2);
+
+  ctx.fillStyle = theme.accent;
+  ctx.font = "800 21px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.fillText("SHELFWEAR  /  TWO SHELVES", PAD, 57);
+
+  ctx.fillStyle = theme.fg;
+  ctx.font = "800 47px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  const heading = wrapByMeasure(ctx, input.leftName + " × " + input.rightName, WIDTH - PAD * 2, 1)[0] ?? "Two shelves";
+  ctx.fillText(heading, PAD, 126);
+
+  ctx.fillStyle = theme.dim;
+  ctx.font = "500 18px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.fillText("public Steam libraries compared from the data Steam returned", PAD, 162);
+
+  const metricsY = 198;
+  const metricGap = 13;
+  const metricW = (WIDTH - PAD * 2 - metricGap * 2) / 3;
+  const metrics = [
+    { label: "LIBRARY OVERLAP", value: Math.round(input.comparison.overlapPercent) + "%" },
+    { label: "OWNED BY BOTH", value: String(input.comparison.sharedCount) },
+    { label: "PLAYED BY BOTH", value: String(input.comparison.mutuallyPlayedCount) },
+  ];
+
+  metrics.forEach((metric, index) => {
+    const x = PAD + index * (metricW + metricGap);
+    roundedRect(ctx, x, metricsY, metricW, 122, 20);
+    ctx.fillStyle = theme.panel;
+    ctx.fill();
+    ctx.strokeStyle = theme.edge;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    ctx.fillStyle = index === 1 ? theme.accent2 : theme.accent;
+    roundedRect(ctx, x + 14, metricsY + 13, 38, 6, 3);
+    ctx.fill();
+
+    ctx.fillStyle = theme.dim;
+    ctx.font = "800 14px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+    ctx.fillText(metric.label, x + 16, metricsY + 38);
+    ctx.fillStyle = theme.fg;
+    ctx.font = "800 40px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+    ctx.fillText(metric.value, x + 16, metricsY + 88);
+  });
+
+  ctx.fillStyle = theme.fg;
+  ctx.font = "800 27px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.fillText("Games both actually played", PAD, 372);
+  ctx.fillStyle = theme.dim;
+  ctx.font = "500 16px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.fillText("ordered by the smaller of the two recorded playtimes", PAD, 400);
+
+  const games = input.comparison.mutuallyPlayed.slice(0, 6);
+  const images = await Promise.all(games.map((game) =>
+    loadImage(proxiedSteamCover(game.appid, game.iconHash))
+  ));
+
+  const cols = 2;
+  const gameGap = 14;
+  const gameW = (WIDTH - PAD * 2 - gameGap) / cols;
+  const gameH = 174;
+  const gamesTop = 430;
+
+  for (let index = 0; index < 6; index++) {
+    const row = Math.floor(index / cols);
+    const col = index % cols;
+    const x = PAD + col * (gameW + gameGap);
+    const y = gamesTop + row * (gameH + gameGap);
+    const game = games[index];
+    const cover = images[index] ?? null;
+
+    roundedRect(ctx, x, y, gameW, gameH, 18);
+    ctx.fillStyle = theme.panel;
+    ctx.fill();
+    ctx.strokeStyle = theme.edge;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    if (!game) {
+      ctx.fillStyle = theme.dim;
+      ctx.font = "600 16px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+      ctx.fillText(index === 0 ? "No shared played game in the public data." : "—", x + 18, y + gameH / 2 + 5);
+      continue;
+    }
+
+    const artX = x + 12;
+    const artY = y + 12;
+    const artSize = gameH - 24;
+    ctx.save();
+    roundedRect(ctx, artX, artY, artSize, artSize, 13);
+    ctx.clip();
+    const artBg = ctx.createLinearGradient(artX, artY, artX + artSize, artY + artSize);
+    artBg.addColorStop(0, theme.raised);
+    artBg.addColorStop(1, index % 2 ? theme.accent2 : theme.accent);
+    ctx.globalAlpha = cover ? 1 : .35;
+    ctx.fillStyle = artBg;
+    ctx.fillRect(artX, artY, artSize, artSize);
+    ctx.globalAlpha = 1;
+    if (cover) drawCover(ctx, cover, artX, artY, artSize);
+    if (!cover) {
+      ctx.fillStyle = theme.fg;
+      ctx.font = "800 58px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+      ctx.fillText((game.name ?? ("app " + game.appid)).trim().charAt(0).toUpperCase(), artX + 25, artY + 92);
+    }
+    ctx.restore();
+
+    const copyX = artX + artSize + 17;
+    const copyW = gameW - (copyX - x) - 15;
+    ctx.fillStyle = theme.fg;
+    ctx.font = "800 19px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+    const gameName = game.name ?? ("app " + game.appid);
+    wrapByMeasure(ctx, gameName, copyW, 2)
+      .forEach((line, lineIndex) => ctx.fillText(line, copyX, y + 42 + lineIndex * 24));
+
+    ctx.fillStyle = theme.dim;
+    ctx.font = "600 14px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+    const leftLine = wrapByMeasure(ctx, input.leftName + ": " + hours(game.leftMinutes) + "h", copyW, 1)[0] ?? "";
+    const rightLine = wrapByMeasure(ctx, input.rightName + ": " + hours(game.rightMinutes) + "h", copyW, 1)[0] ?? "";
+    ctx.fillText(leftLine, copyX, y + 111);
+    ctx.fillText(rightLine, copyX, y + 135);
+  }
+
+  const signatureTop = 1016;
+  roundedRect(ctx, PAD, signatureTop, WIDTH - PAD * 2, 214, 24);
+  ctx.fillStyle = theme.panel;
+  ctx.fill();
+  ctx.strokeStyle = theme.edge;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  ctx.font = "92px 'Segoe UI Emoji', 'Apple Color Emoji', sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(comparisonGlyph(input.comparison.signature.object), PAD + 86, signatureTop + 105);
+  ctx.textAlign = "left";
+  ctx.textBaseline = "alphabetic";
+
+  ctx.fillStyle = theme.accent;
+  ctx.font = "800 14px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.fillText("SHARED SHELF SIGNATURE", PAD + 166, signatureTop + 42);
+  ctx.fillStyle = theme.fg;
+  ctx.font = "800 30px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.fillText(input.comparison.signature.name, PAD + 166, signatureTop + 82);
+  ctx.fillStyle = theme.dim;
+  ctx.font = "500 17px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  const evidence = input.comparison.signature.description + " " + input.comparison.signature.evidence;
+  wrapByMeasure(ctx, evidence, WIDTH - PAD * 2 - 190, 3)
+    .forEach((line, index) => ctx.fillText(line, PAD + 166, signatureTop + 116 + index * 24));
+
+  ctx.fillStyle = theme.dim;
+  ctx.font = "500 15px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.fillText("A comparison of public library data, not a compatibility score.", PAD, 1282);
+  ctx.fillStyle = theme.accent;
+  ctx.font = "800 17px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.textAlign = "right";
+  ctx.fillText("shelfwear ♡", WIDTH - PAD, 1282);
+  ctx.textAlign = "left";
+
+  return canvasBlob(canvas);
+}
+
 export function downloadBlob(blob: Blob, filename: string): void {
   const url = URL.createObjectURL(blob);
   try {
