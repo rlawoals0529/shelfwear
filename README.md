@@ -24,7 +24,7 @@ For sharing, Shelfwear can make:
 - **Shelf familiar** — a deterministic mascot based only on observable library patterns, with three visible signals explaining why it was chosen and its own downloadable 1080×1350 card. It describes the library shape, not the person.
 - **Copy summary** — a text version of the nine for sharing anywhere.
 - **Share shelf** — a stateless URL containing only the resolved public SteamID. Opening it prefills the profile so Shelfwear can rebuild the result live; no library snapshot is stored.
-- **Compare two shelves** — ownership overlap, games with recorded playtime on both profiles, and a shared-shelf signature. Comparison links likewise contain only the two public SteamIDs.
+- **Compare two shelves** — ownership overlap, games with recorded playtime on both profiles, a shared-shelf signature, and a downloadable 1080×1350 friend comparison card. Comparison links likewise contain only the two public SteamIDs.
 
 ## What it tells you
 
@@ -32,7 +32,7 @@ For sharing, Shelfwear can make:
 - How many titles are represented and how many have **never been launched**.
 - **How much disk the unplayed ones are holding** when local manifests provide size data.
 - How few titles make up half of all recorded hours.
-- For two public profiles, **library overlap** is the intersection divided by the combined unique library; **played by both** only counts shared games where both profiles have recorded playtime.
+- For two public profiles, **library overlap** is the intersection divided by the combined unique library; **played by both** only counts shared games where both profiles have recorded playtime. The comparison's strongest shared play signal is the common game with the highest smaller-of-the-two playtime, so one person's huge hours cannot dominate the ordering by itself.
 
 ## Data boundaries
 
@@ -57,6 +57,12 @@ Stories also have three visual treatments: **Scrapbook**, **Polaroid**, and **Po
 Sharing stays stateless. New share URLs use `?story=...` and contain only the story title, caption, selected card look, selected game names, optional per-game notes, numeric Steam AppIDs, and public Steam icon hashes when a loaded library provides them. Shelfwear does not create an account or store the story. Existing `?top=...` links remain supported and open the same editable Shelf Stories view.
 
 The builder can export a 1080×1350 PNG carrying the selected card look and authored notes. Games with an AppID use the existing same-origin Steam artwork proxy. If Steam has no portrait, Shelfwear prefers the public icon hash from GetOwnedGames and otherwise letterboxes an official wide Steam asset rather than cropping it into a blurry square. Games without an AppID intentionally use a designed text tile rather than guessed artwork.
+
+## Friend comparison cards
+
+After loading two public profiles, Shelfwear can export a 1080×1350 comparison card with the two display names, library overlap, shared ownership count, played-by-both count, up to six mutually played games with each person's recorded hours, and the existing shared-shelf signature. Shared games reuse Shelfwear's same-origin Steam artwork proxy and official icon fallback.
+
+The comparison card does **not** create a compatibility score or infer anything about the people. Its figures are the same observable public-library measures already shown on the comparison page. The existing share-comparison URL remains stateless and contains only the two resolved public SteamIDs.
 
 ## Analytics
 
