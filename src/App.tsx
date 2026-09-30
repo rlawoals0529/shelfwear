@@ -348,12 +348,16 @@ export default function App() {
   const familiar = useMemo(() => familiarFor(loaded.games), [loaded]);
   const analytics = useMemo(() => analyticsFor(loaded.games), [loaded]);
 
+  // Installation, disk size, and local recency are only trustworthy after the
+  // visitor explicitly loads files from this PC. The sample contains synthetic
+  // local-shaped data, so it must not unlock real-device controls.
+  const hasRealLocalData = loaded.kind === "local";
   const effectiveLibrarySort: LibrarySort =
-    loaded.kind === "steam" && (librarySort === "recent" || librarySort === "largest")
+    !hasRealLocalData && (librarySort === "recent" || librarySort === "largest")
       ? "most-played"
       : librarySort;
   const effectiveLibraryFilter: LibraryFilter =
-    loaded.kind === "steam" && libraryFilter === "installed" ? "all" : libraryFilter;
+    !hasRealLocalData && libraryFilter === "installed" ? "all" : libraryFilter;
 
   const visibleGames = useMemo(() => {
     const query = libraryQuery.trim().toLocaleLowerCase();
@@ -773,7 +777,7 @@ export default function App() {
             />
           </label>
 
-          <div className="library-control-group">
+          <div className="library-control-group library-sort">
             <span className="library-control-label">Sort by</span>
             <div className="library-chips" aria-label="Sort the whole shelf">
               {([
@@ -792,16 +796,16 @@ export default function App() {
                   {label}
                 </button>
               ))}
-              {loaded.kind !== "steam" && (
+              {hasRealLocalData && (
                 <>
-                  <button type="button" className={effectiveLibrarySort === "recent" ? "active" : ""} aria-pressed={effectiveLibrarySort === "recent"} onClick={() => setLibrarySort("recent")}>Recently played</button>
-                  <button type="button" className={effectiveLibrarySort === "largest" ? "active" : ""} aria-pressed={effectiveLibrarySort === "largest"} onClick={() => setLibrarySort("largest")}>Largest</button>
+                  <button type="button" className={effectiveLibrarySort === "recent" ? "active" : ""} aria-pressed={effectiveLibrarySort === "recent"} onClick={() => setLibrarySort("recent")}>Recently played on this PC</button>
+                  <button type="button" className={effectiveLibrarySort === "largest" ? "active" : ""} aria-pressed={effectiveLibrarySort === "largest"} onClick={() => setLibrarySort("largest")}>Largest installed</button>
                 </>
               )}
             </div>
           </div>
 
-          <div className="library-control-group">
+          <div className="library-control-group library-filter">
             <span className="library-control-label">Show</span>
             <div className="library-chips" aria-label="Filter the whole shelf">
               {([
@@ -819,8 +823,8 @@ export default function App() {
                   {label}
                 </button>
               ))}
-              {loaded.kind !== "steam" && (
-                <button type="button" className={effectiveLibraryFilter === "installed" ? "active" : ""} aria-pressed={effectiveLibraryFilter === "installed"} onClick={() => setLibraryFilter("installed")}>Installed</button>
+              {hasRealLocalData && (
+                <button type="button" className={effectiveLibraryFilter === "installed" ? "active" : ""} aria-pressed={effectiveLibraryFilter === "installed"} onClick={() => setLibraryFilter("installed")}>Installed on this PC</button>
               )}
             </div>
           </div>
@@ -833,6 +837,14 @@ export default function App() {
             </div>
           </div>
         </div>
+
+        <p className={`library-data-note ${loaded.kind}`}>
+          {loaded.kind === "local"
+            ? "Install state, disk size, and recency come only from the Steam files loaded from this PC."
+            : loaded.kind === "sample"
+              ? "Demo local data is shown in the sample. Load your own Steam files for real install size and recency."
+              : "Public Steam profiles show owned games and playtime. Shelfwear cannot see what is installed on another PC."}
+        </p>
 
         {visibleGames.length > 0 ? (
           <div className={`rows library-rows ${libraryDensity}`}>
