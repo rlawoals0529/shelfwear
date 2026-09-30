@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import { readLocalConfig, readManifest, buildLibrary, summarise, shelve, hours, gb, type Game, type Spine } from "./lib/library.js";
-import { familiarFor, steamCover, topNine } from "./lib/profile.js";
+import { familiarFor, steamCover, steamHeader, topNine } from "./lib/profile.js";
 import { compareLibraries, type LibraryComparison } from "./lib/compare.js";
 import { downloadBlob, proxiedSteamCover, renderShareCard, shareCardFilename } from "./lib/share-card.js";
 import {
@@ -333,9 +333,12 @@ export default function App() {
                     decoding="async"
                     onError={(event) => {
                       const image = event.currentTarget;
-                      if (image.dataset.fallback !== "direct") {
-                        image.dataset.fallback = "direct";
+                      if (!image.dataset.fallback) {
+                        image.dataset.fallback = "library";
                         image.src = steamCover(game.appid);
+                      } else if (image.dataset.fallback === "library") {
+                        image.dataset.fallback = "header";
+                        image.src = steamHeader(game.appid);
                       } else {
                         image.hidden = true;
                       }
