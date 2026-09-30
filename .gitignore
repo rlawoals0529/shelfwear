@@ -4,6 +4,7 @@ dist
 *.tsbuildinfo
 test-results
 playwright-report
+.wrangler
 
 # Local secrets / credentials
 .env
@@ -12,6 +13,7 @@ playwright-report
 !.env.sample
 !.env.template
 .dev.vars
+.dev.vars.*
 *.pem
 *.key
 *.p12
