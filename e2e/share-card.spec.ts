@@ -2,6 +2,15 @@ import { expect, test } from "@playwright/test";
 import { readFile, stat } from "node:fs/promises";
 
 test("downloads the sample top-nine card as a real PNG without network data", async ({ page }) => {
+  await page.addInitScript(() => {
+    const seen: string[] = [];
+    (window as unknown as { __shelfwearFillText: string[] }).__shelfwearFillText = seen;
+    const original = CanvasRenderingContext2D.prototype.fillText;
+    CanvasRenderingContext2D.prototype.fillText = function (...args) {
+      seen.push(String(args[0]));
+      return original.apply(this, args as Parameters<CanvasRenderingContext2D["fillText"]>);
+    };
+  });
   await page.goto("/");
   await expect(page.getByRole("heading", { name: "Your nine" })).toBeVisible();
 
@@ -20,6 +29,15 @@ test("downloads the sample top-nine card as a real PNG without network data", as
   expect(bytes.subarray(0, 8)).toEqual(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
   expect(bytes.readUInt32BE(16)).toBe(1080);
   expect(bytes.readUInt32BE(20)).toBe(1350);
+
+  const drawnText = await page.evaluate(() =>
+    (window as unknown as { __shelfwearFillText: string[] }).__shelfwearFillText,
+  );
+  expect(drawnText).toContain("shelfwear ♡");
+  expect(drawnText).not.toContain("cat");
+  expect(drawnText).not.toContain("moth");
+  expect(drawnText).not.toContain("magpie");
+  expect(drawnText).not.toContain("fox");
 });
 
 

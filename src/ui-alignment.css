@@ -1,0 +1,174 @@
+/* Small alignment fixes for the profile/meta/navigation surfaces.
+   Kept as the last cascade layer so long account names and equal-width actions do not regress
+   when earlier cozy/theme styles change. */
+
+.hero-meta {
+  align-items: center;
+  gap: 8px;
+}
+
+.hero-meta .source,
+.hero-meta .steam-identity {
+  min-width: 0;
+  min-height: 40px;
+  margin: 0;
+}
+
+.hero-meta .source {
+  display: inline-flex;
+  align-items: center;
+  gap: .38em;
+  max-width: min(100%, 430px);
+  padding: 8px 13px;
+}
+
+.hero-meta .source > span {
+  flex: 0 0 auto;
+}
+
+.hero-meta .source > b {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.steam-identity {
+  display: grid;
+  grid-template-columns: 28px minmax(0, auto) auto;
+  align-items: center;
+  gap: 8px;
+  width: fit-content;
+  max-width: min(100%, 520px);
+  padding: 6px 10px 6px 7px;
+}
+
+.steam-identity img {
+  width: 28px;
+  height: 28px;
+  flex: none;
+  margin: 0;
+}
+
+.steam-identity-name {
+  min-width: 0;
+  max-width: min(30ch, 36vw);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--font-round);
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.steam-data-badge {
+  flex: 0 0 auto;
+  padding-left: 8px;
+  border-left: 1px solid color-mix(in srgb, var(--edge) 62%, transparent);
+  color: var(--dim);
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* The three primary views should read as one control, not three independently floating
+   pills. Equal tracks keep their baselines, icons, and outer edges aligned. */
+.view-tabs {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  width: min(100%, 468px);
+  gap: 5px;
+}
+
+.view-tabs button {
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  padding: 8px 12px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.view-tabs .button-icon {
+  width: 15px;
+  height: 15px;
+}
+
+/* Share actions use the same visual rhythm as the main view switch. */
+.social-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(124px, 1fr));
+  width: min(100%, 430px);
+  max-width: 430px;
+  gap: 7px;
+  align-items: stretch;
+}
+
+.social-actions button {
+  width: 100%;
+  min-height: 42px;
+  margin: 0;
+}
+
+/* A square Steam icon is a fallback, not a cover. Present it as a centered little app badge
+   rather than stretching a 32/64px icon into poster art. */
+.nine-tile img[data-fallback="icon"],
+.curated-game-tile img[data-fallback="icon"] {
+  box-sizing: border-box;
+  object-fit: contain;
+  object-position: center;
+  padding: 31%;
+  background:
+    radial-gradient(circle at 50% 44%, color-mix(in srgb, var(--accent) 14%, var(--panel)) 0 24%, transparent 25%),
+    radial-gradient(circle at 50% 44%, color-mix(in srgb, var(--panel) 95%, transparent) 0 38%, transparent 39%),
+    linear-gradient(145deg, color-mix(in srgb, var(--raised) 74%, var(--panel)), var(--panel));
+  filter: drop-shadow(0 7px 10px color-mix(in srgb, var(--fg) 13%, transparent));
+}
+
+@media (max-width: 620px) {
+  .steam-identity {
+    grid-template-columns: 28px minmax(0, 1fr);
+    width: min(100%, 430px);
+  }
+
+  .steam-identity-name {
+    max-width: none;
+  }
+
+  .steam-data-badge {
+    grid-column: 2;
+    width: fit-content;
+    padding: 0;
+    border-left: 0;
+  }
+
+  .view-tabs {
+    width: 100%;
+  }
+
+  .view-tabs button {
+    padding-inline: 8px;
+    font-size: 11px;
+  }
+
+  .social-actions {
+    width: 100%;
+    max-width: none;
+  }
+}
+
+@media (max-width: 430px) {
+  .view-tabs {
+    grid-template-columns: 1fr;
+    border-radius: 18px;
+  }
+
+  .view-tabs button {
+    justify-content: flex-start;
+    border-radius: 13px;
+  }
+
+  .social-actions {
+    grid-template-columns: 1fr;
+  }
+}

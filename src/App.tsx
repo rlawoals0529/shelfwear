@@ -200,7 +200,7 @@ function SteamProfileField({
         <input
           value={value}
           onChange={(event) => onChange(event.target.value)}
-          placeholder={direct ? "Steam profile URL or 64-bit SteamID" : "rlawoals"}
+          placeholder={direct ? "Steam profile URL or 64-bit SteamID" : "cozyplayer"}
           aria-label="Steam username, profile URL, or SteamID"
           autoCapitalize="none"
           autoCorrect="off"
@@ -399,13 +399,17 @@ export default function App() {
         {/* Whose library this is has to be settled before the first number is read, so it
             sits with the headline rather than down beside either import method. */}
         <div className="hero-meta">
-          <p className="note source">Reading <b>{loaded.source}</b>.</p>
-          {loaded.kind === "steam" && loaded.profile && (
-            <div className="steam-identity">
+          {loaded.kind === "steam" && loaded.profile ? (
+            <div className="steam-identity" title={loaded.profile.name ?? loaded.profile.steamid}>
               {loaded.profile.avatar && <img src={loaded.profile.avatar} alt="" loading="lazy" />}
-              <span>{loaded.profile.name ?? loaded.profile.steamid}</span>
-              <span className="note">public Steam data</span>
+              <span className="steam-identity-name">{loaded.profile.name ?? loaded.profile.steamid}</span>
+              <span className="steam-data-badge">public Steam data</span>
             </div>
+          ) : (
+            <p className="note source">
+              <span>Reading</span>
+              <b title={loaded.source}>{loaded.source}</b>
+            </p>
           )}
         </div>
       </header>
@@ -429,7 +433,7 @@ export default function App() {
           <div className="import-copy">
             <SectionTitle icon="steam" eyebrow="Start here">Bring in your Steam library</SectionTitle>
             <p className="prose">
-              Type just the end of your Steam custom URL, like <b>rlawoals</b>, or paste a full public Steam profile URL or 64-bit SteamID. Shelfwear fills in
+              Type just the end of your Steam custom URL, like <b>cozyplayer</b>, or paste a full public Steam profile URL or 64-bit SteamID. Shelfwear fills in
               steamcommunity.com/id/ for simple usernames; your Steam password is never requested.
             </p>
             {shared.steam && <p className="share-hint">A friend shared this public SteamID. Read it to rebuild their shelf live.</p>}
