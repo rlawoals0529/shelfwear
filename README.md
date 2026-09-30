@@ -43,6 +43,10 @@ Public-profile mode uses Steam's `GetOwnedGames` response. It can be broader tha
 
 The `/api/steam/cover/:appid` route is different: it is a tightly scoped proxy for public Steam artwork, accepts only a numeric app ID, and may be cached because it contains no user-specific library data. It exists so exported canvas cards remain origin-clean instead of depending on third-party CORS behavior.
 
+## Whole-shelf browsing
+
+The **Everything** section is interactive rather than a fixed dump of games. Visitors can search by title, sort by most/least played or alphabetically, and filter to played or never-played games. Local-file mode also enables **Recently played**, **Largest**, and **Installed** because those facts are not available from the public Steam import. The list can switch between cozy and compact row density without changing the underlying data.
+
 ## Hand-picked top games
 
 **My top games** is for the list you would pick yourself rather than the one playtime picks for you. Add titles manually or pull them from the loaded shelf, attach a Steam AppID or Store URL when you want official artwork, rank up to nine, then change the card title and caption.

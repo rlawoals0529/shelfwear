@@ -197,3 +197,47 @@ test("the server under test is this app, not another app on the same port", asyn
    */
   await expect(page).toHaveTitle(/^shelfwear/);
 });
+
+
+test("the whole shelf can be searched, filtered, sorted, and made compact", async ({ page }) => {
+  await page.locator('input[type="file"]').setInputFiles(ALL);
+
+  const rows = page.locator(".library-rows .row");
+  await expect(rows).toHaveCount(3);
+  await expect(rows.first()).toContainText("Fixture Alpha");
+
+  await page.getByRole("button", { name: "Least played" }).click();
+  await expect(rows.first()).toContainText("Fixture Never Launched");
+
+  await page.getByRole("button", { name: "Played", exact: true }).click();
+  await expect(rows).toHaveCount(2);
+  await expect(row(page, "Fixture Never Launched")).toBeHidden();
+
+  await page.getByLabel("Search games in the whole shelf").fill("Alpha");
+  await expect(rows).toHaveCount(1);
+  await expect(rows.first()).toContainText("Fixture Alpha");
+  await expect(page.locator(".library-result-count")).toContainText("showing 1 of 3");
+
+  await page.getByLabel("Search games in the whole shelf").fill("");
+  await page.getByRole("button", { name: "All", exact: true }).click();
+  await page.getByRole("button", { name: "A–Z" }).click();
+  await expect(rows.first()).toContainText("app 800");
+
+  const cozyHeight = (await rows.first().boundingBox())!.height;
+  await page.getByRole("button", { name: "Compact" }).click();
+  const compactHeight = (await rows.first().boundingBox())!.height;
+  expect(compactHeight).toBeLessThan(cozyHeight);
+
+  await page.getByRole("button", { name: "Installed", exact: true }).click();
+  await expect(rows).toHaveCount(2);
+  await expect(page.locator(".library-result-count")).toContainText("showing 2 of 3");
+});
+
+test("empty shelf searches have a clear reset instead of a blank list", async ({ page }) => {
+  await page.locator('input[type="file"]').setInputFiles(ALL);
+  await page.getByLabel("Search games in the whole shelf").fill("definitely-not-a-game");
+  await expect(page.locator(".library-empty")).toContainText("No games match");
+  await page.getByRole("button", { name: "Clear filters" }).click();
+  await expect(page.locator(".library-rows .row")).toHaveCount(3);
+  await expect(page.getByLabel("Search games in the whole shelf")).toHaveValue("");
+});
