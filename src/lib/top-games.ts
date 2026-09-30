@@ -11,6 +11,52 @@ export interface CuratedTopGames {
   games: CuratedGame[];
 }
 
+export interface ShelfStoryPreset {
+  id: string;
+  title: string;
+  caption: string;
+  prompt: string;
+}
+
+export const SHELF_STORY_PRESETS: readonly ShelfStoryPreset[] = [
+  {
+    id: "shaped-me",
+    title: "games that shaped me",
+    caption: "the games that became part of my gaming history",
+    prompt: "The games that left a mark, changed your taste, or simply stayed with you.",
+  },
+  {
+    id: "comfort",
+    title: "my comfort games",
+    caption: "the ones I always know I can come back to",
+    prompt: "Familiar worlds, reliable favorites, and the games that feel easy to return to.",
+  },
+  {
+    id: "obsessed",
+    title: "currently obsessed",
+    caption: "what has my attention right now",
+    prompt: "Your current rotation, fixation, or the games taking over your free time lately.",
+  },
+  {
+    id: "childhood",
+    title: "childhood favorites",
+    caption: "the games I still remember exactly how they felt",
+    prompt: "Old favorites, formative memories, and the games tied to a particular time in your life.",
+  },
+  {
+    id: "multiplayer",
+    title: "multiplayer memories",
+    caption: "the games that were better because of who I played with",
+    prompt: "Co-op campaigns, late-night queues, party games, and anything inseparable from friends.",
+  },
+  {
+    id: "first-time",
+    title: "play again for the first time",
+    caption: "the experiences I wish I could discover all over again",
+    prompt: "Games whose surprises, worlds, stories, or first hours you would love to experience fresh.",
+  },
+] as const;
+
 export const CURATED_LIMIT = 9;
 const TITLE_LIMIT = 48;
 const CAPTION_LIMIT = 120;
@@ -115,10 +161,11 @@ export function curatedShareUrl(current: string, input: CuratedTopGames): string
   const url = new URL(current);
   url.search = "";
   url.hash = "";
-  url.searchParams.set("top", encodeCuratedTopGames(input));
+  url.searchParams.set("story", encodeCuratedTopGames(input));
   return url.toString();
 }
 
 export function curatedFromSearch(search: string): CuratedTopGames | null {
-  return decodeCuratedTopGames(new URLSearchParams(search).get("top"));
+  const params = new URLSearchParams(search);
+  return decodeCuratedTopGames(params.get("story") ?? params.get("top"));
 }
