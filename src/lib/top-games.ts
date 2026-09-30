@@ -55,17 +55,13 @@ const toBase64Url = (value: string): string => {
   const bytes = new TextEncoder().encode(value);
   let binary = "";
   for (const byte of bytes) binary += String.fromCharCode(byte);
-  const base64 = typeof btoa === "function"
-    ? btoa(binary)
-    : Buffer.from(bytes).toString("base64");
+  const base64 = btoa(binary);
   return base64.replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
 };
 
 const fromBase64Url = (value: string): string => {
   const base64 = value.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat((4 - value.length % 4) % 4);
-  const binary = typeof atob === "function"
-    ? atob(base64)
-    : Buffer.from(base64, "base64").toString("binary");
+  const binary = atob(base64);
   const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0));
   return new TextDecoder().decode(bytes);
 };
