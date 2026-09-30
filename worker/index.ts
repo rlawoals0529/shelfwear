@@ -1,6 +1,6 @@
 interface Env { STEAM_WEB_API_KEY?: string }
 
-type SteamGame = { appid: number; name?: string; playtime_forever?: number };
+type SteamGame = { appid: number; name?: string; playtime_forever?: number; img_icon_url?: string };
 type SteamPlayer = {
   steamid?: string;
   personaname?: string;
@@ -95,6 +95,7 @@ async function library(profile: string, key: string, request: Request): Promise<
       appid: String(game.appid),
       name: game.name ?? null,
       minutes: game.playtime_forever ?? 0,
+      iconHash: game.img_icon_url && /^[a-f0-9]{40}$/i.test(game.img_icon_url) ? game.img_icon_url : null,
     })),
   });
 }
@@ -182,7 +183,7 @@ async function imageResponse(source: string, request: Request): Promise<Response
   });
 }
 
-async function steamCover(appid: string, request: Request): Promise<Response> {
+async function steamCover(appid: string, request: Request, iconHash: string | null): Promise<Response> {
   if (!/^\d{1,10}$/.test(appid)) return new Response(null, { status: 400 });
 
   // Most games still have the classic un-hashed portrait path, so try that first.
@@ -211,6 +212,17 @@ async function steamCover(appid: string, request: Request): Promise<Response> {
   );
   if (legacyHeader) return legacyHeader;
 
+  // GetOwnedGames includes an official Steam community icon hash. It is not a full cover,
+  // but it is a reliable branded fallback for newer games whose portrait art cannot be
+  // discovered from the public store endpoint.
+  if (iconHash && /^[a-f0-9]{40}$/i.test(iconHash)) {
+    const icon = await imageResponse(
+      `https://media.steampowered.com/steamcommunity/public/images/apps/${appid}/${iconHash}.jpg`,
+      request,
+    );
+    if (icon) return icon;
+  }
+
   return new Response(null, {
     status: 404,
     headers: { "cache-control": "public, max-age=300", ...corsHeaders(request) },
@@ -237,7 +249,7 @@ export default {
 
     if (request.method === "GET") {
       const cover = url.pathname.match(/^\/api\/steam\/cover\/(\d{1,10})$/);
-      if (cover?.[1]) return steamCover(cover[1], request);
+      if (cover?.[1]) return steamCover(cover[1], request, url.searchParams.get("icon"));
 
       if (url.pathname === "/api/steam/library") {
         if (!env.STEAM_WEB_API_KEY) return json(request, { error: "Steam import is not configured on this deployment." }, 503);
