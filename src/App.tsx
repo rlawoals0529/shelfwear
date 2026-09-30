@@ -6,6 +6,9 @@ import { downloadBlob, proxiedSteamCover, renderShareCard, shareCardFilename } f
 import {
   comparisonShareUrl,
   fetchPublicSteamLibrary,
+  hasSteamProfileInput,
+  normaliseSteamProfileInput,
+  STEAM_PROFILE_PREFIX,
   sharedComparisonFromSearch,
   sharedSteamFromSearch,
   steamShareUrl,
@@ -90,14 +93,14 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [steamError, setSteamError] = useState<string | null>(null);
   const [over, setOver] = useState(false);
-  const [steamProfile, setSteamProfile] = useState(shared.steam ?? "");
+  const [steamProfile, setSteamProfile] = useState(shared.steam ?? STEAM_PROFILE_PREFIX);
   const [importing, setImporting] = useState(false);
   const [copied, setCopied] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
   const [cardRendering, setCardRendering] = useState(false);
   const [cardError, setCardError] = useState<string | null>(null);
-  const [compareLeft, setCompareLeft] = useState(shared.compare?.[0] ?? "");
-  const [compareRight, setCompareRight] = useState(shared.compare?.[1] ?? "");
+  const [compareLeft, setCompareLeft] = useState(shared.compare?.[0] ?? STEAM_PROFILE_PREFIX);
+  const [compareRight, setCompareRight] = useState(shared.compare?.[1] ?? STEAM_PROFILE_PREFIX);
   const [comparing, setComparing] = useState(false);
   const [compareError, setCompareError] = useState<string | null>(null);
   const [comparison, setComparison] = useState<Compared | null>(null);
@@ -144,7 +147,7 @@ export default function App() {
   const runComparison = useCallback(async () => {
     setCompareError(null);
     setComparison(null);
-    if (compareLeft.trim() === compareRight.trim()) {
+    if (normaliseSteamProfileInput(compareLeft) === normaliseSteamProfileInput(compareRight)) {
       setCompareError("Choose two different Steam profiles to compare.");
       return;
     }
@@ -361,7 +364,7 @@ export default function App() {
       <section className="panel import-panel" id="steam">
         <h2>Bring in a Steam library</h2>
         <p className="prose">
-          Paste a public Steam profile URL or 64-bit SteamID. The Worker asks Steam for public
+          Type your Steam vanity name after the prefilled URL, or paste a full public Steam profile URL or 64-bit SteamID. The Worker asks Steam for public
           game/playtime data; your Steam password is never requested.
         </p>
         {shared.steam && <p className="share-hint">A friend shared this public SteamID. Read it to rebuild their shelf live.</p>}
@@ -369,10 +372,10 @@ export default function App() {
           <input
             value={steamProfile}
             onChange={(e) => setSteamProfile(e.target.value)}
-            placeholder="https://steamcommunity.com/id/..."
-            aria-label="Steam profile URL or SteamID"
+            placeholder="https://steamcommunity.com/id/yourname"
+            aria-label="Steam username, profile URL, or SteamID"
           />
-          <button disabled={importing || !steamProfile.trim()} onClick={() => void importSteam()}>
+          <button disabled={importing || !hasSteamProfileInput(steamProfile)} onClick={() => void importSteam()}>
             {importing ? "Reading…" : shared.steam ? "Load shared shelf" : "Read public profile"}
           </button>
         </div>
@@ -392,10 +395,10 @@ export default function App() {
         </p>
         {shared.compare && <p className="share-hint">This comparison came from a stateless link. Load it to rebuild both public libraries live.</p>}
         <div className="compare-form">
-          <input value={compareLeft} onChange={(e) => setCompareLeft(e.target.value)} placeholder="First Steam profile" aria-label="First Steam profile" />
+          <input value={compareLeft} onChange={(e) => setCompareLeft(e.target.value)} placeholder={`${STEAM_PROFILE_PREFIX}first-user`} aria-label="First Steam profile" />
           <span aria-hidden="true">×</span>
-          <input value={compareRight} onChange={(e) => setCompareRight(e.target.value)} placeholder="Second Steam profile" aria-label="Second Steam profile" />
-          <button disabled={comparing || !compareLeft.trim() || !compareRight.trim()} onClick={() => void runComparison()}>
+          <input value={compareRight} onChange={(e) => setCompareRight(e.target.value)} placeholder={`${STEAM_PROFILE_PREFIX}second-user`} aria-label="Second Steam profile" />
+          <button disabled={comparing || !hasSteamProfileInput(compareLeft) || !hasSteamProfileInput(compareRight)} onClick={() => void runComparison()}>
             {comparing ? "Comparing…" : shared.compare ? "Load comparison" : "Compare"}
           </button>
         </div>
