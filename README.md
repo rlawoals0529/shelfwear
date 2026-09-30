@@ -1,6 +1,6 @@
 # shelfwear
 
-What your Steam library actually gets played, with a local-only mode and a shareable public-profile mode.
+A view of your Steam library based on what you actually play. You can keep it local, or load a public profile when you want something easy to share.
 
 ![The shelf: hours, never-launched count, and disk held by games that have never run](docs/screenshot.png)
 
@@ -14,9 +14,9 @@ Drop in `localconfig.vdf` and your `appmanifest_*.acf` files. They are parsed in
 
 On a Cloudflare Workers deployment, paste a public Steam profile URL or 64-bit SteamID. The Worker keeps the Steam Web API key server-side and asks Steam only for public owned-game/playtime data plus the public profile summary used for the display name/avatar. If Game details are private, Steam will not return the library.
 
-The interface uses original inline SVG doodles, emoji/kaomoji accents, and local system fonts. There is no hotlinked character pack or third-party webfont, so the decorative layer adds no extra request or licensing dependency.
+The interface uses original inline SVG doodles, emoji/kaomoji accents, and system fonts. It does not hotlink a character pack or third-party webfont.
 
-The social summary adds:
+For sharing, Shelfwear can make:
 
 - **Your nine** — the nine titles with the most recorded playtime, in a 3×3 grid.
 - **Download card** — a 1080×1350 PNG rendered in the current Shelfwear palette. Local/sample mode is fully browser-only; Steam mode asks Shelfwear's same-origin Worker cover endpoint for public artwork and falls back to typographic tiles when artwork is unavailable.
@@ -35,7 +35,7 @@ The social summary adds:
 
 ## Data boundaries
 
-Local mode and public-profile mode know different things and Shelfwear keeps that distinction visible.
+Local files and a public Steam profile expose different data, so Shelfwear keeps the two modes separate instead of filling the gaps with guesses.
 
 `localconfig.vdf` only lists apps this Steam client has a local record of. Anything never seen by that client leaves no trace, so local counts are floors rather than account totals.
 
@@ -45,7 +45,7 @@ The `/api/steam/cover/:appid` route is different: it is a tightly scoped proxy f
 
 ## Hand-picked top games
 
-Shelfwear also has a **My top games** builder for lists that are personal rather than playtime-ranked. A visitor can add any title manually, quick-add games from the currently loaded shelf, optionally paste a Steam AppID or Steam Store app URL for official artwork, rank up to nine games, and customize the card title/caption.
+**My top games** is for the list you would pick yourself rather than the one playtime picks for you. Add titles manually or pull them from the loaded shelf, attach a Steam AppID or Store URL when you want official artwork, rank up to nine, then change the card title and caption.
 
 Sharing stays stateless. The share URL contains only the curated title, caption, selected game names, optional numeric Steam AppIDs, and public Steam icon hashes when a loaded library provides them. Shelfwear does not create an account or store the list. Opening a shared `?top=...` link goes directly to the editable top-games view.
 
