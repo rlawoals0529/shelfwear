@@ -15,13 +15,18 @@
   position: absolute;
   right: 4px;
   top: -7px;
-  color: color-mix(in srgb, var(--accent) 74%, var(--dim));
-  font-family: var(--font-hand);
-  font-size: 13px;
-  letter-spacing: .2em;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--accent-text);
   opacity: .78;
   transform: rotate(5deg);
   pointer-events: none;
+}
+
+.social-doodle .cute-icon {
+  width: 14px;
+  height: 14px;
 }
 
 .social-panel {
@@ -91,22 +96,26 @@
 .curated-doodle {
   position: absolute;
   z-index: 3;
+  display: grid;
+  place-items: center;
   color: var(--accent-text);
-  font-family: var(--font-hand);
   pointer-events: none;
+}
+
+.curated-doodle .cute-icon {
+  width: 16px;
+  height: 16px;
 }
 
 .curated-doodle-star {
   right: 12px;
   top: 10px;
-  font-size: 16px;
   transform: rotate(8deg);
 }
 
 .curated-doodle-heart {
   right: 42px;
   top: 34px;
-  font-size: 12px;
   opacity: .72;
   transform: rotate(-8deg);
 }
