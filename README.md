@@ -41,6 +41,14 @@ Public-profile mode uses Steam's `GetOwnedGames` response. It can be broader tha
 
 The `/api/steam/cover/:appid` route is different: it is a tightly scoped proxy for public Steam artwork, accepts only a numeric app ID, and may be cached because it contains no user-specific library data. It exists so exported canvas cards remain origin-clean instead of depending on third-party CORS behavior.
 
+## Hand-picked top games
+
+Shelfwear also has a **My top games** builder for lists that are personal rather than playtime-ranked. A visitor can add any title manually, quick-add games from the currently loaded shelf, optionally paste a Steam AppID or Steam Store app URL for official artwork, rank up to nine games, and customize the card title/caption.
+
+Sharing stays stateless. The share URL contains only the curated title, caption, selected game names, and optional numeric Steam AppIDs. Shelfwear does not create an account or store the list. Opening a shared `?top=...` link goes directly to the editable top-games view.
+
+The builder can export a 1080×1350 scrapbook-style PNG. Games with an AppID use the existing same-origin Steam artwork proxy; games without one intentionally use a designed text tile rather than guessed artwork.
+
 ## Analytics
 
 Shelfwear has a second, page-like Analytics view derived only from the currently loaded library. It reports observable measures such as library utilization, untouched share, playtime-depth buckets, top-game concentration, and the games carrying the largest share of recorded hours. Local-file mode can additionally show known disk-space and last-played buckets when those fields exist. Public Steam imports do not invent disk or recency data that Steam does not return.
