@@ -25,8 +25,8 @@ describe("curated top games", () => {
     title: "games that shaped me",
     caption: "nine little pieces of my gaming history",
     games: [
-      { name: "Counter-Strike 2", appid: "730" },
-      { name: "A custom indie", appid: null },
+      { name: "Counter-Strike 2", appid: "730", iconHash: "0123456789abcdef0123456789abcdef01234567" },
+      { name: "A custom indie", appid: null, iconHash: null },
     ],
   };
 
@@ -51,5 +51,19 @@ describe("curated top games", () => {
     });
     expect(normalized.games).toHaveLength(9);
     expect(normalized.title).toBe("my list");
+  });
+});
+
+
+it("keeps a valid Steam icon hash in shared curated lists", () => {
+  const encoded = encodeCuratedTopGames({
+    title: "favorites",
+    caption: "",
+    games: [{ name: "Blue Protocol: Star Resonance", appid: "3681810", iconHash: "8c7fc95092f64b0a99c4e02263caf254da89b7bb" }],
+  });
+  expect(decodeCuratedTopGames(encoded)?.games[0]).toEqual({
+    name: "Blue Protocol: Star Resonance",
+    appid: "3681810",
+    iconHash: "8c7fc95092f64b0a99c4e02263caf254da89b7bb",
   });
 });

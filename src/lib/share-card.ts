@@ -97,6 +97,21 @@ function drawCover(ctx: CanvasRenderingContext2D, image: CanvasImageSource, x: n
     return;
   }
 
+  // Wide Steam capsules/headers are useful official fallbacks for manually curated AppIDs,
+  // but cropping them into a square makes logos huge and blurry. Letterbox them instead.
+  if (sourceRatio > 1.18) {
+    const targetWidth = size * .88;
+    const targetHeight = targetWidth / sourceRatio;
+    ctx.drawImage(
+      image,
+      x + (size - targetWidth) / 2,
+      y + (size - targetHeight) / 2 - size * .04,
+      targetWidth,
+      targetHeight,
+    );
+    return;
+  }
+
   let sx = 0;
   let sy = 0;
   let sw = sourceWidth;
@@ -352,7 +367,6 @@ export async function renderCuratedCard(input: CuratedTopGames): Promise<Blob> {
   // A few tiny scrapbook marks, kept away from the game art.
   drawSparkle(ctx, WIDTH - 94, 74, 18, theme.accent);
   drawSparkle(ctx, WIDTH - 133, 104, 8, theme.accent2);
-  drawSparkle(ctx, 72, HEIGHT - 80, 10, theme.accent);
 
   ctx.fillStyle = theme.accent;
   ctx.font = "700 22px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
@@ -373,7 +387,9 @@ export async function renderCuratedCard(input: CuratedTopGames): Promise<Blob> {
   const gridSize = WIDTH - PAD * 2;
   const tile = (gridSize - GRID_GAP * 2) / 3;
   const images = await Promise.all(
-    input.games.slice(0, 9).map((game) => game.appid ? loadImage(proxiedSteamCover(game.appid)) : Promise.resolve(null)),
+    input.games.slice(0, 9).map((game) =>
+      game.appid ? loadImage(proxiedSteamCover(game.appid, game.iconHash)) : Promise.resolve(null)
+    ),
   );
 
   for (let index = 0; index < 9; index++) {

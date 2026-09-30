@@ -242,6 +242,13 @@ const familiarEmoji = (animal: string): string =>
 const signatureEmoji = (object: string): string =>
   ({ bookends: "📚", campfire: "🔥", bookmarks: "🔖", shelves: "🪵" } as Record<string, string>)[object] ?? "♡";
 
+const markArtworkShape = (image: HTMLImageElement): void => {
+  const ratio = image.naturalWidth / Math.max(1, image.naturalHeight);
+  if (ratio >= 0.82 && ratio <= 1.18) image.dataset.fallback = "icon";
+  else if (ratio > 1.18) image.dataset.fallback = "wide";
+};
+
+
 
 export default function App() {
   const shared = useMemo(() => ({
@@ -546,7 +553,10 @@ export default function App() {
       {nine.length > 0 && (
         <section className="panel social-panel">
           <div className="social-heading">
-            <SectionTitle icon="nine" eyebrow="Your little game postcard" note="The nine games with the most recorded playtime.">Your nine</SectionTitle>
+            <div className="social-title-wrap">
+              <SectionTitle icon="nine" eyebrow="Your little game postcard" note="The nine games with the most recorded playtime.">Your nine</SectionTitle>
+              <span className="social-doodle" aria-hidden="true"><CuteIcon name="heart" /><CuteIcon name="sparkles" /></span>
+            </div>
             <div className="social-actions">
               <button disabled={cardRendering} onClick={() => void downloadCard()}><CuteIcon name="download" className="button-icon" />{cardRendering ? "Making card…" : "Download card"}</button>
               <button onClick={() => void copyNine()}><CuteIcon name="copy" className="button-icon" />{copied ? "Copied" : "Copy summary"}</button>
@@ -565,11 +575,7 @@ export default function App() {
                     alt=""
                     loading="lazy"
                     decoding="async"
-                    onLoad={(event) => {
-                      const image = event.currentTarget;
-                      const ratio = image.naturalWidth / Math.max(1, image.naturalHeight);
-                      if (ratio >= 0.82 && ratio <= 1.18) image.dataset.fallback = "icon";
-                    }}
+                    onLoad={(event) => markArtworkShape(event.currentTarget)}
                     onError={(event) => {
                       const image = event.currentTarget;
                       if (!image.dataset.fallback) {
@@ -786,6 +792,7 @@ function TopGamesPage({ loadedGames, initial }: { loadedGames: Game[]; initial: 
       return;
     }
     const appid = suppliedAppid ?? exactLibraryGame?.appid ?? null;
+    const iconHash = appid && exactLibraryGame?.appid === appid ? exactLibraryGame.iconHash ?? null : null;
     const duplicate = list.games.some((game) =>
       game.name.toLowerCase() === cleanName.toLowerCase() && game.appid === appid
     );
@@ -793,7 +800,7 @@ function TopGamesPage({ loadedGames, initial }: { loadedGames: Game[]; initial: 
       setFormError("That game is already on this card.");
       return;
     }
-    setList((current) => ({ ...current, games: [...current.games, { name: cleanName.slice(0, 80), appid }].slice(0, 9) }));
+    setList((current) => ({ ...current, games: [...current.games, { name: cleanName.slice(0, 80), appid, iconHash }].slice(0, 9) }));
     setDraftName("");
     setDraftApp("");
     nameInput.current?.focus();
@@ -819,7 +826,11 @@ function TopGamesPage({ loadedGames, initial }: { loadedGames: Game[]; initial: 
   };
 
   const useCurrentNine = () => {
-    const games = topNine(loadedGames).map((game) => ({ name: game.name ?? `app ${game.appid}`, appid: game.appid }));
+    const games = topNine(loadedGames).map((game) => ({
+      name: game.name ?? `app ${game.appid}`,
+      appid: game.appid,
+      iconHash: game.iconHash ?? null,
+    }));
     setList((current) => ({ ...current, games: games.slice(0, 9) }));
     setFormError(null);
   };
@@ -895,7 +906,7 @@ function TopGamesPage({ loadedGames, initial }: { loadedGames: Game[]; initial: 
             />
           </label>
         </div>
-        <p className="note curated-privacy">Share links are stateless: the selected game names, optional Steam AppIDs, title, and caption live in the URL. Shelfwear does not store the list.</p>
+        <p className="note curated-privacy">Share links are stateless: the title, caption, selected game names, optional Steam AppIDs, and public Steam artwork references live in the URL. Shelfwear does not store the list.</p>
       </section>
 
       <section className="panel curated-builder">
@@ -951,6 +962,8 @@ function TopGamesPage({ loadedGames, initial }: { loadedGames: Game[]; initial: 
             <div className="curated-card-preview">
               <div className="curated-preview-heading">
                 <span className="curated-sticker">♡ shelfwear</span>
+                <span className="curated-doodle curated-doodle-star" aria-hidden="true"><CuteIcon name="sparkles" /></span>
+                <span className="curated-doodle curated-doodle-heart" aria-hidden="true"><CuteIcon name="heart" /></span>
                 <h3>{list.title}</h3>
                 {list.caption && <p>{list.caption}</p>}
               </div>
@@ -961,10 +974,11 @@ function TopGamesPage({ loadedGames, initial }: { loadedGames: Game[]; initial: 
                     <article className="curated-game-tile" key={`${game.name}-${index}`}>
                       {game.appid ? (
                         <img
-                          src={proxiedSteamCover(game.appid)}
+                          src={proxiedSteamCover(game.appid, game.iconHash)}
                           alt=""
                           loading="lazy"
                           decoding="async"
+                          onLoad={(event) => markArtworkShape(event.currentTarget)}
                           onError={(event) => {
                             const image = event.currentTarget;
                             if (!image.dataset.fallback) {
@@ -973,6 +987,9 @@ function TopGamesPage({ loadedGames, initial }: { loadedGames: Game[]; initial: 
                             } else if (image.dataset.fallback === "library") {
                               image.dataset.fallback = "header";
                               image.src = steamHeader(game.appid!);
+                            } else if (image.dataset.fallback === "header" && game.iconHash) {
+                              image.dataset.fallback = "icon";
+                              image.src = steamIcon(game.appid!, game.iconHash);
                             } else {
                               image.hidden = true;
                             }

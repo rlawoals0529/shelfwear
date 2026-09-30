@@ -1,0 +1,232 @@
+/* Playful finishing layer.
+   Keep decoration subtle enough that official game art and analytics remain the focus. */
+
+.social-title-wrap {
+  position: relative;
+  flex: 1 1 440px;
+  min-width: 0;
+}
+
+.social-title-wrap .section-title {
+  margin-bottom: 0;
+}
+
+.social-doodle {
+  position: absolute;
+  right: 4px;
+  top: -7px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--accent-text);
+  opacity: .78;
+  transform: rotate(5deg);
+  pointer-events: none;
+}
+
+.social-doodle .cute-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.social-panel {
+  background:
+    radial-gradient(circle at 92% 6%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 19rem),
+    radial-gradient(circle at 7% 98%, color-mix(in srgb, var(--accent-2) 7%, transparent), transparent 21rem),
+    repeating-radial-gradient(circle at 16% 22%, color-mix(in srgb, var(--edge) 10%, transparent) 0 1px, transparent 1px 15px),
+    var(--panel);
+}
+
+.social-panel .nine-grid {
+  position: relative;
+  padding: 9px;
+  border: 1px solid color-mix(in srgb, var(--edge) 46%, transparent);
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--raised) 38%, transparent), color-mix(in srgb, var(--panel) 70%, transparent));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--panel) 52%, transparent);
+}
+
+.social-panel .nine-grid::after {
+  content: "♡";
+  position: absolute;
+  right: -8px;
+  bottom: -13px;
+  z-index: 5;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--edge));
+  border-radius: 50%;
+  color: var(--accent-text);
+  background: var(--panel);
+  font-family: var(--font-hand);
+  font-size: 12px;
+  box-shadow: 0 7px 18px color-mix(in srgb, var(--fg) 7%, transparent);
+  transform: rotate(8deg);
+  pointer-events: none;
+}
+
+/* A wide official Steam capsule/header is a fallback, not a portrait. Letterbox it on a
+   soft paper tile rather than cropping and enlarging the logo. */
+.nine-tile img[data-fallback="wide"],
+.curated-game-tile img[data-fallback="wide"] {
+  box-sizing: border-box;
+  object-fit: contain;
+  object-position: center 42%;
+  padding: 13% 7% 27%;
+  background:
+    radial-gradient(circle at 50% 38%, color-mix(in srgb, var(--accent-2) 12%, transparent), transparent 44%),
+    linear-gradient(145deg, color-mix(in srgb, var(--raised) 72%, var(--panel)), var(--panel));
+  filter: drop-shadow(0 7px 12px color-mix(in srgb, var(--fg) 10%, transparent));
+}
+
+.curated-card-preview {
+  background:
+    radial-gradient(circle at 88% 5%, color-mix(in srgb, var(--accent) 11%, transparent), transparent 14rem),
+    radial-gradient(circle at 4% 94%, color-mix(in srgb, var(--accent-2) 8%, transparent), transparent 15rem),
+    repeating-radial-gradient(circle at 76% 72%, color-mix(in srgb, var(--edge) 11%, transparent) 0 1px, transparent 1px 17px),
+    linear-gradient(145deg, color-mix(in srgb, var(--panel) 96%, var(--raised)), var(--panel));
+}
+
+.curated-preview-heading {
+  position: relative;
+}
+
+.curated-doodle {
+  position: absolute;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  color: var(--accent-text);
+  pointer-events: none;
+}
+
+.curated-doodle .cute-icon {
+  width: 16px;
+  height: 16px;
+}
+
+.curated-doodle-star {
+  right: 12px;
+  top: 10px;
+  transform: rotate(8deg);
+}
+
+.curated-doodle-heart {
+  right: 42px;
+  top: 34px;
+  opacity: .72;
+  transform: rotate(-8deg);
+}
+
+.curated-game-tile,
+.curated-list-row,
+.curated-empty-tile {
+  transition: transform .16s ease, border-color .16s ease, box-shadow .16s ease;
+}
+
+.curated-game-tile:hover {
+  z-index: 3;
+  transform: translateY(-3px) rotate(0);
+  border-color: color-mix(in srgb, var(--accent) 34%, var(--edge));
+  box-shadow: 0 11px 24px color-mix(in srgb, var(--fg) 9%, transparent);
+}
+
+.curated-list-row:hover {
+  transform: translateX(2px);
+  border-color: color-mix(in srgb, var(--accent) 28%, var(--edge));
+}
+
+.curated-empty-tile:hover {
+  background:
+    radial-gradient(circle at 50% 42%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 45%),
+    linear-gradient(145deg, color-mix(in srgb, var(--accent-2) 8%, var(--raised)), color-mix(in srgb, var(--accent) 7%, var(--panel)));
+}
+
+.curated-share {
+  position: relative;
+  overflow: hidden;
+}
+
+.curated-share::before {
+  content: "✦  ♡";
+  position: absolute;
+  right: 30px;
+  top: 24px;
+  color: color-mix(in srgb, var(--accent) 68%, var(--dim));
+  font-family: var(--font-hand);
+  font-size: 12px;
+  letter-spacing: .22em;
+  opacity: .7;
+  transform: rotate(4deg);
+  pointer-events: none;
+}
+
+.curated-share-actions button {
+  border-radius: 13px 16px 12px 15px;
+}
+
+.familiar-cute {
+  box-shadow:
+    0 8px 18px color-mix(in srgb, var(--fg) 6%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, var(--panel) 48%, transparent);
+}
+
+.familiar-cute::before {
+  content: "✦";
+  position: absolute;
+  left: 8px;
+  top: 6px;
+  color: var(--accent-text);
+  font-size: 9px;
+  opacity: .72;
+}
+
+.analytics-kpi,
+.metric-card {
+  box-shadow: 0 7px 19px color-mix(in srgb, var(--fg) 4%, transparent);
+}
+
+.analytics-kpi:nth-child(2n),
+.metric-card:nth-child(2n) {
+  transform: rotate(.08deg);
+}
+
+.analytics-kpi:nth-child(2n + 1),
+.metric-card:nth-child(2n + 1) {
+  transform: rotate(-.08deg);
+}
+
+@media (max-width: 620px) {
+  .social-doodle {
+    display: none;
+  }
+
+  .social-panel .nine-grid::after {
+    right: -4px;
+    bottom: -11px;
+    width: 24px;
+    height: 24px;
+  }
+
+  .curated-share::before {
+    right: 18px;
+    top: 18px;
+  }
+
+  .nine-tile img[data-fallback="wide"],
+  .curated-game-tile img[data-fallback="wide"] {
+    padding: 14% 7% 29%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .curated-game-tile,
+  .curated-list-row,
+  .analytics-kpi,
+  .metric-card {
+    transform: none !important;
+    transition: none;
+  }
+}

@@ -137,7 +137,7 @@ function siblingSteamAsset(source: string | undefined, filename: string): string
   return allowedSteamImage(sibling.toString());
 }
 
-async function steamStoreArtwork(appid: string): Promise<string[]> {
+async function steamStorePortraitArtwork(appid: string): Promise<string[]> {
   const url = new URL("https://store.steampowered.com/api/appdetails/");
   url.searchParams.set("appids", appid);
   url.searchParams.set("cc", "us");
@@ -155,14 +155,35 @@ async function steamStoreArtwork(appid: string): Promise<string[]> {
     const candidates = [
       siblingSteamAsset(data.header_image, "library_600x900_2x.jpg"),
       siblingSteamAsset(data.header_image, "library_600x900.jpg"),
+    ].filter((value): value is string => Boolean(value));
+
+    return [...new Set(candidates)];
+  } catch {
+    return [];
+  }
+}
+
+
+async function steamStoreWideArtwork(appid: string): Promise<string[]> {
+  const url = new URL("https://store.steampowered.com/api/appdetails/");
+  url.searchParams.set("appids", appid);
+  url.searchParams.set("cc", "us");
+  url.searchParams.set("l", "english");
+
+  try {
+    const response = await fetch(url, { headers: { "accept": "application/json" } });
+    if (!response.ok) return [];
+    const payload = await response.json() as Record<string, { success?: boolean; data?: SteamStoreDetails }>;
+    const data = payload[appid]?.success ? payload[appid]?.data : undefined;
+    if (!data) return [];
+
+    return [...new Set([
       allowedSteamImage(data.capsule_image),
       allowedSteamImage(data.capsule_imagev5),
       allowedSteamImage(data.header_image),
       allowedSteamImage(data.background),
       allowedSteamImage(data.background_raw),
-    ].filter((value): value is string => Boolean(value));
-
-    return [...new Set(candidates)];
+    ].filter((value): value is string => Boolean(value)))];
   } catch {
     return [];
   }
@@ -198,23 +219,14 @@ async function steamCover(appid: string, request: Request, iconHash: string | nu
   }
 
   // Newer Steam releases can put artwork below a content-hash directory. Ask Steam's store
-  // details endpoint for its current official image URL, then try portrait siblings in that
-  // exact directory before falling back to Steam's supplied capsule/header art.
-  for (const source of await steamStoreArtwork(appid)) {
+  // details endpoint for its current image directory, but only accept portrait siblings here.
+  for (const source of await steamStorePortraitArtwork(appid)) {
     const response = await imageResponse(source, request);
     if (response) return response;
   }
 
-  // Stable legacy header as the final official-Steam fallback.
-  const legacyHeader = await imageResponse(
-    `https://cdn.cloudflare.steamstatic.com/steam/apps/${appid}/header.jpg`,
-    request,
-  );
-  if (legacyHeader) return legacyHeader;
-
-  // GetOwnedGames includes an official Steam community icon hash. It is not a full cover,
-  // but it is a reliable branded fallback for newer games whose portrait art cannot be
-  // discovered from the public store endpoint.
+  // GetOwnedGames includes an official Steam community icon hash. Prefer this small branded
+  // fallback to a heavily cropped landscape capsule when no portrait exists.
   if (iconHash && /^[a-f0-9]{40}$/i.test(iconHash)) {
     const icon = await imageResponse(
       `https://media.steampowered.com/steamcommunity/public/images/apps/${appid}/${iconHash}.jpg`,
@@ -222,6 +234,20 @@ async function steamCover(appid: string, request: Request, iconHash: string | nu
     );
     if (icon) return icon;
   }
+
+  // A manually curated game may only have an AppID, with no library-provided icon hash.
+  // In that case an official wide Steam asset is still better than a blank tile; the client
+  // detects the wide aspect ratio and letterboxes it instead of cropping it into a poster.
+  for (const source of await steamStoreWideArtwork(appid)) {
+    const response = await imageResponse(source, request);
+    if (response) return response;
+  }
+
+  const legacyHeader = await imageResponse(
+    `https://cdn.cloudflare.steamstatic.com/steam/apps/${appid}/header.jpg`,
+    request,
+  );
+  if (legacyHeader) return legacyHeader;
 
   return new Response(null, {
     status: 404,

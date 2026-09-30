@@ -1,6 +1,8 @@
 export interface CuratedGame {
   name: string;
   appid: string | null;
+  /** Official Steam community icon hash; optional, public, and only used as an artwork fallback. */
+  iconHash?: string | null;
 }
 
 export interface CuratedTopGames {
@@ -42,10 +44,11 @@ export function normaliseCuratedTopGames(input: Partial<CuratedTopGames>): Curat
     const name = clean(raw?.name ?? "", GAME_NAME_LIMIT);
     if (!name) continue;
     const appid = raw?.appid && /^\d{1,10}$/.test(raw.appid) ? raw.appid : null;
+    const iconHash = raw?.iconHash && /^[a-f0-9]{40}$/i.test(raw.iconHash) ? raw.iconHash.toLowerCase() : null;
     const key = `${name.toLowerCase()}\u0000${appid ?? ""}`;
     if (seen.has(key)) continue;
     seen.add(key);
-    games.push({ name, appid });
+    games.push({ name, appid, iconHash });
   }
 
   return { title, caption, games };
@@ -71,7 +74,11 @@ export function encodeCuratedTopGames(input: CuratedTopGames): string {
   const compact = {
     t: list.title,
     c: list.caption || undefined,
-    g: list.games.map((game) => game.appid ? [game.name, game.appid] : [game.name]),
+    g: list.games.map((game) =>
+      game.appid
+        ? (game.iconHash ? [game.name, game.appid, game.iconHash] : [game.name, game.appid])
+        : [game.name],
+    ),
   };
   return toBase64Url(JSON.stringify(compact));
 }
@@ -88,7 +95,10 @@ export function decodeCuratedTopGames(value: string | null | undefined): Curated
     const games = parsed.g.map((entry): CuratedGame | null => {
       if (!Array.isArray(entry) || typeof entry[0] !== "string") return null;
       const appid = typeof entry[1] === "string" && /^\d{1,10}$/.test(entry[1]) ? entry[1] : null;
-      return { name: entry[0], appid };
+      const iconHash = typeof entry[2] === "string" && /^[a-f0-9]{40}$/i.test(entry[2])
+        ? entry[2].toLowerCase()
+        : null;
+      return { name: entry[0], appid, iconHash };
     }).filter((game): game is CuratedGame => game !== null);
 
     return normaliseCuratedTopGames({

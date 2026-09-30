@@ -69,3 +69,55 @@ test("downloads a hand-picked top-games scrapbook card", async ({ page }) => {
   expect(bytes.readUInt32BE(16)).toBe(1080);
   expect(bytes.readUInt32BE(20)).toBe(1350);
 });
+
+
+test("curated export keeps the library-provided Steam icon fallback", async ({ page }) => {
+  const iconHash = "8c7fc95092f64b0a99c4e02263caf254da89b7bb";
+  const pixel = Buffer.from(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
+    "base64",
+  );
+  const coverRequests: string[] = [];
+
+  await page.route("**/api/steam/library?*", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        steamid: "76561198000000000",
+        gameCount: 1,
+        profile: {
+          steamid: "76561198000000000",
+          name: "Cozy Player",
+          avatar: null,
+          profileUrl: "https://steamcommunity.com/id/cozyplayer/",
+        },
+        games: [{
+          appid: "3681810",
+          name: "Blue Protocol: Star Resonance",
+          minutes: 60000,
+          iconHash,
+        }],
+      }),
+    });
+  });
+
+  await page.route("**/api/steam/cover/*", async (route) => {
+    coverRequests.push(route.request().url());
+    await route.fulfill({ status: 200, contentType: "image/png", body: pixel });
+  });
+
+  await page.goto("/");
+  await page.getByLabel("Steam username, profile URL, or SteamID").fill("cozyplayer");
+  await page.getByRole("button", { name: "Read public profile" }).click();
+  await page.getByRole("button", { name: "My top games" }).click();
+  await page.getByRole("button", { name: "Use current nine" }).click();
+
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Download 1080×1350 card" }).click();
+  await downloadPromise;
+
+  expect(coverRequests.some((url) =>
+    url.includes("/api/steam/cover/3681810") && url.includes(`icon=${iconHash}`)
+  )).toBe(true);
+});

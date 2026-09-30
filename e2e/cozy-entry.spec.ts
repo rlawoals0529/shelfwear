@@ -299,3 +299,48 @@ test("long Steam names truncate cleanly and the main view buttons stay aligned",
   expect(Math.max(...boxes.map((box) => box.height)) - Math.min(...boxes.map((box) => box.height))).toBeLessThanOrEqual(1);
   expect(Math.max(...boxes.map((box) => box.width)) - Math.min(...boxes.map((box) => box.width))).toBeLessThanOrEqual(1);
 });
+
+
+test("use current nine preserves Steam icon fallbacks and styles them as badges", async ({ page }) => {
+  const iconHash = "8c7fc95092f64b0a99c4e02263caf254da89b7bb";
+  await page.route("**/api/steam/library?*", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        steamid: "76561198000000000",
+        gameCount: 1,
+        profile: {
+          steamid: "76561198000000000",
+          name: "Cozy Player",
+          avatar: null,
+          profileUrl: "https://steamcommunity.com/id/cozyplayer/",
+        },
+        games: [{
+          appid: "3681810",
+          name: "Blue Protocol: Star Resonance",
+          minutes: 60000,
+          iconHash,
+        }],
+      }),
+    });
+  });
+  await page.route("**/api/steam/cover/*", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "image/png",
+      body: pixel,
+    });
+  });
+
+  await page.goto("/");
+  await page.getByLabel("Steam username, profile URL, or SteamID").fill("cozyplayer");
+  await page.getByRole("button", { name: "Read public profile" }).click();
+  await page.getByRole("button", { name: "My top games" }).click();
+  await page.getByRole("button", { name: "Use current nine" }).click();
+
+  const art = page.locator(".curated-game-tile img").first();
+  await expect(art).toHaveAttribute("src", new RegExp(`/api/steam/cover/3681810\\?icon=${iconHash}`));
+  await expect(art).toHaveAttribute("data-fallback", "icon");
+  await expect(page.locator(".curated-list-row")).toContainText("Steam art · app 3681810");
+});
