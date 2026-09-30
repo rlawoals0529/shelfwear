@@ -359,6 +359,7 @@ export default function App() {
 
   const runComparison = useCallback(async () => {
     setCompareError(null);
+    setCompareCardError(null);
     setComparison(null);
     if (normaliseSteamProfileInput(compareLeft) === normaliseSteamProfileInput(compareRight)) {
       setCompareError("Choose two different Steam profiles to compare.");
