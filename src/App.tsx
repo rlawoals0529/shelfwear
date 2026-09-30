@@ -237,6 +237,39 @@ export default function App() {
         </div>
       )}
 
+      <section className="panel import-panel" id="steam">
+        <p className="eyebrow">Start here</p>
+        <h2>Bring in your Steam library</h2>
+        <p className="prose">
+          Type your Steam vanity name after the prefilled URL, or paste a full public Steam profile URL or 64-bit SteamID. The Worker asks Steam for public
+          game/playtime data; your Steam password is never requested.
+        </p>
+        {shared.steam && <p className="share-hint">A friend shared this public SteamID. Read it to rebuild their shelf live.</p>}
+        <div className="profile-form">
+          <input
+            value={steamProfile}
+            onChange={(e) => setSteamProfile(e.target.value)}
+            onFocus={(e) => {
+              if (e.currentTarget.value === STEAM_PROFILE_PREFIX) {
+                const end = e.currentTarget.value.length;
+                e.currentTarget.setSelectionRange(end, end);
+              }
+            }}
+            placeholder="https://steamcommunity.com/id/yourname"
+            aria-label="Steam username, profile URL, or SteamID"
+          />
+          <button disabled={importing || !hasSteamProfileInput(steamProfile)} onClick={() => void importSteam()}>
+            {importing ? "Reading…" : shared.steam ? "Load shared shelf" : "Read public profile"}
+          </button>
+        </div>
+        {steamError && <p className="err">{steamError}</p>}
+        <p className="note">
+          If Steam says the library is unavailable, set Profile → Privacy Settings → Game
+          details to Public, or use the local-file method below. Share links contain only a
+          public SteamID; Shelfwear does not store a library snapshot.
+        </p>
+      </section>
+
       {(shelf.untouched.length > 0 || shelf.played.length > 0) && (
         <section className="panel figure">
           <h2>The shelf</h2>
@@ -363,32 +396,6 @@ export default function App() {
           </div>
         </section>
       )}
-
-      <section className="panel import-panel" id="steam">
-        <h2>Bring in a Steam library</h2>
-        <p className="prose">
-          Type your Steam vanity name after the prefilled URL, or paste a full public Steam profile URL or 64-bit SteamID. The Worker asks Steam for public
-          game/playtime data; your Steam password is never requested.
-        </p>
-        {shared.steam && <p className="share-hint">A friend shared this public SteamID. Read it to rebuild their shelf live.</p>}
-        <div className="profile-form">
-          <input
-            value={steamProfile}
-            onChange={(e) => setSteamProfile(e.target.value)}
-            placeholder="https://steamcommunity.com/id/yourname"
-            aria-label="Steam username, profile URL, or SteamID"
-          />
-          <button disabled={importing || !hasSteamProfileInput(steamProfile)} onClick={() => void importSteam()}>
-            {importing ? "Reading…" : shared.steam ? "Load shared shelf" : "Read public profile"}
-          </button>
-        </div>
-        {steamError && <p className="err">{steamError}</p>}
-        <p className="note">
-          If Steam says the library is unavailable, set Profile → Privacy Settings → Game
-          details to Public, or use the local-file method below. Share links contain only a
-          public SteamID; Shelfwear does not store a library snapshot.
-        </p>
-      </section>
 
       <section className="panel compare-panel" id="compare">
         <h2>Compare two shelves</h2>
