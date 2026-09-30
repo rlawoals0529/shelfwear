@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { SHELFWEAR_WORKER_ORIGIN, STEAM_PROFILE_PREFIX, comparisonShareUrl, hasSteamProfileInput, normaliseSteamProfileInput, sharedComparisonFromSearch, sharedSteamFromSearch, steamApiUrl, steamShareUrl } from "./steam.js";
+import { SHELFWEAR_WORKER_ORIGIN, STEAM_PROFILE_PREFIX, comparisonShareUrl, hasSteamProfileInput, inviteShareUrl, normaliseSteamProfileInput, sharedComparisonFromSearch, sharedInviteFromSearch, sharedSteamFromSearch, steamApiUrl, steamShareUrl } from "./steam.js";
 
 describe("Steam share URLs", () => {
   it("creates a single-shelf link without retaining unrelated query data", () => {
@@ -13,9 +13,17 @@ describe("Steam share URLs", () => {
     expect(sharedComparisonFromSearch(new URL(url).search)).toEqual(["76561198000000000", "76561198000000001"]);
   });
 
+  it("creates a one-sided invite that contains only the inviter's public SteamID", () => {
+    const url = inviteShareUrl("https://example.com/shelfwear/?old=1#x", "76561198000000000");
+    expect(url).toBe("https://example.com/shelfwear/?invite=76561198000000000#compare");
+    expect(sharedInviteFromSearch(new URL(url).search)).toBe("76561198000000000");
+    expect(url).not.toContain("compare=");
+  });
+
   it("rejects malformed shared identifiers", () => {
     expect(sharedSteamFromSearch("?steam=not-an-id")).toBeNull();
     expect(sharedComparisonFromSearch("?compare=76561198000000000,wat" )).toBeNull();
+    expect(sharedInviteFromSearch("?invite=not-an-id")).toBeNull();
   });
 });
 
