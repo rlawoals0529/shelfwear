@@ -15,9 +15,9 @@ export const SAMPLE_CONFIG = `
   "1145360" { "playTime" "196"   "LastPlayed" "1690000000" }
   "105600"  { "playTime" "41"    "LastPlayed" "1688000000" }
   "550"     { "playTime" "12"    "LastPlayed" "1670000000" }
-  "1086940" { "playTime" "0" }
+  "1086940" { "playTime" "120"   "LastPlayed" "1668000000" }
   "1091500" { "playTime" "0" }
-  "1245620" { "playTime" "0" }
+  "1245620" { "playTime" "90"    "LastPlayed" "1664000000" }
   "289070"  { "playTime" "0" }
   "292030"  { "playTime" "0" }
   "440"     { "playTime" "0" }
@@ -32,7 +32,9 @@ export const SAMPLE_MANIFESTS = [
   M("413150", "Stardew Valley", "21474836480"),
   M("367520", "Hollow Knight", "12884901888"),
   M("620", "Portal 2", "8589934592"),
+  M("1145360", "Hades", "12884901888"),
   M("105600", "Terraria", "3221225472"),
+  M("550", "Left 4 Dead 2", "13958643712"),
   M("1086940", "Baldur's Gate 3", "96636764160"),
   M("1091500", "Cyberpunk 2077", "64424509440"),
   M("1245620", "ELDEN RING", "53687091200"),
