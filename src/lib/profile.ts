@@ -57,6 +57,7 @@ export function familiarFor(games: Game[]): Familiar {
   };
 }
 
+/** Official Steam library artwork, served same-origin by the Worker so cards export reliably. */
 export function steamCover(appid: string): string {
-  return `https://shared.steamstatic.com/store_item_assets/steam/apps/${encodeURIComponent(appid)}/library_600x900.jpg`;
+  return `/api/steam/cover/${encodeURIComponent(appid)}`;
 }
