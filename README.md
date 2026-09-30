@@ -14,7 +14,7 @@ Drop in `localconfig.vdf` and your `appmanifest_*.acf` files. They are parsed in
 
 On a Cloudflare Workers deployment, paste a public Steam profile URL or 64-bit SteamID. The Worker keeps the Steam Web API key server-side and asks Steam only for public owned-game/playtime data plus the public profile summary used for the display name/avatar. If Game details are private, Steam will not return the library.
 
-The social summary adds:
+The cozy UI deliberately uses original inline SVG doodles, emoji/kaomoji accents, and a rounded local system-font stack. It does not hotlink a chibi pack or load a third-party webfont, so the decorative layer does not add another external request or licensing dependency.\n\nThe social summary adds:
 
 - **Your nine** — the nine titles with the most recorded playtime, in a 3×3 grid.
 - **Download card** — a 1080×1350 PNG rendered in the current Shelfwear palette. Local/sample mode is fully browser-only; Steam mode asks Shelfwear's same-origin Worker cover endpoint for public artwork and falls back to typographic tiles when artwork is unavailable.
