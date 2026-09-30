@@ -1,0 +1,25 @@
+/* Guardrails for the cozy layer: preserve the shelf's measured geometry and keep every
+   palette AA-readable, including the no-art sample state. */
+.shelf-run {
+  padding: 0 0 var(--plank);
+}
+
+.row.cold { opacity: 1; }
+.row .hrs,
+.row .sz,
+.row.cold .name,
+.row.cold .hrs {
+  color: var(--fg);
+}
+
+.nine-tile:not(:has(img)) {
+  background: color-mix(in srgb, var(--raised) 74%, var(--panel));
+}
+.nine-tile:not(:has(img)) .nine-shade {
+  background: linear-gradient(to bottom, transparent, color-mix(in srgb, var(--fg) 8%, transparent));
+}
+.nine-tile:not(:has(img)) .nine-copy b,
+.nine-tile:not(:has(img)) .nine-copy span {
+  color: var(--fg);
+  text-shadow: none;
+}
