@@ -1,7 +1,9 @@
 import { defineConfig, devices } from "@playwright/test";
 
 /**
- * No slow lane here: nothing this page does needs a model or a network.
+ * No slow lane here: the browser suite is built around synthetic/local Steam-shaped fixtures
+ * and does not depend on live Steam or Cloudflare. Worker-backed integration is verified only
+ * after a real deployment, so a third-party outage cannot turn parser/layout CI red.
  *
  * The fixtures are Steam-shaped rather than minimal, tabs and all, including the
  * capitalisation the real client is inconsistent about.
