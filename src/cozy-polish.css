@@ -298,3 +298,30 @@ button:hover:not(:disabled) {
     left: 7px;
   }
 }
+
+.import-panel {
+  margin-top: 30px;
+  border-color: color-mix(in srgb, var(--accent) 22%, var(--edge));
+  background:
+    radial-gradient(circle at 96% 10%, color-mix(in srgb, var(--accent) 9%, transparent), transparent 20rem),
+    color-mix(in srgb, var(--panel) 97%, transparent);
+}
+
+.import-panel .eyebrow {
+  margin: 0 0 9px;
+  font-size: 10px;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+}
+
+.import-panel h2 {
+  margin-bottom: 12px;
+}
+
+.import-panel .profile-form {
+  margin-top: 20px;
+}
+
+.import-panel .profile-form input {
+  font-variant-numeric: tabular-nums;
+}
