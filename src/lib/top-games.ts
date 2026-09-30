@@ -111,12 +111,12 @@ export function normaliseCuratedTopGames(input: Partial<CuratedTopGames>): Curat
     games.push({ name, appid, iconHash, ...(note ? { note } : {}) });
   }
 
-  const style: ShelfStoryStyle =
+  const style: ShelfStoryStyle | undefined =
     input.style === "polaroid" || input.style === "poster" || input.style === "scrapbook"
       ? input.style
-      : "scrapbook";
+      : undefined;
 
-  return { title, caption, games, style };
+  return { title, caption, games, ...(style ? { style } : {}) };
 }
 
 const toBase64Url = (value: string): string => {
@@ -139,7 +139,7 @@ export function encodeCuratedTopGames(input: CuratedTopGames): string {
   const compact = {
     t: list.title,
     c: list.caption || undefined,
-    s: list.style === "scrapbook" ? undefined : list.style,
+    s: list.style && list.style !== "scrapbook" ? list.style : undefined,
     g: list.games.map((game) => {
       if (game.note) return [game.name, game.appid, game.iconHash ?? null, game.note];
       if (game.appid) return game.iconHash ? [game.name, game.appid, game.iconHash] : [game.name, game.appid];
@@ -172,7 +172,7 @@ export function decodeCuratedTopGames(value: string | null | undefined): Curated
     return normaliseCuratedTopGames({
       title: typeof parsed.t === "string" ? parsed.t : "shelf story",
       caption: typeof parsed.c === "string" ? parsed.c : "",
-      style: parsed.s === "polaroid" || parsed.s === "poster" || parsed.s === "scrapbook" ? parsed.s : "scrapbook",
+      style: parsed.s === "polaroid" || parsed.s === "poster" || parsed.s === "scrapbook" ? parsed.s : undefined,
       games,
     });
   } catch {
