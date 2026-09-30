@@ -200,3 +200,41 @@ test("builds a hand-picked top-games list with Steam art or cute fallbacks", asy
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   expect(overflow).toBeLessThanOrEqual(1);
 });
+
+
+test("builds a hand-picked top-games list with Steam art or cute fallbacks", async ({ page }) => {
+  await page.route("**/api/steam/cover/*", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "image/png",
+      body: pixel,
+    });
+  });
+
+  await page.goto("/");
+  await page.getByRole("button", { name: "My top games" }).click();
+  await expect(page.getByRole("heading", { name: "My top games" })).toBeVisible();
+
+  await page.getByLabel("Game name to add").fill("Hades");
+  await page.getByLabel("Optional Steam AppID or store link").fill("1145360");
+  await page.getByRole("button", { name: "Add game" }).click();
+
+  await expect(page.locator(".curated-game-tile img")).toHaveCount(1);
+  await expect(page.locator(".curated-game-tile img")).toHaveAttribute("src", "/api/steam/cover/1145360");
+
+  await page.getByLabel("Game name to add").fill("A tiny custom game");
+  await page.getByRole("button", { name: "Add game" }).click();
+  await expect(page.locator(".curated-fallback-letter")).toHaveText("A");
+  await expect(page.getByText("2/9 picked")).toBeVisible();
+
+  await page.getByLabel("Move A tiny custom game up").click();
+  const names = await page.locator(".curated-list-row > div:nth-child(2) > b").allTextContents();
+  expect(names.slice(0, 2)).toEqual(["A tiny custom game", "Hades"]);
+
+  await expect(page.getByRole("button", { name: "Copy share link" })).toBeEnabled();
+  await expect(page.getByRole("button", { name: /Download 1080×1350 card/ })).toBeEnabled();
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(overflow).toBeLessThanOrEqual(1);
+});
