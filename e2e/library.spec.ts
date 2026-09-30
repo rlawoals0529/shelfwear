@@ -24,7 +24,7 @@ test("shows a real library before you have given it anything", async ({ page }) 
   // A page whose first paint is an empty drop zone teaches nothing. The sample has to be
   // labelled as a sample, though, or it reads as the visitor's own data.
   await expect(page.getByRole("heading", { name: "shelfwear" })).toBeVisible();
-  await expect(page.getByText("Reading the sample library.")).toBeVisible();
+  await expect(page.locator(".hero-meta .source")).toContainText("the sample library");
   await expect(page.getByRole("heading", { name: "The shelf" })).toBeVisible();
   await expect(page.getByText("nothing is fetched")).toBeVisible();
 });
@@ -86,7 +86,7 @@ test("you can get back to the sample after loading your own", async ({ page }) =
   await page.locator('input[type="file"]').setInputFiles(ALL);
   await expect(page.getByText("3 files")).toBeVisible();
   await page.getByRole("button", { name: "Back to the sample" }).click();
-  await expect(page.getByText("Reading the sample library.")).toBeVisible();
+  await expect(page.locator(".hero-meta .source")).toContainText("the sample library");
 });
 
 test("the counts are described as a floor, because they are", async ({ page }) => {
