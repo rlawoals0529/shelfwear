@@ -1,5 +1,6 @@
 import { hours, type Game } from "./library.js";
 import type { Familiar } from "./profile.js";
+import { steamApiUrl } from "./steam.js";
 
 export interface ShareCardTheme {
   bg: string;
@@ -40,7 +41,7 @@ const DEFAULT_THEME: ShareCardTheme = {
 };
 
 export function proxiedSteamCover(appid: string): string {
-  return `/api/steam/cover/${encodeURIComponent(appid)}`;
+  return steamApiUrl(`/api/steam/cover/${encodeURIComponent(appid)}`);
 }
 
 export function shareCardFilename(profileName?: string | null): string {
