@@ -128,6 +128,49 @@
   outline-offset: 2px;
 }
 
+.story-style-picker {
+  display: grid;
+  gap: 8px;
+  max-width: 900px;
+  margin-top: 16px;
+}
+
+.story-style-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.story-style-options button {
+  min-height: 74px;
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--panel) 94%, var(--raised));
+  box-shadow: none;
+  text-align: left;
+}
+
+.story-style-options button b {
+  color: var(--fg);
+  font-family: var(--font-round);
+  font-size: 11px;
+}
+
+.story-style-options button span {
+  color: var(--dim);
+  font-size: 9px;
+  line-height: 1.4;
+}
+
+.story-style-options button.active {
+  border-color: color-mix(in srgb, var(--accent) 52%, var(--edge));
+  background: color-mix(in srgb, var(--accent) 9%, var(--panel));
+}
+
 .curated-privacy {
   max-width: 78ch;
   margin-top: 14px;
@@ -257,6 +300,51 @@
   background: color-mix(in srgb, var(--accent-2) 13%, var(--panel));
 }
 
+.curated-card-preview.story-style-polaroid {
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--fg) 7%, var(--panel)), var(--panel));
+  box-shadow: 0 20px 44px color-mix(in srgb, var(--fg) 10%, transparent);
+}
+
+.curated-card-preview.story-style-polaroid::before,
+.curated-card-preview.story-style-polaroid::after,
+.curated-card-preview.story-style-poster::before,
+.curated-card-preview.story-style-poster::after {
+  display: none;
+}
+
+.curated-card-preview.story-style-polaroid .curated-game-tile,
+.curated-card-preview.story-style-polaroid .curated-empty-tile {
+  border: 8px solid color-mix(in srgb, var(--fg) 10%, var(--panel));
+  border-bottom-width: 18px;
+  border-radius: 8px;
+  transform: none;
+}
+
+.curated-card-preview.story-style-poster {
+  border-radius: 10px;
+  background:
+    linear-gradient(150deg, color-mix(in srgb, var(--accent) 10%, var(--bg)), var(--panel) 44%, color-mix(in srgb, var(--accent-2) 10%, var(--bg)));
+  box-shadow: 0 16px 36px color-mix(in srgb, var(--fg) 12%, transparent);
+}
+
+.curated-card-preview.story-style-poster .curated-sticker,
+.curated-card-preview.story-style-poster .curated-doodle {
+  display: none;
+}
+
+.curated-card-preview.story-style-poster .curated-preview-heading h3 {
+  text-transform: uppercase;
+  letter-spacing: -.02em;
+}
+
+.curated-card-preview.story-style-poster .curated-game-tile,
+.curated-card-preview.story-style-poster .curated-empty-tile {
+  border-radius: 5px;
+  transform: none;
+}
+
 .curated-preview-heading {
   min-height: 95px;
   padding: 8px 3px 16px;
@@ -381,6 +469,24 @@
   -webkit-line-clamp: 2;
 }
 
+.curated-game-name.has-note {
+  bottom: 27px;
+}
+
+.curated-game-note {
+  position: absolute;
+  z-index: 2;
+  inset: auto 8px 8px;
+  overflow: hidden;
+  color: rgba(255,255,255,.78);
+  font-size: clamp(7px, 1vw, 9px);
+  font-weight: 650;
+  line-height: 1.15;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-shadow: 0 1px 2px rgba(0,0,0,.7);
+}
+
 .curated-empty-tile {
   display: grid;
   place-items: center;
@@ -482,10 +588,10 @@
   font-weight: 850;
 }
 
-.curated-list-row > div:nth-child(2) {
+.curated-list-copy {
   min-width: 0;
   display: grid;
-  gap: 3px;
+  gap: 4px;
 }
 
 .curated-list-row b {
@@ -495,9 +601,27 @@
   font-size: 12px;
 }
 
-.curated-list-row > div:nth-child(2) span {
+.curated-list-copy > span {
   color: var(--dim);
   font-size: 9px;
+}
+
+.curated-list-copy input {
+  width: 100%;
+  min-width: 0;
+  min-height: 32px;
+  padding: 6px 8px;
+  border: 1px solid color-mix(in srgb, var(--edge) 70%, transparent);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--panel) 92%, var(--raised));
+  color: var(--fg);
+  font: inherit;
+  font-size: 10px;
+}
+
+.curated-list-copy input:focus {
+  outline: 2px solid color-mix(in srgb, var(--accent) 46%, transparent);
+  outline-offset: 1px;
 }
 
 .curated-row-actions {
@@ -590,6 +714,10 @@
 @media (max-width: 860px) {
   .story-presets {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .story-style-options {
+    grid-template-columns: 1fr;
   }
 
   .curated-layout {
@@ -701,6 +829,10 @@
 
   .curated-list-row {
     grid-template-columns: 28px minmax(0, 1fr);
+  }
+
+  .story-style-picker {
+    margin-top: 14px;
   }
 
   .curated-row-actions {
