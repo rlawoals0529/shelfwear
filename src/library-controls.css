@@ -106,7 +106,7 @@
 .library-chips button.active {
   border-color: color-mix(in srgb, var(--accent) 44%, var(--edge));
   background: color-mix(in srgb, var(--accent) 12%, var(--panel));
-  color: var(--accent-text);
+  color: var(--fg);
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 12%, transparent);
 }
 
