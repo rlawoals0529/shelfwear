@@ -751,9 +751,12 @@ export async function renderComparisonCard(input: ComparisonCardInput): Promise<
   ctx.fillText("Games both actually played", PAD, 372);
   ctx.fillStyle = theme.dim;
   ctx.font = "500 16px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  const corners = input.leftName + "-only: " + input.comparison.leftOnlyCount
-    + "  ·  " + input.rightName + "-only: " + input.comparison.rightOnlyCount;
-  ctx.fillText(wrapByMeasure(ctx, corners, WIDTH - PAD * 2, 1)[0] ?? corners, PAD, 400);
+  const leftCorner = wrapByMeasure(ctx, input.leftName + " only: " + input.comparison.leftOnlyCount, 420, 1)[0] ?? "";
+  const rightCorner = wrapByMeasure(ctx, input.rightName + " only: " + input.comparison.rightOnlyCount, 420, 1)[0] ?? "";
+  ctx.fillText(leftCorner, PAD, 400);
+  ctx.textAlign = "right";
+  ctx.fillText(rightCorner, WIDTH - PAD, 400);
+  ctx.textAlign = "left";
 
   const games = input.comparison.mutuallyPlayed.slice(0, 6);
   const images = await Promise.all(games.map((game) =>
