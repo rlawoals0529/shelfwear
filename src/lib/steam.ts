@@ -14,6 +14,20 @@ export interface PublicSteamLibrary {
   games: Game[];
 }
 
+export const STEAM_PROFILE_PREFIX = "https://steamcommunity.com/id/";
+
+export function normaliseSteamProfileInput(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed || trimmed === STEAM_PROFILE_PREFIX) return "";
+  if (/^\d{17}$/.test(trimmed) || /^https?:\/\//i.test(trimmed)) return trimmed;
+  if (/^[A-Za-z0-9_-]{2,64}$/.test(trimmed)) return `${STEAM_PROFILE_PREFIX}${trimmed}`;
+  return trimmed;
+}
+
+export function hasSteamProfileInput(value: string): boolean {
+  return normaliseSteamProfileInput(value).length > 0;
+}
+
 interface ApiLibrary {
   steamid?: string;
   gameCount?: number;
@@ -23,7 +37,9 @@ interface ApiLibrary {
 }
 
 export async function fetchPublicSteamLibrary(profile: string): Promise<PublicSteamLibrary> {
-  const response = await fetch(`/api/steam/library?profile=${encodeURIComponent(profile.trim())}`);
+  const normalized = normaliseSteamProfileInput(profile);
+  if (!normalized) throw new Error("Add your Steam username, profile URL, or SteamID.");
+  const response = await fetch(`/api/steam/library?profile=${encodeURIComponent(normalized)}`);
   const data = await response.json().catch(() => null) as ApiLibrary | null;
 
   if (!data) {

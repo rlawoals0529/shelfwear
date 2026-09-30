@@ -1,0 +1,334 @@
+/* Final consumer polish: Ariadne's warm paper and editorial restraint, with Shelfwear's
+   playful library shapes. This layer intentionally comes last so it can soften the shared
+   design system without changing data semantics or accessibility behavior. */
+
+[data-theme="cherry-blossom-dusk"] {
+  --bg: #f6f0e9;
+  --panel: #fffaf5;
+  --raised: #eee4da;
+  --accent: #c35f79;
+  --accent-2: #6f7fa5;
+  --fg: #2e2624;
+  --dim: #756962;
+  --edge: #d9cbc0;
+  --edge-strong: #bba99b;
+  --accent-text: #a63f62;
+  --on-accent: #fffaf8;
+}
+
+body {
+  background:
+    radial-gradient(circle at 8% 0%, color-mix(in srgb, var(--accent) 8%, transparent), transparent 28rem),
+    radial-gradient(circle at 94% 12%, color-mix(in srgb, var(--accent-2) 7%, transparent), transparent 30rem),
+    var(--bg);
+}
+
+.wrap {
+  width: min(1080px, calc(100% - 40px));
+  max-width: 1080px;
+  padding-top: 52px;
+}
+
+.wrap::before {
+  width: 92px;
+  height: 92px;
+  top: 30px;
+  opacity: .45;
+  filter: blur(6px);
+}
+
+h1.display {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(62px, 9.5vw, 112px);
+  line-height: .86;
+  letter-spacing: -.06em;
+}
+
+.tagline {
+  max-width: 650px;
+  margin-top: 22px;
+  color: color-mix(in srgb, var(--fg) 82%, var(--dim));
+  font-size: clamp(16px, 1.8vw, 19px);
+}
+
+.source {
+  border-radius: 10px;
+  box-shadow: none;
+  background: color-mix(in srgb, var(--panel) 90%, transparent);
+}
+
+.panel {
+  margin-top: 30px;
+  padding: clamp(24px, 3.4vw, 34px);
+  border-radius: 20px;
+  border-color: color-mix(in srgb, var(--edge) 84%, transparent);
+  background: color-mix(in srgb, var(--panel) 95%, transparent);
+  box-shadow: 0 14px 38px color-mix(in srgb, var(--fg) 6%, transparent);
+}
+
+.panel::after {
+  opacity: .55;
+}
+
+.panel h2 {
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(31px, 4.6vw, 46px);
+  letter-spacing: -.035em;
+}
+
+.metric {
+  min-height: 106px;
+  border-radius: 14px;
+  box-shadow: none;
+}
+
+.metric b,
+.familiar h3 {
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+button,
+.actions button,
+.social-actions button,
+.profile-form button,
+.compare-form button,
+.compare-heading > button {
+  border-radius: 11px;
+  box-shadow: none;
+  font-weight: 650;
+}
+
+button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 7px 18px color-mix(in srgb, var(--fg) 7%, transparent);
+}
+
+.social-panel {
+  padding-bottom: clamp(28px, 4vw, 42px);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--accent) 4%, var(--panel)), var(--panel) 42%);
+}
+
+.social-heading {
+  align-items: flex-start;
+  gap: 18px;
+  margin-bottom: 22px;
+}
+
+.social-heading > div:first-child {
+  max-width: 520px;
+}
+
+.social-actions {
+  margin-left: auto;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+}
+
+.nine-grid {
+  width: min(100%, 900px);
+  max-width: 900px;
+  gap: 12px;
+}
+
+.nine-tile {
+  aspect-ratio: 1;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--raised) 76%, var(--panel));
+  box-shadow:
+    0 7px 20px color-mix(in srgb, var(--fg) 7%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, var(--edge) 78%, transparent);
+}
+
+.nine-tile:hover {
+  transform: translateY(-3px);
+  box-shadow:
+    0 14px 30px color-mix(in srgb, var(--fg) 10%, transparent),
+    inset 0 0 0 1px color-mix(in srgb, var(--edge) 72%, transparent);
+}
+
+.nine-tile:nth-child(2n):hover {
+  transform: translateY(-3px);
+}
+
+.nine-tile img {
+  object-fit: cover;
+  object-position: center;
+  transform: none;
+}
+
+.nine-tile:hover img {
+  transform: scale(1.025);
+}
+
+.nine-shade {
+  inset: 34% 0 0;
+  background: linear-gradient(to bottom, transparent, rgba(19, 14, 17, .82));
+}
+
+.nine-rank {
+  top: 10px;
+  left: 10px;
+  width: 28px;
+  height: 28px;
+  border: 1px solid rgba(255,255,255,.32);
+  background: rgba(28, 23, 25, .72);
+  color: #fff;
+  backdrop-filter: blur(8px);
+}
+
+.nine-copy {
+  inset: auto auto 12px 12px;
+  max-width: calc(100% - 24px);
+  gap: 4px;
+  padding: 9px 11px 8px;
+  border-radius: 10px;
+  background-color: #1b1719;
+  box-shadow: 0 5px 16px rgba(0,0,0,.18);
+}
+
+.nine-copy b {
+  font-size: clamp(13px, 1.45vw, 17px);
+  line-height: 1.12;
+}
+
+.nine-tile:not(:has(img)) {
+  background:
+    radial-gradient(circle at 80% 12%, color-mix(in srgb, var(--accent-2) 14%, transparent), transparent 42%),
+    linear-gradient(145deg, color-mix(in srgb, var(--accent) 10%, var(--panel)), var(--raised));
+}
+
+.nine-tile:not(:has(img)) .nine-shade {
+  background: linear-gradient(to bottom, transparent, color-mix(in srgb, var(--fg) 7%, transparent));
+}
+
+.familiar {
+  width: min(100%, 900px);
+  max-width: 900px;
+  margin-top: 20px;
+  border-radius: 16px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--accent) 9%, var(--panel)), color-mix(in srgb, var(--accent-2) 8%, var(--panel)));
+}
+
+.familiar-mark {
+  border-radius: 22px;
+  box-shadow: none;
+}
+
+.profile-form,
+.compare-form {
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--raised) 56%, var(--panel));
+}
+
+.profile-form input,
+.compare-form input {
+  border-radius: 9px;
+}
+
+.rows {
+  gap: 7px;
+}
+
+.row {
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--raised) 42%, var(--panel));
+}
+
+.drop {
+  border-radius: 15px;
+  background: color-mix(in srgb, var(--accent) 5%, var(--panel));
+}
+
+.palette {
+  margin-top: 48px;
+}
+
+@media (max-width: 760px) {
+  .wrap {
+    width: min(100% - 24px, 1080px);
+    padding-top: 34px;
+  }
+
+  .panel {
+    border-radius: 17px;
+    padding: 20px 17px;
+  }
+
+  .social-heading {
+    flex-direction: column;
+  }
+
+  .social-actions {
+    width: 100%;
+    margin-left: 0;
+    justify-content: flex-start;
+  }
+
+  .nine-grid {
+    gap: 7px;
+  }
+
+  .nine-tile {
+    border-radius: 12px;
+  }
+
+  .nine-copy {
+    inset: auto auto 8px 8px;
+    max-width: calc(100% - 16px);
+    padding: 7px 8px 6px;
+    border-radius: 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .social-actions button {
+    flex: 1 1 calc(50% - 6px);
+  }
+
+  .nine-grid {
+    gap: 5px;
+  }
+
+  .nine-rank {
+    width: 24px;
+    height: 24px;
+    top: 7px;
+    left: 7px;
+  }
+}
+
+.import-panel {
+  margin-top: 30px;
+  border-color: color-mix(in srgb, var(--accent) 22%, var(--edge));
+  background:
+    radial-gradient(circle at 96% 10%, color-mix(in srgb, var(--accent) 9%, transparent), transparent 20rem),
+    color-mix(in srgb, var(--panel) 97%, transparent);
+}
+
+.import-panel .eyebrow {
+  margin: 0 0 9px;
+  font-size: 10px;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+}
+
+.import-panel h2 {
+  margin-bottom: 12px;
+}
+
+.import-panel .profile-form {
+  margin-top: 20px;
+}
+
+.import-panel .profile-form input {
+  font-variant-numeric: tabular-nums;
+}
+
+
+/* Inline file paths sit on a tinted code chip; use ink rather than muted prose so the
+   smallest labels remain AA-readable on the warm paper palette. */
+code {
+  color: var(--fg);
+}

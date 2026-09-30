@@ -89,20 +89,32 @@ async function library(profile: string, key: string): Promise<Response> {
 
 async function steamCover(appid: string): Promise<Response> {
   if (!/^\d{1,10}$/.test(appid)) return new Response(null, { status: 400 });
-  const source = `https://shared.steamstatic.com/store_item_assets/steam/apps/${appid}/library_600x900.jpg`;
-  const upstream = await fetch(source);
-  const contentType = upstream.headers.get("content-type") ?? "";
-  if (!upstream.ok || !contentType.toLowerCase().startsWith("image/")) {
-    return new Response(null, { status: 404, headers: { "cache-control": "public, max-age=300" } });
+
+  // Steam's portrait library asset is ideal for the 3×3, but newer store assets can move
+  // behind hashed paths. Stay on official Steam/CDN hosts and fall back to the stable header
+  // artwork rather than leaving a blank card.
+  const sources = [
+    `https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/${appid}/library_600x900.jpg`,
+    `https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/${appid}/library_600x900.jpg`,
+    `https://cdn.cloudflare.steamstatic.com/steam/apps/${appid}/library_600x900.jpg`,
+    `https://cdn.cloudflare.steamstatic.com/steam/apps/${appid}/header.jpg`,
+  ];
+
+  for (const source of sources) {
+    const upstream = await fetch(source);
+    const contentType = upstream.headers.get("content-type") ?? "";
+    if (!upstream.ok || !contentType.toLowerCase().startsWith("image/")) continue;
+    return new Response(upstream.body, {
+      status: 200,
+      headers: {
+        "content-type": contentType,
+        "cache-control": "public, max-age=86400, stale-while-revalidate=604800",
+        "x-content-type-options": "nosniff",
+      },
+    });
   }
-  return new Response(upstream.body, {
-    status: 200,
-    headers: {
-      "content-type": contentType,
-      "cache-control": "public, max-age=86400, stale-while-revalidate=604800",
-      "x-content-type-options": "nosniff",
-    },
-  });
+
+  return new Response(null, { status: 404, headers: { "cache-control": "public, max-age=300" } });
 }
 
 export default {
