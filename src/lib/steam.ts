@@ -41,7 +41,7 @@ interface ApiLibrary {
   gameCount?: number;
   profile?: Partial<SteamProfileSummary>;
   error?: string;
-  games?: { appid: string; name: string | null; minutes: number }[];
+  games?: { appid: string; name: string | null; minutes: number; iconHash?: string | null }[];
 }
 
 export async function fetchPublicSteamLibrary(profile: string): Promise<PublicSteamLibrary> {

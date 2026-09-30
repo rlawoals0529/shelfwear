@@ -16,5 +16,7 @@ describe("shareCardFilename", () => {
 describe("proxiedSteamCover", () => {
   it("keeps cover retrieval on Shelfwear's own API origin", () => {
     expect(proxiedSteamCover("730")).toBe("/api/steam/cover/730");
+    expect(proxiedSteamCover("730", "0123456789abcdef0123456789abcdef01234567"))
+      .toBe("/api/steam/cover/730?icon=0123456789abcdef0123456789abcdef01234567");
   });
 });

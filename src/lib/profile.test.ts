@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { familiarFor, steamCover, steamHeader, topNine } from "./profile.js";
+import { familiarFor, steamCover, steamHeader, steamIcon, topNine } from "./profile.js";
 import type { Game } from "./library.js";
 
 const game = (appid: string, minutes: number, name = `Game ${appid}`): Game => ({
@@ -39,5 +39,6 @@ describe("steamCover", () => {
   it("builds the official Steam artwork CDN URL", () => {
     expect(steamCover("730")).toBe("https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/730/library_600x900.jpg");
     expect(steamHeader("730")).toBe("https://cdn.cloudflare.steamstatic.com/steam/apps/730/header.jpg");
+    expect(steamIcon("730", "0123456789abcdef0123456789abcdef01234567")).toBe("https://media.steampowered.com/steamcommunity/public/images/apps/730/0123456789abcdef0123456789abcdef01234567.jpg");
   });
 });

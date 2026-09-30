@@ -19,6 +19,8 @@ export interface Game {
   /** Bytes on disk. Null when the game is not installed, which is not the same as 0. */
   bytes: number | null;
   installed: boolean;
+  /** Official Steam community icon hash, available for public Steam imports. */
+  iconHash?: string | null;
 }
 
 const int = (v: unknown): number | null => {

@@ -86,10 +86,10 @@ jobs:
           grep -qi '^access-control-allow-origin: https://rlawoals0529.github.io' /tmp/shelfwear-api-headers.txt
           grep -q '"error"' /tmp/shelfwear-api-body.json
 
-          # Blue Protocol: Star Resonance uses Steam's newer hashed artwork layout. Keep one
-          # real release in the smoke test so a future CDN-path regression cannot silently
-          # turn its top-nine card back into a blank tile.
-          curl --fail --silent --show-error --retry 4 --retry-delay 2             --header 'Origin: https://rlawoals0529.github.io'             --dump-header /tmp/shelfwear-cover-headers.txt             --output /tmp/shelfwear-cover.bin             "$DEPLOYMENT_URL/api/steam/cover/3681810"
+          # Blue Protocol: Star Resonance uses Steam's newer hashed artwork layout. Its public
+          # GetOwnedGames icon hash gives us a reliable official-Steam fallback when a
+          # portrait cannot be discovered, so keep that path in the live smoke test.
+          curl --fail --silent --show-error --retry 4 --retry-delay 2             --header 'Origin: https://rlawoals0529.github.io'             --dump-header /tmp/shelfwear-cover-headers.txt             --output /tmp/shelfwear-cover.bin             "$DEPLOYMENT_URL/api/steam/cover/3681810?icon=8c7fc95092f64b0a99c4e02263caf254da89b7bb"
           grep -qi '^content-type: image/' /tmp/shelfwear-cover-headers.txt
           grep -qi '^access-control-allow-origin: https://rlawoals0529.github.io' /tmp/shelfwear-cover-headers.txt
           test -s /tmp/shelfwear-cover.bin

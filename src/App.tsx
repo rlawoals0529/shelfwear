@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import { readLocalConfig, readManifest, buildLibrary, summarise, shelve, hours, gb, type Game, type Spine, type Stats } from "./lib/library.js";
 import { analyticsFor, type LibraryAnalytics } from "./lib/analytics.js";
-import { familiarFor, steamCover, steamHeader, topNine } from "./lib/profile.js";
+import { familiarFor, steamCover, steamHeader, steamIcon, topNine } from "./lib/profile.js";
 import { compareLibraries, type LibraryComparison } from "./lib/compare.js";
 import { curatedCardFilename, downloadBlob, proxiedSteamCover, renderCuratedCard, renderShareCard, shareCardFilename } from "./lib/share-card.js";
 import {
@@ -557,10 +557,15 @@ export default function App() {
               <article className="nine-tile" key={game.appid}>
                 {loaded.kind !== "local" && (
                   <img
-                    src={proxiedSteamCover(game.appid)}
+                    src={proxiedSteamCover(game.appid, game.iconHash)}
                     alt=""
                     loading="lazy"
                     decoding="async"
+                    onLoad={(event) => {
+                      const image = event.currentTarget;
+                      const ratio = image.naturalWidth / Math.max(1, image.naturalHeight);
+                      if (ratio >= 0.82 && ratio <= 1.18) image.dataset.fallback = "icon";
+                    }}
                     onError={(event) => {
                       const image = event.currentTarget;
                       if (!image.dataset.fallback) {
@@ -569,6 +574,9 @@ export default function App() {
                       } else if (image.dataset.fallback === "library") {
                         image.dataset.fallback = "header";
                         image.src = steamHeader(game.appid);
+                      } else if (image.dataset.fallback === "header" && game.iconHash) {
+                        image.dataset.fallback = "icon";
+                        image.src = steamIcon(game.appid, game.iconHash);
                       } else {
                         image.hidden = true;
                       }
