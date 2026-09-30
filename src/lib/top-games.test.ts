@@ -36,6 +36,24 @@ describe("curated top games", () => {
     expect(decodeCuratedTopGames(encoded)).toEqual({ ...list, caption: "cozy ♡ 게임" });
   });
 
+  it("round-trips authored game notes and non-default card styles", () => {
+    const encoded = encodeCuratedTopGames({
+      ...list,
+      style: "poster",
+      games: [
+        { ...list.games[0]!, note: "the game that got me into ranked FPS" },
+        { ...list.games[1]!, note: "tiny game, huge memory" },
+      ],
+    });
+    expect(decodeCuratedTopGames(encoded)).toMatchObject({
+      style: "poster",
+      games: [
+        { name: "Counter-Strike 2", note: "the game that got me into ranked FPS" },
+        { name: "A custom indie", note: "tiny game, huge memory" },
+      ],
+    });
+  });
+
   it("creates and reads a stateless Shelf Story URL", () => {
     const url = curatedShareUrl("https://example.com/?steam=123#x", list);
     expect(url).not.toContain("steam=");
@@ -60,6 +78,15 @@ describe("curated top games", () => {
       "first-time",
     ]);
     expect(new Set(SHELF_STORY_PRESETS.map((preset) => preset.title)).size).toBe(SHELF_STORY_PRESETS.length);
+  });
+
+  it("trims authored notes instead of letting share links grow without bounds", () => {
+    const normalized = normaliseCuratedTopGames({
+      title: "story",
+      caption: "",
+      games: [{ name: "Hades", appid: "1145360", note: "x".repeat(100) }],
+    });
+    expect(normalized.games[0]?.note).toHaveLength(42);
   });
 
   it("caps the list at nine and removes duplicate entries", () => {
