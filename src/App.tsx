@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { readLocalConfig, readManifest, buildLibrary, summarise, shelve, hours, gb, type Game, type Spine, type Stats } from "./lib/library.js";
 import { analyticsFor, type LibraryAnalytics } from "./lib/analytics.js";
 import { familiarFor, steamCover, steamHeader, steamIcon, topNine } from "./lib/profile.js";
-import { compareLibraries, type LibraryComparison } from "./lib/compare.js";
+import { compareLibraries, type LibraryComparison, type SharedGame } from "./lib/compare.js";
 import { comparisonCardFilename, curatedCardFilename, downloadBlob, familiarCardFilename, proxiedSteamCover, renderComparisonCard, renderCuratedCard, renderFamiliarCard, renderShareCard, shareCardFilename } from "./lib/share-card.js";
 import {
   comparisonShareUrl,
@@ -801,6 +801,10 @@ export default function App() {
               <div className="metric"><span className="metric-icon"><CuteIcon name="shelf" /></span><b>{comparison.result.sharedCount}</b><span>owned by both</span></div>
               <div className="metric"><span className="metric-icon"><CuteIcon name="friends" /></span><b>{comparison.result.mutuallyPlayedCount}</b><span>played by both</span></div>
             </div>
+            <div className="compare-corners" aria-label="Games unique to each public shelf">
+              <span><small>Only on {displayName(comparison.left)}’s shelf</small><b>{comparison.result.leftOnlyCount}</b></span>
+              <span><small>Only on {displayName(comparison.right)}’s shelf</small><b>{comparison.result.rightOnlyCount}</b></span>
+            </div>
             {comparison.result.mutuallyPlayed[0] && (
               <div className="compare-highlight">
                 <div>
@@ -827,16 +831,52 @@ export default function App() {
             </div>
             {comparison.result.mutuallyPlayed.length > 0 ? (
               <div className="shared-games">
-                <h3>Games both actually played</h3>
-                {comparison.result.mutuallyPlayed.slice(0, 8).map((game) => (
-                  <div className="shared-game" key={game.appid}>
-                    <b>{game.name ?? `app ${game.appid}`}</b>
-                    <span>{displayName(comparison.left)} {hours(game.leftMinutes)}h · {displayName(comparison.right)} {hours(game.rightMinutes)}h</span>
+                <div className="shared-games-heading">
+                  <div>
+                    <h3>Games both actually played</h3>
+                    <p>Shared ownership with recorded playtime on both profiles.</p>
                   </div>
+                </div>
+                {comparison.result.mutuallyPlayed.slice(0, 8).map((game) => (
+                  <ComparisonGameRow
+                    key={game.appid}
+                    game={game}
+                    leftName={displayName(comparison.left)}
+                    rightName={displayName(comparison.right)}
+                  />
                 ))}
               </div>
             ) : (
               <p className="note">The profiles share no game with recorded playtime on both sides.</p>
+            )}
+
+            {comparison.result.oneSidedPlayed.length > 0 && (
+              <div className="compare-handoffs">
+                <div className="shared-games-heading">
+                  <div>
+                    <p className="eyebrow">Easy handoffs</p>
+                    <h3>One of you already knows these</h3>
+                    <p>Both profiles own the game, but only one has recorded playtime.</p>
+                  </div>
+                </div>
+                <div className="compare-handoff-grid">
+                  {comparison.result.oneSidedPlayed.slice(0, 4).map((game) => {
+                    const leftPlayed = game.leftMinutes > 0;
+                    const playedName = leftPlayed ? displayName(comparison.left) : displayName(comparison.right);
+                    const unplayedName = leftPlayed ? displayName(comparison.right) : displayName(comparison.left);
+                    const playedMinutes = leftPlayed ? game.leftMinutes : game.rightMinutes;
+                    return (
+                      <div className="compare-handoff" key={game.appid}>
+                        <ComparisonGameArt game={game} />
+                        <div>
+                          <b>{game.name ?? `app ${game.appid}`}</b>
+                          <span>{playedName} {hours(playedMinutes)}h · {unplayedName} 0h recorded</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
             )}
           </div>
         )}
@@ -1517,6 +1557,34 @@ function SteamPerson({ library }: { library: PublicSteamLibrary }) {
     <div className="steam-person">
       {library.profile.avatar && <img src={library.profile.avatar} alt="" loading="lazy" />}
       <div><b>{displayName(library)}</b><span>{library.gameCount} public games</span></div>
+    </div>
+  );
+}
+
+function ComparisonGameArt({ game }: { game: SharedGame }) {
+  const name = game.name ?? `app ${game.appid}`;
+  return (
+    <span className="compare-game-art" aria-hidden="true">
+      <span>{name.trim().charAt(0).toUpperCase() || "♡"}</span>
+      <img
+        src={proxiedSteamCover(game.appid, game.iconHash)}
+        alt=""
+        loading="lazy"
+        decoding="async"
+        onError={(event) => { event.currentTarget.hidden = true; }}
+      />
+    </span>
+  );
+}
+
+function ComparisonGameRow({ game, leftName, rightName }: { game: SharedGame; leftName: string; rightName: string }) {
+  return (
+    <div className="shared-game">
+      <ComparisonGameArt game={game} />
+      <div className="shared-game-copy">
+        <b>{game.name ?? `app ${game.appid}`}</b>
+        <span>{leftName} {hours(game.leftMinutes)}h · {rightName} {hours(game.rightMinutes)}h</span>
+      </div>
     </div>
   );
 }
