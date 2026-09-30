@@ -6,8 +6,11 @@ const F = (n: string) => fileURLToPath(new URL(join("fixtures", n), import.meta.
 const ALL = ["localconfig.vdf", "appmanifest_700.acf", "appmanifest_900.acf"].map(F);
 
 /** A headline figure, found by its label rather than by its value. */
+const metricCard = (page: import("@playwright/test").Page, label: string) =>
+  page.locator(".metric").filter({ hasText: label });
+
 const metric = (page: import("@playwright/test").Page, label: string) =>
-  page.locator(".metric").filter({ hasText: label }).locator("b");
+  metricCard(page, label).locator(".metric-value");
 
 /** A row in the full list, which is where a game's own name is the exact text. */
 const row = (page: import("@playwright/test").Page, name: string) =>
@@ -57,10 +60,12 @@ test("never launched is counted, and its disk is counted separately", async ({ p
   // 900 is installed at 50 GB and has never been launched. Separating that from the
   // 60 GB total is the number the whole page exists to show.
   await expect(metric(page, "never launched")).toHaveText("1");
-  // One decimal, because the headline figures count up to their value and hold their
-  // width while they do it. Same numbers, written the way the page writes them.
-  await expect(metric(page, "installed")).toHaveText("60.0 GB");
-  await expect(metric(page, "held by unplayed")).toHaveText("50.0 GB");
+  // The number still holds a fixed-width decimal while the unit has its own smaller
+  // typographic role, so changing a caption cannot move either value.
+  await expect(metric(page, "installed")).toHaveText("60.0");
+  await expect(metricCard(page, "installed").locator(".metric-unit")).toHaveText("GB");
+  await expect(metric(page, "held by unplayed")).toHaveText("50.0");
+  await expect(metricCard(page, "held by unplayed").locator(".metric-unit")).toHaveText("GB");
 });
 
 test("a file that is not a manifest is reported, not silently dropped", async ({ page }) => {

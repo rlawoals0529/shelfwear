@@ -120,3 +120,45 @@ test("section icons are vertically centered with their title copy", async ({ pag
   const copyCenter = copyBox!.y + copyBox!.height / 2;
   expect(Math.abs(iconCenter - copyCenter)).toBeLessThanOrEqual(2);
 });
+
+
+test("stat cards keep values and labels aligned even when captions wrap", async ({ page }) => {
+  await page.setViewportSize({ width: 1366, height: 900 });
+  await page.goto("/");
+
+  const values = page.locator(".stats-panel .metric-value-row");
+  const labels = page.locator(".stats-panel .metric-label");
+  await expect(values).toHaveCount(6);
+  await expect(labels).toHaveCount(6);
+  await expect(page.locator(".stats-panel .metric-unit")).toHaveCount(2);
+
+  const valueBoxes = await values.evaluateAll((elements) =>
+    elements.map((element) => {
+      const rect = element.getBoundingClientRect();
+      return { y: rect.y, height: rect.height };
+    }),
+  );
+  const labelBoxes = await labels.evaluateAll((elements) =>
+    elements.map((element) => {
+      const rect = element.getBoundingClientRect();
+      return { y: rect.y, height: rect.height };
+    }),
+  );
+
+  for (const row of [[0, 1, 2], [3, 4, 5]]) {
+    const valueBaselines = row.map((index) => valueBoxes[index]!.y + valueBoxes[index]!.height);
+    const labelTops = row.map((index) => labelBoxes[index]!.y);
+    expect(Math.max(...valueBaselines) - Math.min(...valueBaselines)).toBeLessThanOrEqual(1);
+    expect(Math.max(...labelTops) - Math.min(...labelTops)).toBeLessThanOrEqual(1);
+  }
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(overflow).toBeLessThanOrEqual(1);
+
+  const first = await page.locator(".stats-panel .metric-card").nth(0).boundingBox();
+  const second = await page.locator(".stats-panel .metric-card").nth(1).boundingBox();
+  expect(first).not.toBeNull();
+  expect(second).not.toBeNull();
+  expect(Math.abs(first!.y - second!.y)).toBeLessThanOrEqual(1);
+});
