@@ -10,4 +10,5 @@ import "./cozy-fit.css";
 import "./cozy-cute.css";
 import "./analytics.css";
 import "./stats-polish.css";
+import "./curated.css";
 createRoot(document.getElementById("root")!).render(<StrictMode><App /></StrictMode>);
