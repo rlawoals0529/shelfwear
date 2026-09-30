@@ -180,6 +180,37 @@ function SectionTitle({
   );
 }
 
+function SteamProfileField({
+  value,
+  onChange,
+  label,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  label: string;
+}) {
+  const trimmed = value.trim();
+  const direct = /^https?:\/\//i.test(trimmed) || /^\d{17}$/.test(trimmed);
+
+  return (
+    <label className="steam-profile-control">
+      <span className="steam-profile-label">{label}</span>
+      <span className={direct ? "steam-profile-combo direct" : "steam-profile-combo"}>
+        {!direct && <span className="steam-profile-prefix" aria-hidden="true">steamcommunity.com/id/</span>}
+        <input
+          value={value}
+          onChange={(event) => onChange(event.target.value)}
+          placeholder={direct ? "Steam profile URL or 64-bit SteamID" : "rlawoals"}
+          aria-label="Steam username, profile URL, or SteamID"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+        />
+      </span>
+    </label>
+  );
+}
+
 function MetricCard({
   icon,
   value,
@@ -223,7 +254,7 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [steamError, setSteamError] = useState<string | null>(null);
   const [over, setOver] = useState(false);
-  const [steamProfile, setSteamProfile] = useState(shared.steam ?? STEAM_PROFILE_PREFIX);
+  const [steamProfile, setSteamProfile] = useState(shared.steam ?? "");
   const [importing, setImporting] = useState(false);
   const [copied, setCopied] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
@@ -398,24 +429,17 @@ export default function App() {
           <div className="import-copy">
             <SectionTitle icon="steam" eyebrow="Start here">Bring in your Steam library</SectionTitle>
             <p className="prose">
-              Type your Steam vanity name after the prefilled URL, or paste a full public Steam profile URL or 64-bit SteamID. The Worker asks Steam for public
-              game/playtime data; your Steam password is never requested.
+              Type just the end of your Steam custom URL, like <b>rlawoals</b>, or paste a full public Steam profile URL or 64-bit SteamID. Shelfwear fills in
+              steamcommunity.com/id/ for simple usernames; your Steam password is never requested.
             </p>
             {shared.steam && <p className="share-hint">A friend shared this public SteamID. Read it to rebuild their shelf live.</p>}
           </div>
           <div className="import-action">
             <div className="profile-form">
-              <input
+              <SteamProfileField
                 value={steamProfile}
-                onChange={(e) => setSteamProfile(e.target.value)}
-                onFocus={(e) => {
-                  if (e.currentTarget.value === STEAM_PROFILE_PREFIX) {
-                    const end = e.currentTarget.value.length;
-                    e.currentTarget.setSelectionRange(end, end);
-                  }
-                }}
-                placeholder="https://steamcommunity.com/id/yourname"
-                aria-label="Steam username, profile URL, or SteamID"
+                onChange={setSteamProfile}
+                label="Steam profile"
               />
               <button disabled={importing || !hasSteamProfileInput(steamProfile)} onClick={() => void importSteam()}>
                 <CuteIcon name="sparkles" className="button-icon" />
@@ -423,6 +447,19 @@ export default function App() {
               </button>
             </div>
             {steamError && <p className="err">{steamError}</p>}
+            {loaded.kind === "steam" && loaded.profile && (
+              <div className="import-profile-preview" aria-live="polite">
+                {loaded.profile.avatar && <img src={loaded.profile.avatar} alt="" loading="lazy" />}
+                <div>
+                  <span className="eyebrow">Connected</span>
+                  <b>{loaded.profile.name ?? loaded.profile.steamid}</b>
+                  <small>{loaded.profile.steamid}</small>
+                </div>
+                {loaded.profile.profileUrl && (
+                  <a href={loaded.profile.profileUrl} target="_blank" rel="noreferrer">View profile</a>
+                )}
+              </div>
+            )}
             <p className="note">
               If Steam says the library is unavailable, set Profile → Privacy Settings → Game
               details to Public, or use the local-file method below. Share links contain only a
