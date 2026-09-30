@@ -5,6 +5,8 @@ export interface SharedGame {
   name: string | null;
   leftMinutes: number;
   rightMinutes: number;
+  /** Public Steam icon hash, used only as an official-art fallback on comparison cards. */
+  iconHash?: string | null;
 }
 
 export interface LibraryComparison {
@@ -37,6 +39,7 @@ export function compareLibraries(left: Game[], right: Game[]): LibraryComparison
       name: leftGame.name ?? rightGame.name,
       leftMinutes: leftGame.minutes,
       rightMinutes: rightGame.minutes,
+      iconHash: leftGame.iconHash ?? rightGame.iconHash ?? null,
     });
   }
 
