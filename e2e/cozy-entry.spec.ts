@@ -56,3 +56,37 @@ test("the cozy layout stays fitted on a phone and keeps portrait game art", asyn
   expect(tile!.height / tile!.width).toBeGreaterThan(1.45);
   expect(tile!.height / tile!.width).toBeLessThan(1.55);
 });
+
+
+test("cute decoration is aligned and does not add third-party font or icon requests", async ({ page }) => {
+  const externalDecorRequests: string[] = [];
+  page.on("request", (request) => {
+    const url = request.url();
+    if (/fonts\.googleapis|fonts\.gstatic|unpkg|jsdelivr/i.test(url)) externalDecorRequests.push(url);
+  });
+
+  await page.route("**/api/steam/cover/*", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "image/png",
+      body: pixel,
+    });
+  });
+
+  await page.goto("/");
+
+  await expect(page.locator(".hero-charm")).toBeVisible();
+  const titles = page.locator(".section-title");
+  expect(await titles.count()).toBeGreaterThanOrEqual(6);
+
+  const firstTitle = titles.first();
+  const icon = firstTitle.locator(".section-icon");
+  const heading = firstTitle.getByRole("heading");
+  const [iconBox, headingBox] = await Promise.all([icon.boundingBox(), heading.boundingBox()]);
+  expect(iconBox).not.toBeNull();
+  expect(headingBox).not.toBeNull();
+  expect(Math.abs(iconBox!.y - headingBox!.y)).toBeLessThan(28);
+
+  await expect(page.getByRole("button", { name: "Read public profile" }).locator(".button-icon")).toBeVisible();
+  expect(externalDecorRequests).toEqual([]);
+});

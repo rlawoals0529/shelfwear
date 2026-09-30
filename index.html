@@ -6,9 +6,6 @@
 <meta name="theme-color" content="#f7eef4">
 <meta name="description" content="Turn your Steam library into a cozy shelf, a shareable top nine, and playful friend comparisons.">
 <title>shelfwear - your cozy Steam library shelf</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <script>
   /* Before first paint, so the page never shows one palette and swaps to another.
      Every palette block in palettes.css declares its own color-scheme, so setting the attribute
@@ -16,7 +13,7 @@
      agree. Wrapped because localStorage throws outright in a private window. */
   (function () {
     var t;
-    try { t = localStorage.getItem("shelfwear:theme"); } catch (e) {}
+    try { t = localStorage.getItem("shelfwear:theme:cozy-v2"); } catch (e) {}
     document.documentElement.setAttribute("data-theme", t || "cherry-blossom-dusk");
   })();
 </script>

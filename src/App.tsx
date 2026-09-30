@@ -83,6 +83,93 @@ const ago = (unix: number | null): string => {
 const displayName = (library: PublicSteamLibrary): string =>
   library.profile.name ?? `Steam ${library.steamid.slice(-6)}`;
 
+type CuteIconName =
+  | "steam"
+  | "shelf"
+  | "sparkles"
+  | "nine"
+  | "friends"
+  | "folder"
+  | "list"
+  | "clock"
+  | "archive"
+  | "download"
+  | "copy"
+  | "share"
+  | "heart";
+
+function CuteIcon({ name, className = "" }: { name: CuteIconName; className?: string }) {
+  const common = {
+    className: `cute-icon ${className}`.trim(),
+    viewBox: "0 0 24 24",
+    fill: "none",
+    stroke: "currentColor",
+    strokeWidth: 1.8,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const,
+    "aria-hidden": true,
+  };
+
+  switch (name) {
+    case "steam":
+      return <svg {...common}><path d="M7.2 8.2h9.6a4.2 4.2 0 0 1 4 5.6l-.9 2.5a2.1 2.1 0 0 1-3.5.8l-1.8-1.8H9.4l-1.8 1.8a2.1 2.1 0 0 1-3.5-.8l-.9-2.5a4.2 4.2 0 0 1 4-5.6Z"/><path d="M8.4 11.1v4.2M6.3 13.2h4.2"/><circle cx="16.3" cy="12.2" r=".8" fill="currentColor" stroke="none"/><circle cx="18.3" cy="14.3" r=".8" fill="currentColor" stroke="none"/></svg>;
+    case "shelf":
+      return <svg {...common}><path d="M4 18.5h16M6 6.2v10.3M10 4.5v12M14 7.2v9.3M18 5.5v11"/><path d="M5.2 6.2h1.6M9.2 4.5h1.6M13.2 7.2h1.6M17.2 5.5h1.6"/></svg>;
+    case "sparkles":
+      return <svg {...common}><path d="m12 3 1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.6L12 3Z"/><path d="m18.5 14 .7 2 .8.7-.8.7-.7 2-.7-2-.8-.7.8-.7.7-2ZM5 14.5l.5 1.4 1.4.5-1.4.5L5 18.3l-.5-1.4-1.4-.5 1.4-.5.5-1.4Z"/></svg>;
+    case "nine":
+      return <svg {...common}><rect x="4" y="4" width="4" height="4" rx="1"/><rect x="10" y="4" width="4" height="4" rx="1"/><rect x="16" y="4" width="4" height="4" rx="1"/><rect x="4" y="10" width="4" height="4" rx="1"/><rect x="10" y="10" width="4" height="4" rx="1"/><rect x="16" y="10" width="4" height="4" rx="1"/><rect x="4" y="16" width="4" height="4" rx="1"/><rect x="10" y="16" width="4" height="4" rx="1"/><rect x="16" y="16" width="4" height="4" rx="1"/></svg>;
+    case "friends":
+      return <svg {...common}><circle cx="9" cy="9" r="3"/><circle cx="16.5" cy="10" r="2.5"/><path d="M3.8 19c.5-3.1 2.4-5 5.2-5s4.8 1.9 5.2 5M14.2 15.2c2.7-.5 5 .9 5.8 3.8"/></svg>;
+    case "folder":
+      return <svg {...common}><path d="M3.5 7.5h6l1.8 2H20a1.5 1.5 0 0 1 1.5 1.5v6.5A1.5 1.5 0 0 1 20 19H4a1.5 1.5 0 0 1-1.5-1.5V9A1.5 1.5 0 0 1 4 7.5Z"/><path d="M3.5 10h18"/></svg>;
+    case "list":
+      return <svg {...common}><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="5" cy="6" r="1"/><circle cx="5" cy="12" r="1"/><circle cx="5" cy="18" r="1"/></svg>;
+    case "clock":
+      return <svg {...common}><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5v5l3.2 1.8"/></svg>;
+    case "archive":
+      return <svg {...common}><rect x="4" y="6" width="16" height="13" rx="2"/><path d="M3.5 6h17V3.8H3.5V6ZM9 10.5h6"/></svg>;
+    case "download":
+      return <svg {...common}><path d="M12 4v10M8.5 10.5 12 14l3.5-3.5M5 19h14"/></svg>;
+    case "copy":
+      return <svg {...common}><rect x="8" y="8" width="11" height="11" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg>;
+    case "share":
+      return <svg {...common}><circle cx="6" cy="12" r="2"/><circle cx="17.5" cy="6" r="2"/><circle cx="17.5" cy="18" r="2"/><path d="m7.8 11 7.9-4M7.8 13l7.9 4"/></svg>;
+    case "heart":
+      return <svg {...common}><path d="M12 20s-7-4.2-7-9.4A3.9 3.9 0 0 1 12 8a3.9 3.9 0 0 1 7 2.6C19 15.8 12 20 12 20Z"/></svg>;
+  }
+}
+
+function SectionTitle({
+  icon,
+  eyebrow,
+  children,
+  note,
+}: {
+  icon: CuteIconName;
+  eyebrow?: string;
+  children: React.ReactNode;
+  note?: React.ReactNode;
+}) {
+  return (
+    <div className="section-title">
+      <span className="section-icon"><CuteIcon name={icon} /></span>
+      <div className="section-title-copy">
+        {eyebrow && <p className="eyebrow">{eyebrow}</p>}
+        <h2>{children}</h2>
+        {note && <p className="note">{note}</p>}
+      </div>
+    </div>
+  );
+}
+
+const familiarEmoji = (animal: string): string =>
+  ({ cat: "🐱", moth: "🦋", magpie: "🐦", fox: "🦊" } as Record<string, string>)[animal] ?? "✨";
+
+const signatureEmoji = (object: string): string =>
+  ({ bookends: "📚", campfire: "🔥", bookmarks: "🔖", shelves: "🪵" } as Record<string, string>)[object] ?? "♡";
+
+
 export default function App() {
   const shared = useMemo(() => ({
     steam: sharedSteamFromSearch(window.location.search),
@@ -221,7 +308,12 @@ export default function App() {
   return (
     <div className="wrap rhythm">
       <header className="hero">
-        <p className="hero-kicker">a cozy look at your Steam shelf</p>
+        <div className="hero-charm" aria-hidden="true">
+          <span className="hero-charm-spark">✦</span>
+          <span className="hero-charm-face">૮₍ ˶ᵔ ᵕ ᵔ˶ ₎ა</span>
+          <span className="hero-charm-label">your shelf buddy</span>
+        </div>
+        <p className="hero-kicker"><CuteIcon name="heart" /> a cozy look at your Steam shelf</p>
         <h1 className="display">shelf<span>wear</span></h1>
         <p className="tagline prose">
           See what your Steam library actually gets played, then turn the shape of it into
@@ -245,8 +337,7 @@ export default function App() {
       <section className="panel import-panel" id="steam">
         <div className="import-layout">
           <div className="import-copy">
-            <p className="eyebrow">Start here</p>
-            <h2>Bring in your Steam library</h2>
+            <SectionTitle icon="steam" eyebrow="Start here">Bring in your Steam library</SectionTitle>
             <p className="prose">
               Type your Steam vanity name after the prefilled URL, or paste a full public Steam profile URL or 64-bit SteamID. The Worker asks Steam for public
               game/playtime data; your Steam password is never requested.
@@ -268,6 +359,7 @@ export default function App() {
                 aria-label="Steam username, profile URL, or SteamID"
               />
               <button disabled={importing || !hasSteamProfileInput(steamProfile)} onClick={() => void importSteam()}>
+                <CuteIcon name="sparkles" className="button-icon" />
                 {importing ? "Reading…" : shared.steam ? "Load shared shelf" : "Read public profile"}
               </button>
             </div>
@@ -283,7 +375,7 @@ export default function App() {
 
       {(shelf.untouched.length > 0 || shelf.played.length > 0) && (
         <section className="panel figure shelf-panel">
-          <h2>The shelf</h2>
+          <SectionTitle icon="shelf" eyebrow="Little shelf view">The shelf</SectionTitle>
           {/* Two shelves, untouched on top. Shelfwear is the trade term for what stock takes
               from sitting unsold, so the games that have never run are the ones wearing it:
               faded, with dust along the top edge. The played ones are clean because they
@@ -310,23 +402,24 @@ export default function App() {
       )}
 
       <section className="panel stats-panel">
-        <h2>What it adds up to</h2>
+        <SectionTitle icon="sparkles" eyebrow="Tiny stats">What it adds up to</SectionTitle>
         <div className="grid">
-          <div className="metric"><b><Ticker value={stats.games} /></b><span>games here</span></div>
-          <div className="metric"><b><Ticker value={hours(stats.totalMinutes)} decimals={1} /></b><span>hours played</span></div>
-          <div className="metric warn"><b><Ticker value={stats.neverPlayed} /></b><span>never launched</span></div>
+          <div className="metric"><span className="metric-icon"><CuteIcon name="list" /></span><b><Ticker value={stats.games} /></b><span>games here</span></div>
+          <div className="metric"><span className="metric-icon"><CuteIcon name="clock" /></span><b><Ticker value={hours(stats.totalMinutes)} decimals={1} /></b><span>hours played</span></div>
+          <div className="metric warn"><span className="metric-icon"><CuteIcon name="heart" /></span><b><Ticker value={stats.neverPlayed} /></b><span>never launched</span></div>
           {loaded.kind === "steam" ? (
             <>
-              <div className="metric"><b>—</b><span>disk data unavailable</span></div>
-              <div className="metric"><b>—</b><span>unplayed disk unavailable</span></div>
+              <div className="metric"><span className="metric-icon"><CuteIcon name="archive" /></span><b>—</b><span>disk data unavailable</span></div>
+              <div className="metric"><span className="metric-icon"><CuteIcon name="folder" /></span><b>—</b><span>unplayed disk unavailable</span></div>
             </>
           ) : (
             <>
-              <div className="metric"><b><Ticker value={gb(stats.installedBytes)} decimals={1} suffix=" GB" /></b><span>installed</span></div>
-              <div className="metric warn"><b><Ticker value={gb(stats.unplayedBytes)} decimals={1} suffix=" GB" /></b><span>held by unplayed</span></div>
+              <div className="metric"><span className="metric-icon"><CuteIcon name="archive" /></span><b><Ticker value={gb(stats.installedBytes)} decimals={1} suffix=" GB" /></b><span>installed</span></div>
+              <div className="metric warn"><span className="metric-icon"><CuteIcon name="folder" /></span><b><Ticker value={gb(stats.unplayedBytes)} decimals={1} suffix=" GB" /></b><span>held by unplayed</span></div>
             </>
           )}
           <div className="metric">
+            <span className="metric-icon"><CuteIcon name="sparkles" /></span>
             <b><Ticker value={stats.halfOfHoursIn} /></b>
             <span>{stats.halfOfHoursIn === 1 ? "title is" : "titles are"} half your hours</span>
           </div>
@@ -353,15 +446,12 @@ export default function App() {
       {nine.length > 0 && (
         <section className="panel social-panel">
           <div className="social-heading">
-            <div>
-              <h2>Your nine</h2>
-              <p className="note">The nine games with the most recorded playtime.</p>
-            </div>
+            <SectionTitle icon="nine" eyebrow="Your little game postcard" note="The nine games with the most recorded playtime.">Your nine</SectionTitle>
             <div className="social-actions">
-              <button disabled={cardRendering} onClick={() => void downloadCard()}>{cardRendering ? "Making card…" : "Download card"}</button>
-              <button onClick={() => void copyNine()}>{copied ? "Copied" : "Copy summary"}</button>
+              <button disabled={cardRendering} onClick={() => void downloadCard()}><CuteIcon name="download" className="button-icon" />{cardRendering ? "Making card…" : "Download card"}</button>
+              <button onClick={() => void copyNine()}><CuteIcon name="copy" className="button-icon" />{copied ? "Copied" : "Copy summary"}</button>
               {loaded.kind === "steam" && loaded.steamid && (
-                <button onClick={() => void copyShelfLink()}>{shareCopied ? "Link copied" : "Share shelf"}</button>
+                <button onClick={() => void copyShelfLink()}><CuteIcon name="share" className="button-icon" />{shareCopied ? "Link copied" : "Share shelf"}</button>
               )}
             </div>
           </div>
@@ -397,7 +487,10 @@ export default function App() {
           </div>
           <p className="note">Download card exports a 1080×1350 PNG using the current Shelfwear palette. Missing cover art falls back to a typographic tile.</p>
           <div className="familiar">
-            <span className="familiar-mark" aria-hidden="true">{familiar.animal}</span>
+            <span className="familiar-mark familiar-cute" aria-hidden="true">
+              <span className="familiar-emoji">{familiarEmoji(familiar.animal)}</span>
+              <span className="familiar-kaomoji">♡</span>
+            </span>
             <div>
               <p className="eyebrow">Shelf familiar</p>
               <h3>{familiar.name}</h3>
@@ -409,7 +502,7 @@ export default function App() {
       )}
 
       <section className="panel compare-panel" id="compare">
-        <h2>Compare two shelves</h2>
+        <SectionTitle icon="friends" eyebrow="For friends">Compare two shelves</SectionTitle>
         <p className="prose">
           Put two public Steam profiles side by side. Overlap is the intersection divided by
           the combined unique library; played-together counts only games with recorded time on both profiles.
@@ -420,6 +513,7 @@ export default function App() {
           <span aria-hidden="true">×</span>
           <input value={compareRight} onChange={(e) => setCompareRight(e.target.value)} placeholder={`${STEAM_PROFILE_PREFIX}second-user`} aria-label="Second Steam profile" />
           <button disabled={comparing || !hasSteamProfileInput(compareLeft) || !hasSteamProfileInput(compareRight)} onClick={() => void runComparison()}>
+            <CuteIcon name="friends" className="button-icon" />
             {comparing ? "Comparing…" : shared.compare ? "Load comparison" : "Compare"}
           </button>
         </div>
@@ -431,15 +525,18 @@ export default function App() {
               <SteamPerson library={comparison.left} />
               <span className="compare-cross">×</span>
               <SteamPerson library={comparison.right} />
-              <button onClick={() => void copyComparisonLink()}>{compareCopied ? "Link copied" : "Share comparison"}</button>
+              <button onClick={() => void copyComparisonLink()}><CuteIcon name="share" className="button-icon" />{compareCopied ? "Link copied" : "Share comparison"}</button>
             </div>
             <div className="compare-metrics">
-              <div className="metric"><b>{Math.round(comparison.result.overlapPercent)}%</b><span>library overlap</span></div>
-              <div className="metric"><b>{comparison.result.sharedCount}</b><span>owned by both</span></div>
-              <div className="metric"><b>{comparison.result.mutuallyPlayedCount}</b><span>played by both</span></div>
+              <div className="metric"><span className="metric-icon"><CuteIcon name="heart" /></span><b>{Math.round(comparison.result.overlapPercent)}%</b><span>library overlap</span></div>
+              <div className="metric"><span className="metric-icon"><CuteIcon name="shelf" /></span><b>{comparison.result.sharedCount}</b><span>owned by both</span></div>
+              <div className="metric"><span className="metric-icon"><CuteIcon name="friends" /></span><b>{comparison.result.mutuallyPlayedCount}</b><span>played by both</span></div>
             </div>
             <div className="compare-signature familiar">
-              <span className="familiar-mark" aria-hidden="true">{comparison.result.signature.object}</span>
+              <span className="familiar-mark familiar-cute" aria-hidden="true">
+                <span className="familiar-emoji">{signatureEmoji(comparison.result.signature.object)}</span>
+                <span className="familiar-kaomoji">✦</span>
+              </span>
               <div>
                 <p className="eyebrow">Shared shelf signature</p>
                 <h3>{comparison.result.signature.name}</h3>
@@ -467,7 +564,7 @@ export default function App() {
       {/* The local picker remains available even after the Worker path exists. It is the only
           mode that can say anything about the machine's disk, and it sends nothing away. */}
       <section className="panel local-panel">
-        <h2>Or keep it completely local</h2>
+        <SectionTitle icon="folder" eyebrow="Private mode">Or keep it completely local</SectionTitle>
         <div
           className={over ? "drop over" : "drop"}
           onDragOver={(e) => { e.preventDefault(); setOver(true); }}
@@ -477,8 +574,8 @@ export default function App() {
           Drop <code>localconfig.vdf</code> and your <code>appmanifest_*.acf</code> files here
         </div>
         <div className="actions">
-          <button onClick={() => picker.current?.click()}>Choose files</button>
-          <button onClick={() => { setError(null); setLoaded(SAMPLE); }}>Back to the sample</button>
+          <button onClick={() => picker.current?.click()}><CuteIcon name="folder" className="button-icon" />Choose files</button>
+          <button onClick={() => { setError(null); setLoaded(SAMPLE); }}><CuteIcon name="sparkles" className="button-icon" />Back to the sample</button>
           <input
             ref={picker}
             type="file"
@@ -500,7 +597,7 @@ export default function App() {
       </section>
 
       <section className="panel library-panel">
-        <h2>Everything ({loaded.games.length})</h2>
+        <SectionTitle icon="list" eyebrow="The whole shelf">Everything ({loaded.games.length})</SectionTitle>
         <div className="rows">
           {loaded.games.map((g) => (
             <div className={g.minutes === 0 ? "row cold" : "row"} key={g.appid}>
