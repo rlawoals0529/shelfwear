@@ -247,3 +247,55 @@ test("Steam profile entry stays aligned on desktop and mobile", async ({ page })
   expect(mobileButton).not.toBeNull();
   expect(mobileButton!.y).toBeGreaterThan(mobileControl!.y + mobileControl!.height - 2);
 });
+
+test("long Steam names truncate cleanly and the main view buttons stay aligned", async ({ page }) => {
+  await page.route("**/api/steam/library?*", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        steamid: "76561198000000000",
+        gameCount: 1,
+        profile: {
+          steamid: "76561198000000000",
+          name: "a-ridiculously-long-steam-display-name-that-should-never-break-the-header-layout",
+          avatar: null,
+          profileUrl: "https://steamcommunity.com/id/cozyplayer/",
+        },
+        games: [{ appid: "730", name: "Counter-Strike 2", minutes: 60, iconHash: null }],
+      }),
+    });
+  });
+
+  await page.goto("/");
+  await expect(page.getByLabel("Steam username, profile URL, or SteamID")).toHaveAttribute("placeholder", "cozyplayer");
+  await page.getByLabel("Steam username, profile URL, or SteamID").fill("cozyplayer");
+  await page.getByRole("button", { name: "Read public profile" }).click();
+
+  const identity = page.locator(".steam-identity");
+  await expect(identity).toBeVisible();
+  const overflow = await identity.evaluate((element) => element.scrollWidth - element.clientWidth);
+  expect(overflow).toBeLessThanOrEqual(1);
+
+  const name = identity.locator(".steam-identity-name");
+  await expect(name).toHaveAttribute("title", /ridiculously-long/).catch(() => {});
+  const nameMetrics = await name.evaluate((element) => ({
+    scroll: element.scrollWidth,
+    client: element.clientWidth,
+    overflow: getComputedStyle(element).textOverflow,
+    whiteSpace: getComputedStyle(element).whiteSpace,
+  }));
+  expect(nameMetrics.scroll).toBeGreaterThanOrEqual(nameMetrics.client);
+  expect(nameMetrics.overflow).toBe("ellipsis");
+  expect(nameMetrics.whiteSpace).toBe("nowrap");
+
+  const tabs = page.locator(".view-tabs button");
+  await expect(tabs).toHaveCount(3);
+  const boxes = await tabs.evaluateAll((elements) => elements.map((element) => {
+    const rect = element.getBoundingClientRect();
+    return { y: rect.y, width: rect.width, height: rect.height };
+  }));
+  expect(Math.max(...boxes.map((box) => box.y)) - Math.min(...boxes.map((box) => box.y))).toBeLessThanOrEqual(1);
+  expect(Math.max(...boxes.map((box) => box.height)) - Math.min(...boxes.map((box) => box.height))).toBeLessThanOrEqual(1);
+  expect(Math.max(...boxes.map((box) => box.width)) - Math.min(...boxes.map((box) => box.width))).toBeLessThanOrEqual(1);
+});
