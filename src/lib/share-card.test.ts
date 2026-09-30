@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { familiarCardFilename, proxiedSteamCover, shareCardFilename } from "./share-card.js";
+import { comparisonCardFilename, familiarCardFilename, proxiedSteamCover, shareCardFilename } from "./share-card.js";
 
 describe("shareCardFilename", () => {
   it("creates a filesystem-safe PNG name from a public profile name", () => {
@@ -16,6 +16,13 @@ describe("shareCardFilename", () => {
 describe("familiarCardFilename", () => {
   it("creates a filesystem-safe familiar filename", () => {
     expect(familiarCardFilename("Deep-Dive Owl")).toBe("shelfwear-deep-dive-owl-familiar.png");
+  });
+});
+
+describe("comparisonCardFilename", () => {
+  it("keeps both public profile names in a filesystem-safe comparison filename", () => {
+    expect(comparisonCardFilename("Jaemin's Shelf", "Cozy Friend"))
+      .toBe("shelfwear-jaemin-s-shelf-x-cozy-friend-comparison.png");
   });
 });
 

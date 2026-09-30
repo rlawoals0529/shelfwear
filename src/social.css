@@ -69,7 +69,23 @@
   align-items: center;
   gap: 16px;
 }
-.compare-heading > button { margin-left: auto; }
+.compare-actions {
+  margin-left: auto;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 7px;
+}
+
+.compare-actions button {
+  min-height: 40px;
+  padding: 8px 11px;
+  border-radius: 12px;
+  box-shadow: none;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
 .compare-cross {
   color: var(--dim);
   font-size: 18px;
@@ -109,7 +125,56 @@
   max-width: 600px;
   margin-top: 28px;
 }
-.compare-signature.familiar { margin-top: 28px; }
+
+.compare-highlight {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 22px;
+  max-width: 760px;
+  margin-top: 22px;
+  padding: 15px 17px;
+  border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--edge));
+  border-radius: 18px 15px 19px 16px;
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--accent) 7%, var(--panel)), color-mix(in srgb, var(--accent-2) 5%, var(--panel)));
+}
+
+.compare-highlight .eyebrow {
+  margin: 0 0 4px;
+}
+
+.compare-highlight h3 {
+  margin: 0;
+  font-family: var(--font-round);
+  font-size: 17px;
+}
+
+.compare-highlight-hours {
+  display: flex;
+  flex: none;
+  gap: 8px;
+}
+
+.compare-highlight-hours span {
+  min-width: 94px;
+  display: grid;
+  gap: 2px;
+  padding: 8px 10px;
+  border: 1px solid color-mix(in srgb, var(--edge) 66%, transparent);
+  border-radius: 12px;
+  color: var(--dim);
+  background: color-mix(in srgb, var(--raised) 44%, var(--panel));
+  font-size: 9px;
+}
+
+.compare-highlight-hours b {
+  color: var(--fg);
+  font-family: var(--font-round);
+  font-size: 14px;
+}
+
+.compare-signature.familiar { margin-top: 24px; }
 
 .shared-games {
   margin-top: 30px;
@@ -199,8 +264,12 @@
   .compare-form { grid-template-columns: 1fr; }
   .compare-form > span { display: none; }
   .compare-heading { align-items: flex-start; flex-wrap: wrap; }
-  .compare-heading > button { width: 100%; margin-left: 0; }
+  .compare-actions { width: 100%; margin-left: 0; justify-content: flex-start; }
+  .compare-actions button { flex: 1 1 auto; }
   .compare-metrics { grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .compare-highlight { align-items: flex-start; flex-direction: column; }
+  .compare-highlight-hours { width: 100%; }
+  .compare-highlight-hours span { flex: 1 1 0; }
   .shared-game { grid-template-columns: 1fr; gap: 2px; }
   .shared-game span { text-align: left; }
 }
@@ -208,4 +277,7 @@
 @media (max-width: 480px) {
   .compare-metrics { grid-template-columns: 1fr; }
   .steam-person { width: calc(50% - 18px); }
+  .compare-actions { display: grid; }
+  .compare-actions button { width: 100%; }
+  .compare-highlight-hours { flex-direction: column; }
 }

@@ -3,7 +3,7 @@ import { readLocalConfig, readManifest, buildLibrary, summarise, shelve, hours, 
 import { analyticsFor, type LibraryAnalytics } from "./lib/analytics.js";
 import { familiarFor, steamCover, steamHeader, steamIcon, topNine } from "./lib/profile.js";
 import { compareLibraries, type LibraryComparison } from "./lib/compare.js";
-import { curatedCardFilename, downloadBlob, familiarCardFilename, proxiedSteamCover, renderCuratedCard, renderFamiliarCard, renderShareCard, shareCardFilename } from "./lib/share-card.js";
+import { comparisonCardFilename, curatedCardFilename, downloadBlob, familiarCardFilename, proxiedSteamCover, renderComparisonCard, renderCuratedCard, renderFamiliarCard, renderShareCard, shareCardFilename } from "./lib/share-card.js";
 import {
   comparisonShareUrl,
   fetchPublicSteamLibrary,
@@ -299,6 +299,8 @@ export default function App() {
   const [compareError, setCompareError] = useState<string | null>(null);
   const [comparison, setComparison] = useState<Compared | null>(null);
   const [compareCopied, setCompareCopied] = useState(false);
+  const [compareCardRendering, setCompareCardRendering] = useState(false);
+  const [compareCardError, setCompareCardError] = useState<string | null>(null);
   const [view, setView] = useState<"shelf" | "analytics" | "top">(shared.top ? "top" : "shelf");
   const [libraryQuery, setLibraryQuery] = useState("");
   const [librarySort, setLibrarySort] = useState<LibrarySort>(() =>
@@ -357,6 +359,7 @@ export default function App() {
 
   const runComparison = useCallback(async () => {
     setCompareError(null);
+    setCompareCardError(null);
     setComparison(null);
     if (normaliseSteamProfileInput(compareLeft) === normaliseSteamProfileInput(compareRight)) {
       setCompareError("Choose two different Steam profiles to compare.");
@@ -496,6 +499,26 @@ export default function App() {
     await navigator.clipboard.writeText(comparisonShareUrl(window.location.href, comparison.left.steamid, comparison.right.steamid));
     setCompareCopied(true);
     window.setTimeout(() => setCompareCopied(false), 1600);
+  }, [comparison]);
+
+  const downloadComparisonCard = useCallback(async () => {
+    if (!comparison) return;
+    setCompareCardError(null);
+    setCompareCardRendering(true);
+    const leftName = displayName(comparison.left);
+    const rightName = displayName(comparison.right);
+    try {
+      const blob = await renderComparisonCard({
+        leftName,
+        rightName,
+        comparison: comparison.result,
+      });
+      downloadBlob(blob, comparisonCardFilename(leftName, rightName));
+    } catch (error) {
+      setCompareCardError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setCompareCardRendering(false);
+    }
   }, [comparison]);
 
   return (
@@ -764,13 +787,32 @@ export default function App() {
               <SteamPerson library={comparison.left} />
               <span className="compare-cross">×</span>
               <SteamPerson library={comparison.right} />
-              <button onClick={() => void copyComparisonLink()}><CuteIcon name="share" className="button-icon" />{compareCopied ? "Link copied" : "Share comparison"}</button>
+              <div className="compare-actions">
+                <button disabled={compareCardRendering} onClick={() => void downloadComparisonCard()}>
+                  <CuteIcon name="download" className="button-icon" />
+                  {compareCardRendering ? "Making card…" : "Download comparison card"}
+                </button>
+                <button onClick={() => void copyComparisonLink()}><CuteIcon name="share" className="button-icon" />{compareCopied ? "Link copied" : "Share comparison"}</button>
+              </div>
             </div>
+            {compareCardError && <p className="err">{compareCardError}</p>}
             <div className="compare-metrics">
               <div className="metric"><span className="metric-icon"><CuteIcon name="heart" /></span><b>{Math.round(comparison.result.overlapPercent)}%</b><span>library overlap</span></div>
               <div className="metric"><span className="metric-icon"><CuteIcon name="shelf" /></span><b>{comparison.result.sharedCount}</b><span>owned by both</span></div>
               <div className="metric"><span className="metric-icon"><CuteIcon name="friends" /></span><b>{comparison.result.mutuallyPlayedCount}</b><span>played by both</span></div>
             </div>
+            {comparison.result.mutuallyPlayed[0] && (
+              <div className="compare-highlight">
+                <div>
+                  <p className="eyebrow">Strongest shared play signal</p>
+                  <h3>{comparison.result.mutuallyPlayed[0].name ?? `app ${comparison.result.mutuallyPlayed[0].appid}`}</h3>
+                </div>
+                <div className="compare-highlight-hours">
+                  <span><b>{hours(comparison.result.mutuallyPlayed[0].leftMinutes)}h</b>{displayName(comparison.left)}</span>
+                  <span><b>{hours(comparison.result.mutuallyPlayed[0].rightMinutes)}h</b>{displayName(comparison.right)}</span>
+                </div>
+              </div>
+            )}
             <div className="compare-signature familiar">
               <span className="familiar-mark familiar-cute" aria-hidden="true">
                 <span className="familiar-emoji">{signatureEmoji(comparison.result.signature.object)}</span>
