@@ -14,9 +14,13 @@ export interface LibraryComparison {
   rightCount: number;
   sharedCount: number;
   unionCount: number;
+  leftOnlyCount: number;
+  rightOnlyCount: number;
   overlapPercent: number;
   mutuallyPlayedCount: number;
   mutuallyPlayed: SharedGame[];
+  /** Shared ownership where exactly one profile has recorded playtime. */
+  oneSidedPlayed: SharedGame[];
   signature: {
     name: string;
     object: string;
@@ -51,6 +55,12 @@ export function compareLibraries(left: Game[], right: Game[]): LibraryComparison
       return bMutual - aMutual || (b.leftMinutes + b.rightMinutes) - (a.leftMinutes + a.rightMinutes);
     });
 
+  const oneSidedPlayed = shared
+    .filter((game) => (game.leftMinutes > 0) !== (game.rightMinutes > 0))
+    .sort((a, b) => Math.max(b.leftMinutes, b.rightMinutes) - Math.max(a.leftMinutes, a.rightMinutes));
+
+  const leftOnlyCount = left.filter((game) => !rightById.has(game.appid)).length;
+  const rightOnlyCount = right.filter((game) => !leftById.has(game.appid)).length;
   const overlapPercent = union.size ? (shared.length / union.size) * 100 : 0;
   const roundedOverlap = Math.round(overlapPercent);
   const signature = comparisonSignature(roundedOverlap, mutuallyPlayed.length, shared.length);
@@ -60,9 +70,12 @@ export function compareLibraries(left: Game[], right: Game[]): LibraryComparison
     rightCount: right.length,
     sharedCount: shared.length,
     unionCount: union.size,
+    leftOnlyCount,
+    rightOnlyCount,
     overlapPercent,
     mutuallyPlayedCount: mutuallyPlayed.length,
     mutuallyPlayed,
+    oneSidedPlayed,
     signature,
   };
 }
