@@ -21,6 +21,9 @@ export const SAMPLE_CONFIG = `
   "289070"  { "playTime" "0" }
   "292030"  { "playTime" "0" }
   "440"     { "playTime" "0" }
+  "646570"  { "playTime" "0" }
+  "504230"  { "playTime" "0" }
+  "391540"  { "playTime" "0" }
   "570"     { "playTime" "0" }
 } } } } }`;
 
@@ -41,6 +44,9 @@ export const SAMPLE_MANIFESTS = [
   M("289070", "Sid Meier's Civilization VI", "42949672960"),
   M("292030", "The Witcher 3: Wild Hunt", "38654705664"),
   M("440", "Team Fortress 2", "26843545600"),
+  M("646570", "Slay the Spire", "8589934592"),
+  M("504230", "Celeste", "6442450944"),
+  M("391540", "Undertale", "4294967296"),
   // Installed, and its manifest carries no size. The disk figures are a floor because of it.
   M("570", "Dota 2", null),
 ];
