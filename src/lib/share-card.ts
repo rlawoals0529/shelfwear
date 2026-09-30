@@ -287,13 +287,16 @@ export async function renderShareCard(input: ShareCardInput): Promise<Blob> {
   const description = wrapByMeasure(ctx, input.familiar.description, 720, 2);
   description.forEach((line, index) => ctx.fillText(line, PAD, footerY + 111 + index * 25));
 
-  ctx.fillStyle = theme.accent2;
-  ctx.font = "600 18px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  ctx.textAlign = "right";
-  ctx.fillText(input.familiar.animal, WIDTH - PAD, footerY + 77);
+  // Keep the footer clean: the previous free-floating familiar glyph/string at the lower
+  // right read like a misplaced game icon in exported cards. Use one aligned text block
+  // instead, on the same baseline as the familiar details.
   ctx.fillStyle = theme.dim;
-  ctx.font = "400 15px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  ctx.fillText("playtime, not a personality test", WIDTH - PAD, footerY + 108);
+  ctx.font = "500 15px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.textAlign = "right";
+  ctx.fillText("playtime pattern · not a personality test", WIDTH - PAD, footerY + 78);
+  ctx.fillStyle = theme.accent;
+  ctx.font = "700 16px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.fillText("shelfwear ♡", WIDTH - PAD, footerY + 106);
   ctx.textAlign = "left";
 
   return canvasBlob(canvas);
@@ -460,10 +463,13 @@ export async function renderCuratedCard(input: CuratedTopGames): Promise<Blob> {
   ctx.font = "400 16px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
   ctx.fillText("a hand-picked list · not ranked by playtime", PAD, footerY + 75);
 
-  ctx.fillStyle = theme.accent2;
-  ctx.font = "700 22px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.fillStyle = theme.accent;
+  ctx.font = "700 16px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
   ctx.textAlign = "right";
-  ctx.fillText("૮ ˶ᵔ ᵕ ᵔ˶ ა", WIDTH - PAD, footerY + 55);
+  ctx.fillText("shelfwear ♡", WIDTH - PAD, footerY + 48);
+  ctx.fillStyle = theme.dim;
+  ctx.font = "500 14px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.fillText("hand-picked by you", WIDTH - PAD, footerY + 74);
   ctx.textAlign = "left";
 
   return canvasBlob(canvas);
