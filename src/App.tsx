@@ -3,7 +3,7 @@ import { readLocalConfig, readManifest, buildLibrary, summarise, shelve, hours, 
 import { analyticsFor, type LibraryAnalytics } from "./lib/analytics.js";
 import { familiarFor, steamCover, steamHeader, steamIcon, topNine } from "./lib/profile.js";
 import { compareLibraries, type LibraryComparison } from "./lib/compare.js";
-import { curatedCardFilename, downloadBlob, proxiedSteamCover, renderCuratedCard, renderShareCard, shareCardFilename } from "./lib/share-card.js";
+import { curatedCardFilename, downloadBlob, familiarCardFilename, proxiedSteamCover, renderCuratedCard, renderFamiliarCard, renderShareCard, shareCardFilename } from "./lib/share-card.js";
 import {
   comparisonShareUrl,
   fetchPublicSteamLibrary,
@@ -262,9 +262,6 @@ function MetricCard({
   );
 }
 
-const familiarEmoji = (animal: string): string =>
-  ({ cat: "🐱", moth: "🦋", magpie: "🐦", fox: "🦊" } as Record<string, string>)[animal] ?? "✨";
-
 const signatureEmoji = (object: string): string =>
   ({ bookends: "📚", campfire: "🔥", bookmarks: "🔖", shelves: "🪵" } as Record<string, string>)[object] ?? "♡";
 
@@ -293,6 +290,9 @@ export default function App() {
   const [shareCopied, setShareCopied] = useState(false);
   const [cardRendering, setCardRendering] = useState(false);
   const [cardError, setCardError] = useState<string | null>(null);
+  const [familiarRendering, setFamiliarRendering] = useState(false);
+  const [familiarError, setFamiliarError] = useState<string | null>(null);
+  const [familiarCopied, setFamiliarCopied] = useState(false);
   const [compareLeft, setCompareLeft] = useState(shared.compare?.[0] ?? STEAM_PROFILE_PREFIX);
   const [compareRight, setCompareRight] = useState(shared.compare?.[1] ?? STEAM_PROFILE_PREFIX);
   const [comparing, setComparing] = useState(false);
@@ -456,6 +456,33 @@ export default function App() {
       setCardRendering(false);
     }
   }, [familiar, loaded.kind, loaded.profile?.name, nine]);
+
+  const downloadFamiliarCard = useCallback(async () => {
+    setFamiliarError(null);
+    setFamiliarRendering(true);
+    try {
+      const profileName = loaded.kind === "steam" ? loaded.profile?.name ?? null : null;
+      const blob = await renderFamiliarCard({ familiar, profileName });
+      downloadBlob(blob, familiarCardFilename(familiar.name));
+    } catch (error) {
+      setFamiliarError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setFamiliarRendering(false);
+    }
+  }, [familiar, loaded.kind, loaded.profile?.name]);
+
+  const copyFamiliar = useCallback(async () => {
+    const text = [
+      `My Shelfwear familiar: ${familiar.name} ${familiar.glyph}`,
+      familiar.description,
+      familiar.evidence,
+      ...familiar.signals.map((signal) => `${signal.label}: ${signal.value}`),
+      "A library pattern, not a personality test.",
+    ].join("\n");
+    await navigator.clipboard.writeText(text);
+    setFamiliarCopied(true);
+    window.setTimeout(() => setFamiliarCopied(false), 1600);
+  }, [familiar]);
 
   const copyShelfLink = useCallback(async () => {
     if (!loaded.steamid) return;
@@ -683,16 +710,31 @@ export default function App() {
             ))}
           </div>
           <p className="note">Download card exports a 1080×1350 PNG using the current Shelfwear palette. Missing cover art falls back to a typographic tile.</p>
-          <div className="familiar">
+          <div className="familiar familiar-v2">
             <span className="familiar-mark familiar-cute" aria-hidden="true">
-              <span className="familiar-emoji">{familiarEmoji(familiar.animal)}</span>
+              <span className="familiar-emoji">{familiar.glyph}</span>
               <span className="familiar-kaomoji">♡</span>
             </span>
-            <div>
+            <div className="familiar-copy">
               <p className="eyebrow">Shelf familiar</p>
               <h3>{familiar.name}</h3>
               <p>{familiar.description}</p>
-              <p className="note">{familiar.evidence} A playful description of the library pattern, not a personality test.</p>
+              <div className="familiar-signals" aria-label="Why this Shelf familiar was chosen">
+                {familiar.signals.map((signal) => (
+                  <span key={signal.label}><small>{signal.label}</small><b>{signal.value}</b></span>
+                ))}
+              </div>
+              <p className="note familiar-evidence"><b>Why this one:</b> {familiar.evidence}</p>
+              <div className="familiar-actions">
+                <button type="button" disabled={familiarRendering} onClick={() => void downloadFamiliarCard()}>
+                  <CuteIcon name="download" className="button-icon" />{familiarRendering ? "Making familiar card…" : "Download familiar card"}
+                </button>
+                <button type="button" onClick={() => void copyFamiliar()}>
+                  <CuteIcon name="copy" className="button-icon" />{familiarCopied ? "Copied" : "Copy familiar"}
+                </button>
+              </div>
+              {familiarError && <p className="err">{familiarError}</p>}
+              <p className="note">This is a playful description of observable library patterns, not a personality test or a claim about you.</p>
             </div>
           </div>
         </section>
