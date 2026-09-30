@@ -162,3 +162,26 @@ test("new story links use story= and old top= links still open", async ({ page, 
   await expect(page.getByLabel("Shelf story card title")).toHaveValue("games that shaped me");
   await expect(page.locator(".curated-list-row")).toContainText("Hades");
 });
+
+
+test("downloads a standalone Shelf Familiar card with transparent evidence", async ({ page }) => {
+  await page.goto("/");
+
+  const familiar = page.locator(".familiar-v2");
+  await expect(familiar).toBeVisible();
+  await expect(familiar.locator(".familiar-signals > span")).toHaveCount(3);
+  await expect(familiar.getByText("Why this one:", { exact: false })).toBeVisible();
+
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Download familiar card" }).click();
+  const download = await downloadPromise;
+
+  expect(download.suggestedFilename()).toMatch(/^shelfwear-[a-z0-9-]+-familiar\.png$/);
+  const path = await download.path();
+  expect(path).not.toBeNull();
+
+  const bytes = await readFile(path!);
+  expect(bytes.subarray(0, 8)).toEqual(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+  expect(bytes.readUInt32BE(16)).toBe(1080);
+  expect(bytes.readUInt32BE(20)).toBe(1350);
+});
