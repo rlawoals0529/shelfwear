@@ -43,7 +43,7 @@ body {
   position: absolute;
   width: 172px;
   height: 112px;
-  right: -86px;
+  right: 0;
   top: 18px;
   border-radius: 58% 42% 48% 52% / 48% 46% 54% 52%;
   background:
@@ -447,7 +447,7 @@ h1.display {
   .hero::after {
     width: 130px;
     height: 90px;
-    right: -58px;
+    right: 0;
   }
 
   .import-layout {
@@ -498,7 +498,7 @@ h1.display {
   .hero::after {
     width: 86px;
     height: 62px;
-    right: -34px;
+    right: 0;
     top: 20px;
     opacity: .58;
   }
