@@ -60,6 +60,32 @@ jobs:
         env:
           STEAM_WEB_API_KEY: ${{ secrets.STEAM_WEB_API_KEY }}
 
+      - name: Verify deployed site and Pages API bridge
+        env:
+          DEPLOYMENT_URL: ${{ steps.deploy.outputs.deployment-url }}
+        run: |
+          set -euo pipefail
+          if [ -z "$DEPLOYMENT_URL" ]; then
+            echo "::error::Wrangler did not return a deployment URL."
+            exit 1
+          fi
+
+          curl --fail --silent --show-error --retry 4 --retry-delay 2 "$DEPLOYMENT_URL/" > /tmp/shelfwear-index.html
+          grep -qi 'shelfwear' /tmp/shelfwear-index.html
+
+          status="$(
+            curl --silent --show-error --retry 4 --retry-delay 2               --header 'Origin: https://rlawoals0529.github.io'               --dump-header /tmp/shelfwear-api-headers.txt               --output /tmp/shelfwear-api-body.json               --write-out '%{http_code}'               "$DEPLOYMENT_URL/api/steam/library?profile=not-valid"
+          )"
+
+          if [ "$status" != "400" ]; then
+            echo "::error::Expected the invalid-profile smoke check to return 400; got $status."
+            cat /tmp/shelfwear-api-body.json
+            exit 1
+          fi
+          grep -qi '^content-type: application/json' /tmp/shelfwear-api-headers.txt
+          grep -qi '^access-control-allow-origin: https://rlawoals0529.github.io' /tmp/shelfwear-api-headers.txt
+          grep -q '"error"' /tmp/shelfwear-api-body.json
+
       - name: Record deployment URL
         env:
           DEPLOYMENT_URL: ${{ steps.deploy.outputs.deployment-url }}
@@ -67,6 +93,7 @@ jobs:
           echo "### Shelfwear Cloudflare deployment" >> "$GITHUB_STEP_SUMMARY"
           if [ -n "$DEPLOYMENT_URL" ]; then
             echo "$DEPLOYMENT_URL" >> "$GITHUB_STEP_SUMMARY"
+            echo "Live smoke check: PASS" >> "$GITHUB_STEP_SUMMARY"
           else
             echo "Wrangler completed without returning a deployment URL in the action output." >> "$GITHUB_STEP_SUMMARY"
           fi
