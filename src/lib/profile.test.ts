@@ -36,7 +36,7 @@ describe("familiarFor", () => {
 });
 
 describe("steamCover", () => {
-  it("builds the same-origin official Steam artwork proxy URL", () => {
-    expect(steamCover("730")).toBe("/api/steam/cover/730");
+  it("builds the official Steam artwork CDN URL", () => {
+    expect(steamCover("730")).toBe("https://shared.steamstatic.com/store_item_assets/steam/apps/730/library_600x900.jpg");
   });
 });
