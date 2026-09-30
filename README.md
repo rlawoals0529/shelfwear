@@ -12,13 +12,15 @@ Drop in `localconfig.vdf` and your `appmanifest_*.acf` files. They are parsed in
 
 ### Public Steam profile — easiest to share
 
-On a Cloudflare Workers deployment, paste a public Steam profile URL or 64-bit SteamID. The Worker keeps the Steam Web API key server-side and asks Steam only for public owned-game/playtime data. If Game details are private, Steam will not return the library.
+On a Cloudflare Workers deployment, paste a public Steam profile URL or 64-bit SteamID. The Worker keeps the Steam Web API key server-side and asks Steam only for public owned-game/playtime data plus the public profile summary used for the display name/avatar. If Game details are private, Steam will not return the library.
 
 The social summary adds:
 
 - **Your nine** — the nine titles with the most recorded playtime, in a 3×3 grid.
 - **Shelf familiar** — a deterministic, playful description based only on observable playtime/library patterns. It describes the library shape, not the person.
 - **Copy summary** — a text version of the nine for sharing anywhere.
+- **Share shelf** — a stateless URL containing only the resolved public SteamID. Opening it prefills the profile so Shelfwear can rebuild the result live; no library snapshot is stored.
+- **Compare two shelves** — ownership overlap, games with recorded playtime on both profiles, and a shared-shelf signature. Comparison links likewise contain only the two public SteamIDs.
 
 ## What it tells you
 
@@ -26,6 +28,7 @@ The social summary adds:
 - How many titles are represented and how many have **never been launched**.
 - **How much disk the unplayed ones are holding** when local manifests provide size data.
 - How few titles make up half of all recorded hours.
+- For two public profiles, **library overlap** is the intersection divided by the combined unique library; **played by both** only counts shared games where both profiles have recorded playtime.
 
 ## Data boundaries
 
@@ -33,7 +36,7 @@ Local mode and public-profile mode know different things and Shelfwear keeps tha
 
 `localconfig.vdf` only lists apps this Steam client has a local record of. Anything never seen by that client leaves no trace, so local counts are floors rather than account totals.
 
-Public-profile mode uses Steam's `GetOwnedGames` response. It can be broader than the local files, but only when the profile's Game details are visible. It does not provide local disk usage.
+Public-profile mode uses Steam's `GetOwnedGames` response. It can be broader than the local files, but only when the profile's Game details are visible. It does not provide local disk usage or last-played timestamps. The Worker also uses `GetPlayerSummaries` for public display metadata. API responses use `Cache-Control: no-store`, and Shelfwear does not persist imported libraries in KV, D1, or another database.
 
 ## Cloudflare Workers deployment
 
@@ -58,7 +61,7 @@ Then deploy:
 npx wrangler deploy
 ```
 
-The checked-in Wrangler config uses the current Workers Static Assets model. GitHub Pages can remain in place until the Worker deployment has been verified.
+The checked-in Wrangler config uses the current Workers Static Assets model. GitHub Pages can remain in place until the Worker deployment has been verified; on Pages, local mode still works and Worker-backed actions explain that a Cloudflare deployment is required.
 
 ## The files
 
@@ -87,7 +90,7 @@ npm install
 npm run dev
 ```
 
-`npm test` covers parser/arithmetic/social-summary behavior; `npm run e2e` drives a browser against Steam-shaped fixtures.
+`npm test` covers parser/arithmetic/social-summary/share-link/comparison behavior; `npm run e2e` drives a browser against Steam-shaped fixtures.
 
 The page opens on clearly labeled synthetic sample data so there is something to inspect before loading a library.
 
