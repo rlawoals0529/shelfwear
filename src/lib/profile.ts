@@ -66,3 +66,8 @@ export function steamCover(appid: string): string {
 export function steamHeader(appid: string): string {
   return `https://cdn.cloudflare.steamstatic.com/steam/apps/${encodeURIComponent(appid)}/header.jpg`;
 }
+
+/** Official Steam community icon from the hash returned by GetOwnedGames. */
+export function steamIcon(appid: string, iconHash: string): string {
+  return `https://media.steampowered.com/steamcommunity/public/images/apps/${encodeURIComponent(appid)}/${encodeURIComponent(iconHash)}.jpg`;
+}
