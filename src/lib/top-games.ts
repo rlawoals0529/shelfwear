@@ -1,15 +1,27 @@
+export type ShelfStoryStyle = "scrapbook" | "polaroid" | "poster";
+
 export interface CuratedGame {
   name: string;
   appid: string | null;
   /** Official Steam community icon hash; optional, public, and only used as an artwork fallback. */
   iconHash?: string | null;
+  /** Optional author-written context for why this game belongs in the story. */
+  note?: string;
 }
 
 export interface CuratedTopGames {
   title: string;
   caption: string;
   games: CuratedGame[];
+  /** Visual treatment only. It never changes the underlying game data. */
+  style?: ShelfStoryStyle;
 }
+
+export const SHELF_STORY_STYLES: readonly { id: ShelfStoryStyle; label: string; description: string }[] = [
+  { id: "scrapbook", label: "Scrapbook", description: "Tape, soft paper edges, and little doodles." },
+  { id: "polaroid", label: "Polaroid", description: "Bright photo-card frames with more breathing room." },
+  { id: "poster", label: "Poster", description: "Cleaner edges and a bolder, more graphic grid." },
+] as const;
 
 export interface ShelfStoryPreset {
   id: string;
@@ -61,6 +73,7 @@ export const CURATED_LIMIT = 9;
 const TITLE_LIMIT = 48;
 const CAPTION_LIMIT = 120;
 const GAME_NAME_LIMIT = 80;
+const GAME_NOTE_LIMIT = 42;
 
 const clean = (value: string, max: number): string =>
   value.replace(/\s+/g, " ").trim().slice(0, max);
@@ -91,13 +104,19 @@ export function normaliseCuratedTopGames(input: Partial<CuratedTopGames>): Curat
     if (!name) continue;
     const appid = raw?.appid && /^\d{1,10}$/.test(raw.appid) ? raw.appid : null;
     const iconHash = raw?.iconHash && /^[a-f0-9]{40}$/i.test(raw.iconHash) ? raw.iconHash.toLowerCase() : null;
+    const note = clean(raw?.note ?? "", GAME_NOTE_LIMIT);
     const key = `${name.toLowerCase()}\u0000${appid ?? ""}`;
     if (seen.has(key)) continue;
     seen.add(key);
-    games.push({ name, appid, iconHash });
+    games.push({ name, appid, iconHash, ...(note ? { note } : {}) });
   }
 
-  return { title, caption, games };
+  const style: ShelfStoryStyle =
+    input.style === "polaroid" || input.style === "poster" || input.style === "scrapbook"
+      ? input.style
+      : "scrapbook";
+
+  return { title, caption, games, style };
 }
 
 const toBase64Url = (value: string): string => {
@@ -120,11 +139,12 @@ export function encodeCuratedTopGames(input: CuratedTopGames): string {
   const compact = {
     t: list.title,
     c: list.caption || undefined,
-    g: list.games.map((game) =>
-      game.appid
-        ? (game.iconHash ? [game.name, game.appid, game.iconHash] : [game.name, game.appid])
-        : [game.name],
-    ),
+    s: list.style === "scrapbook" ? undefined : list.style,
+    g: list.games.map((game) => {
+      if (game.note) return [game.name, game.appid, game.iconHash ?? null, game.note];
+      if (game.appid) return game.iconHash ? [game.name, game.appid, game.iconHash] : [game.name, game.appid];
+      return [game.name];
+    }),
   };
   return toBase64Url(JSON.stringify(compact));
 }
@@ -135,6 +155,7 @@ export function decodeCuratedTopGames(value: string | null | undefined): Curated
     const parsed = JSON.parse(fromBase64Url(value)) as {
       t?: unknown;
       c?: unknown;
+      s?: unknown;
       g?: unknown;
     };
     if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.g)) return null;
@@ -144,12 +165,14 @@ export function decodeCuratedTopGames(value: string | null | undefined): Curated
       const iconHash = typeof entry[2] === "string" && /^[a-f0-9]{40}$/i.test(entry[2])
         ? entry[2].toLowerCase()
         : null;
-      return { name: entry[0], appid, iconHash };
+      const note = typeof entry[3] === "string" ? entry[3] : "";
+      return { name: entry[0], appid, iconHash, ...(note ? { note } : {}) };
     }).filter((game): game is CuratedGame => game !== null);
 
     return normaliseCuratedTopGames({
       title: typeof parsed.t === "string" ? parsed.t : "shelf story",
       caption: typeof parsed.c === "string" ? parsed.c : "",
+      style: parsed.s === "polaroid" || parsed.s === "poster" || parsed.s === "scrapbook" ? parsed.s : "scrapbook",
       games,
     });
   } catch {
