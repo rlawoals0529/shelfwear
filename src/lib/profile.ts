@@ -22,20 +22,23 @@ export function familiarFor(games: Game[]): Familiar {
   const topThree = totalMinutes ? ranked.slice(0, 3).reduce((sum, game) => sum + game.minutes, 0) / totalMinutes : 0;
   const untouchedShare = games.length ? games.filter((game) => game.minutes === 0).length / games.length : 0;
 
-  if (topOne >= 0.38) {
-    return {
-      name: "Hearth Cat",
-      animal: "cat",
-      description: "This shelf keeps returning to one especially warm spot.",
-      evidence: `${Math.round(topOne * 100)}% of recorded playtime sits in one game.`,
-    };
-  }
+  // A mostly untouched shelf is the stronger library-level signal. Check it before
+  // concentration, otherwise a shelf with one played game and eleven untouched games
+  // looks like a single-game devotee simply because its only recorded time is 100%.
   if (untouchedShare >= 0.55 && games.length >= 12) {
     return {
       name: "Lantern Moth",
       animal: "moth",
       description: "This shelf is very good at finding the next bright thing.",
       evidence: `${Math.round(untouchedShare * 100)}% of the games here have no recorded playtime.`,
+    };
+  }
+  if (topOne >= 0.38) {
+    return {
+      name: "Hearth Cat",
+      animal: "cat",
+      description: "This shelf keeps returning to one especially warm spot.",
+      evidence: `${Math.round(topOne * 100)}% of recorded playtime sits in one game.`,
     };
   }
   if (played.length >= 24 && topThree < 0.45) {
