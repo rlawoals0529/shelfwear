@@ -41,8 +41,9 @@ const DEFAULT_THEME: ShareCardTheme = {
   edge: "#4e4147",
 };
 
-export function proxiedSteamCover(appid: string): string {
-  return steamApiUrl(`/api/steam/cover/${encodeURIComponent(appid)}`);
+export function proxiedSteamCover(appid: string, iconHash?: string | null): string {
+  const path = `/api/steam/cover/${encodeURIComponent(appid)}`;
+  return steamApiUrl(iconHash ? `${path}?icon=${encodeURIComponent(iconHash)}` : path);
 }
 
 export function shareCardFilename(profileName?: string | null): string {
@@ -191,7 +192,7 @@ export async function renderShareCard(input: ShareCardInput): Promise<Blob> {
   ctx.fillText("the games with the most recorded playtime", PAD, 163);
 
   const coverImages = input.useSteamCovers
-    ? await Promise.all(input.games.slice(0, 9).map((game) => loadImage(proxiedSteamCover(game.appid))))
+    ? await Promise.all(input.games.slice(0, 9).map((game) => loadImage(proxiedSteamCover(game.appid, game.iconHash))))
     : input.games.slice(0, 9).map(() => null);
 
   for (let index = 0; index < 9; index++) {
