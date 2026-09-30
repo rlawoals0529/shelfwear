@@ -1,0 +1,152 @@
+/* Sharing stays visually subordinate to the shelf itself: these are connective controls and
+   explanations, not a second dashboard layered on top of the first one. */
+.social-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-end;
+}
+
+.steam-identity {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-top: 12px;
+  font-size: 13px;
+}
+.steam-identity img {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+.steam-identity .note { margin: 0; }
+
+.share-hint {
+  max-width: 720px;
+  margin: 14px 0 0;
+  padding-left: 12px;
+  border-left: 2px solid var(--accent-text, var(--accent));
+  color: var(--fg);
+  font-size: 13px;
+}
+
+.compare-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  max-width: 920px;
+  margin-top: 18px;
+}
+.compare-form input {
+  min-width: 0;
+  border: 1px solid var(--edge);
+  border-radius: var(--radius);
+  background: var(--raised);
+  color: var(--fg);
+  padding: 11px 13px;
+  font: inherit;
+}
+.compare-form input:focus {
+  outline: 2px solid color-mix(in srgb, var(--accent) 55%, transparent);
+  outline-offset: 2px;
+}
+.compare-form > span {
+  color: var(--dim);
+  font-size: 18px;
+}
+.compare-form button { white-space: nowrap; }
+
+.comparison-result {
+  max-width: 920px;
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 1px solid var(--edge);
+}
+.compare-heading {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.compare-heading > button { margin-left: auto; }
+.compare-cross {
+  color: var(--dim);
+  font-size: 18px;
+}
+.steam-person {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.steam-person img {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex: none;
+}
+.steam-person div { min-width: 0; }
+.steam-person b,
+.steam-person span { display: block; }
+.steam-person b {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 14px;
+}
+.steam-person span {
+  margin-top: 2px;
+  color: var(--dim);
+  font-size: 11px;
+}
+
+.compare-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+  max-width: 600px;
+  margin-top: 28px;
+}
+.compare-signature.familiar { margin-top: 28px; }
+
+.shared-games {
+  margin-top: 30px;
+  max-width: 760px;
+}
+.shared-games h3 {
+  margin-bottom: 8px;
+  font-size: 17px;
+}
+.shared-game {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: baseline;
+  padding: 8px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--edge) 62%, transparent);
+}
+.shared-game:last-child { border-bottom: 0; }
+.shared-game b { font-size: 13px; }
+.shared-game span {
+  color: var(--dim);
+  font-size: 11px;
+  text-align: right;
+}
+
+@media (max-width: 720px) {
+  .social-actions { justify-content: flex-start; }
+  .compare-form { grid-template-columns: 1fr; }
+  .compare-form > span { display: none; }
+  .compare-heading { align-items: flex-start; flex-wrap: wrap; }
+  .compare-heading > button { width: 100%; margin-left: 0; }
+  .compare-metrics { grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .shared-game { grid-template-columns: 1fr; gap: 2px; }
+  .shared-game span { text-align: left; }
+}
+
+@media (max-width: 480px) {
+  .compare-metrics { grid-template-columns: 1fr; }
+  .steam-person { width: calc(50% - 18px); }
+}
