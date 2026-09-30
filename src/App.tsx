@@ -167,6 +167,31 @@ function SectionTitle({
   );
 }
 
+function MetricCard({
+  icon,
+  value,
+  unit,
+  label,
+  warn = false,
+}: {
+  icon: CuteIconName;
+  value: React.ReactNode;
+  unit?: string;
+  label: React.ReactNode;
+  warn?: boolean;
+}) {
+  return (
+    <div className={warn ? "metric metric-card warn" : "metric metric-card"}>
+      <span className="metric-icon"><CuteIcon name={icon} /></span>
+      <div className="metric-value-row">
+        <b className="metric-value">{value}</b>
+        {unit && <span className="metric-unit">{unit}</span>}
+      </div>
+      <span className="metric-label">{label}</span>
+    </div>
+  );
+}
+
 const familiarEmoji = (animal: string): string =>
   ({ cat: "🐱", moth: "🦋", magpie: "🐦", fox: "🦊" } as Record<string, string>)[animal] ?? "✨";
 
@@ -420,28 +445,28 @@ export default function App() {
 
       <section className="panel stats-panel">
         <SectionTitle icon="sparkles" eyebrow="Tiny stats">What it adds up to</SectionTitle>
-        <div className="grid">
-          <div className="metric"><span className="metric-icon"><CuteIcon name="list" /></span><b><Ticker value={stats.games} /></b><span>games here</span></div>
-          <div className="metric"><span className="metric-icon"><CuteIcon name="clock" /></span><b><Ticker value={hours(stats.totalMinutes)} decimals={1} /></b><span>hours played</span></div>
-          <div className="metric warn"><span className="metric-icon"><CuteIcon name="heart" /></span><b><Ticker value={stats.neverPlayed} /></b><span>never launched</span></div>
+        <div className="grid stats-grid">
+          <MetricCard icon="list" value={<Ticker value={stats.games} />} label="games here" />
+          <MetricCard icon="clock" value={<Ticker value={hours(stats.totalMinutes)} decimals={1} />} label="hours played" />
+          <MetricCard icon="heart" value={<Ticker value={stats.neverPlayed} />} label="never launched" warn />
           {loaded.kind === "steam" ? (
             <>
-              <div className="metric"><span className="metric-icon"><CuteIcon name="archive" /></span><b>—</b><span>disk data unavailable</span></div>
-              <div className="metric"><span className="metric-icon"><CuteIcon name="folder" /></span><b>—</b><span>unplayed disk unavailable</span></div>
+              <MetricCard icon="archive" value="—" label="disk data unavailable" />
+              <MetricCard icon="folder" value="—" label="unplayed disk unavailable" />
             </>
           ) : (
             <>
-              <div className="metric"><span className="metric-icon"><CuteIcon name="archive" /></span><b><Ticker value={gb(stats.installedBytes)} decimals={1} suffix=" GB" /></b><span>installed</span></div>
-              <div className="metric warn"><span className="metric-icon"><CuteIcon name="folder" /></span><b><Ticker value={gb(stats.unplayedBytes)} decimals={1} suffix=" GB" /></b><span>held by unplayed</span></div>
+              <MetricCard icon="archive" value={<Ticker value={gb(stats.installedBytes)} decimals={1} />} unit="GB" label="installed" />
+              <MetricCard icon="folder" value={<Ticker value={gb(stats.unplayedBytes)} decimals={1} />} unit="GB" label="held by unplayed" warn />
             </>
           )}
-          <div className="metric">
-            <span className="metric-icon"><CuteIcon name="sparkles" /></span>
-            <b><Ticker value={stats.halfOfHoursIn} /></b>
-            <span>{stats.halfOfHoursIn === 1 ? "title is" : "titles are"} half your hours</span>
-          </div>
+          <MetricCard
+            icon="sparkles"
+            value={<Ticker value={stats.halfOfHoursIn} />}
+            label={<>{stats.halfOfHoursIn === 1 ? "title makes up" : "titles make up"} half your hours</>}
+          />
         </div>
-        <p className="note prose">
+        <p className="note prose stats-note">
           {loaded.kind === "steam" ? (
             <>Steam mode reflects the games Steam returned for this public profile. Steam does not expose local disk size or last-played timestamps through this import.</>
           ) : (
