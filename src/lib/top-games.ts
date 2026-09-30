@@ -80,7 +80,7 @@ export function steamAppIdFromInput(value: string): string | null {
 }
 
 export function normaliseCuratedTopGames(input: Partial<CuratedTopGames>): CuratedTopGames {
-  const title = clean(input.title ?? "", TITLE_LIMIT) || "my top games";
+  const title = clean(input.title ?? "", TITLE_LIMIT) || "shelf story";
   const caption = clean(input.caption ?? "", CAPTION_LIMIT);
   const seen = new Set<string>();
   const games: CuratedGame[] = [];
@@ -148,7 +148,7 @@ export function decodeCuratedTopGames(value: string | null | undefined): Curated
     }).filter((game): game is CuratedGame => game !== null);
 
     return normaliseCuratedTopGames({
-      title: typeof parsed.t === "string" ? parsed.t : "my top games",
+      title: typeof parsed.t === "string" ? parsed.t : "shelf story",
       caption: typeof parsed.c === "string" ? parsed.c : "",
       games,
     });
