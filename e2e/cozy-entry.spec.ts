@@ -344,3 +344,89 @@ test("fill from playtime preserves Steam icon fallbacks and styles them as badge
   await expect(art).toHaveAttribute("data-fallback", "icon");
   await expect(page.locator(".curated-list-row")).toContainText("Steam art · app 3681810");
 });
+
+
+test("copies a stateless invite from a loaded public shelf", async ({ page, context }) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.route("**/api/steam/library?*", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        steamid: "76561198000000000",
+        gameCount: 1,
+        profile: {
+          steamid: "76561198000000000",
+          name: "Invite Player",
+          avatar: null,
+          profileUrl: null,
+        },
+        games: [{ appid: "10", name: "Shared Quest", minutes: 120 }],
+      }),
+    });
+  });
+
+  await page.goto("/");
+  await page.getByLabel("Steam username, profile URL, or SteamID").fill("inviteplayer");
+  await page.getByRole("button", { name: "Read public profile" }).click();
+
+  const invite = page.getByRole("button", { name: "Copy invite link" });
+  await expect(invite).toBeVisible();
+  await invite.click();
+
+  const copied = await page.evaluate(() => navigator.clipboard.readText());
+  expect(copied).toContain("?invite=76561198000000000");
+  expect(copied).toContain("#compare");
+  expect(copied).not.toContain("compare=");
+  expect(copied).not.toContain("Shared%20Quest");
+});
+
+
+test("an invite fills the friend side and only asks the recipient for their profile", async ({ page }) => {
+  const requested: string[] = [];
+  await page.route("**/api/steam/library?*", async (route) => {
+    const profile = new URL(route.request().url()).searchParams.get("profile") ?? "";
+    requested.push(profile);
+    const inviter = profile === "76561198000000000";
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        steamid: inviter ? "76561198000000000" : "76561198000000001",
+        gameCount: 2,
+        profile: {
+          steamid: inviter ? "76561198000000000" : "76561198000000001",
+          name: inviter ? "Invite Player" : "Friend Player",
+          avatar: null,
+          profileUrl: null,
+        },
+        games: [
+          { appid: "10", name: "Shared Quest", minutes: inviter ? 600 : 300 },
+          { appid: inviter ? "20" : "30", name: inviter ? "Invite Only" : "Friend Only", minutes: 60 },
+        ],
+      }),
+    });
+  });
+
+  await page.goto("/?invite=76561198000000000#compare");
+
+  await expect(page.getByText(/A friend invited you to compare shelves/)).toBeVisible();
+
+  const inviter = page.getByLabel("Inviter Steam profile");
+  await expect(inviter).toHaveValue("76561198000000000");
+  await expect(inviter).toHaveAttribute("readonly", "");
+
+  const recipient = page.getByLabel("Your Steam profile for comparison");
+  await recipient.fill("friendplayer");
+
+  const compare = page.getByRole("button", { name: "Compare with friend" });
+  await expect(compare).toBeEnabled();
+  await compare.click();
+
+  const result = page.locator(".comparison-result");
+  await expect(result).toContainText("Invite Player");
+  await expect(result).toContainText("Friend Player");
+  await expect(result).toContainText("Shared Quest");
+  expect(requested).toContain("76561198000000000");
+  expect(requested).toContain("https://steamcommunity.com/id/friendplayer");
+});
