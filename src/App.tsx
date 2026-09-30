@@ -1281,7 +1281,7 @@ function TopGamesPage({ loadedGames, initial }: { loadedGames: Game[]; initial: 
                         <span className="curated-fallback-letter" aria-hidden="true">{game.name.charAt(0).toUpperCase()}</span>
                       )}
                       <span className="curated-rank">{index + 1}</span>
-                      <div className="curated-game-name">{game.name}</div>
+                      <div className={game.note ? "curated-game-name has-note" : "curated-game-name"}>{game.name}</div>
                       {game.note && <div className="curated-game-note">{game.note}</div>}
                     </article>
                   ) : (
