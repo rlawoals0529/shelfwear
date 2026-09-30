@@ -15,6 +15,14 @@ export interface PublicSteamLibrary {
 }
 
 export const STEAM_PROFILE_PREFIX = "https://steamcommunity.com/id/";
+export const SHELFWEAR_WORKER_ORIGIN = "https://shelfwear.rlawoals0529.workers.dev";
+
+export function steamApiUrl(path: string, hostname = typeof window === "undefined" ? "" : window.location.hostname): string {
+  const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+  return hostname.toLowerCase().endsWith("github.io")
+    ? `${SHELFWEAR_WORKER_ORIGIN}${normalizedPath}`
+    : normalizedPath;
+}
 
 export function normaliseSteamProfileInput(value: string): string {
   const trimmed = value.trim();
@@ -39,7 +47,7 @@ interface ApiLibrary {
 export async function fetchPublicSteamLibrary(profile: string): Promise<PublicSteamLibrary> {
   const normalized = normaliseSteamProfileInput(profile);
   if (!normalized) throw new Error("Add your Steam username, profile URL, or SteamID.");
-  const response = await fetch(`/api/steam/library?profile=${encodeURIComponent(normalized)}`);
+  const response = await fetch(steamApiUrl(`/api/steam/library?profile=${encodeURIComponent(normalized)}`));
   const data = await response.json().catch(() => null) as ApiLibrary | null;
 
   if (!data) {
