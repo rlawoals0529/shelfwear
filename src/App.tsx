@@ -24,6 +24,9 @@ import palettes from "./theme/palettes.json";
 
 type Manifest = NonNullable<ReturnType<typeof readManifest>>;
 type SourceKind = "sample" | "local" | "steam";
+type LibrarySort = "most-played" | "least-played" | "name-az" | "name-za" | "recent" | "largest";
+type LibraryFilter = "all" | "played" | "unplayed" | "installed";
+type LibraryDensity = "cozy" | "compact";
 
 interface Loaded {
   games: Game[];
@@ -274,6 +277,10 @@ export default function App() {
   const [comparison, setComparison] = useState<Compared | null>(null);
   const [compareCopied, setCompareCopied] = useState(false);
   const [view, setView] = useState<"shelf" | "analytics" | "top">(shared.top ? "top" : "shelf");
+  const [libraryQuery, setLibraryQuery] = useState("");
+  const [librarySort, setLibrarySort] = useState<LibrarySort>("most-played");
+  const [libraryFilter, setLibraryFilter] = useState<LibraryFilter>("all");
+  const [libraryDensity, setLibraryDensity] = useState<LibraryDensity>("cozy");
   const picker = useRef<HTMLInputElement>(null);
 
   const accept = useCallback(async (list: File[]) => {
@@ -340,6 +347,43 @@ export default function App() {
   const nine = useMemo(() => topNine(loaded.games), [loaded]);
   const familiar = useMemo(() => familiarFor(loaded.games), [loaded]);
   const analytics = useMemo(() => analyticsFor(loaded.games), [loaded]);
+
+  const effectiveLibrarySort: LibrarySort =
+    loaded.kind === "steam" && (librarySort === "recent" || librarySort === "largest")
+      ? "most-played"
+      : librarySort;
+  const effectiveLibraryFilter: LibraryFilter =
+    loaded.kind === "steam" && libraryFilter === "installed" ? "all" : libraryFilter;
+
+  const visibleGames = useMemo(() => {
+    const query = libraryQuery.trim().toLocaleLowerCase();
+    const filtered = loaded.games.filter((game) => {
+      if (query && !(game.name ?? `app ${game.appid}`).toLocaleLowerCase().includes(query)) return false;
+      if (effectiveLibraryFilter === "played" && game.minutes <= 0) return false;
+      if (effectiveLibraryFilter === "unplayed" && game.minutes !== 0) return false;
+      if (effectiveLibraryFilter === "installed" && !game.installed) return false;
+      return true;
+    });
+
+    const name = (game: Game) => (game.name ?? `app ${game.appid}`).toLocaleLowerCase();
+    return [...filtered].sort((a, b) => {
+      switch (effectiveLibrarySort) {
+        case "least-played":
+          return a.minutes - b.minutes || name(a).localeCompare(name(b));
+        case "name-az":
+          return name(a).localeCompare(name(b));
+        case "name-za":
+          return name(b).localeCompare(name(a));
+        case "recent":
+          return (b.lastPlayed ?? -1) - (a.lastPlayed ?? -1) || b.minutes - a.minutes;
+        case "largest":
+          return (b.bytes ?? -1) - (a.bytes ?? -1) || b.minutes - a.minutes;
+        case "most-played":
+        default:
+          return b.minutes - a.minutes || name(a).localeCompare(name(b));
+      }
+    });
+  }, [effectiveLibraryFilter, effectiveLibrarySort, libraryQuery, loaded.games]);
 
   /** What a shelf of untouched games is holding, said once, under the shelf itself. */
   const untouchedBytes = shelf.untouched.reduce((n, s) => n + (s.game.bytes ?? 0), 0);
@@ -711,21 +755,107 @@ export default function App() {
       </section>
 
       <section className="panel library-panel">
-        <SectionTitle icon="list" eyebrow="The whole shelf">Everything ({loaded.games.length})</SectionTitle>
-        <div className="rows">
-          {loaded.games.map((g) => (
-            <div className={g.minutes === 0 ? "row cold" : "row"} key={g.appid}>
-              <span className="hrs">{hours(g.minutes)}h</span>
-              <span className="name">{g.name ?? <em>app {g.appid}</em>}</span>
-              <span className="sz">
-                {g.bytes === null
-                  ? (g.installed ? "size unknown" : loaded.kind === "steam" ? "Steam profile" : "not installed")
-                  : `${gb(g.bytes)} GB`}
-                {loaded.kind !== "steam" ? ` · ${ago(g.lastPlayed)}` : ""}
-              </span>
-            </div>
-          ))}
+        <div className="library-heading">
+          <SectionTitle icon="list" eyebrow="The whole shelf">Everything ({loaded.games.length})</SectionTitle>
+          <span className="library-result-count">
+            showing <b>{visibleGames.length}</b>{visibleGames.length !== loaded.games.length ? ` of ${loaded.games.length}` : ""}
+          </span>
         </div>
+
+        <div className="library-tools">
+          <label className="library-search">
+            <span>Find a game</span>
+            <input
+              value={libraryQuery}
+              onChange={(event) => setLibraryQuery(event.target.value)}
+              placeholder="Search this shelf…"
+              aria-label="Search games in the whole shelf"
+            />
+          </label>
+
+          <div className="library-control-group">
+            <span className="library-control-label">Sort by</span>
+            <div className="library-chips" aria-label="Sort the whole shelf">
+              {([
+                ["most-played", "Most played"],
+                ["least-played", "Least played"],
+                ["name-az", "A–Z"],
+                ["name-za", "Z–A"],
+              ] as const).map(([value, label]) => (
+                <button
+                  type="button"
+                  key={value}
+                  className={effectiveLibrarySort === value ? "active" : ""}
+                  aria-pressed={effectiveLibrarySort === value}
+                  onClick={() => setLibrarySort(value)}
+                >
+                  {label}
+                </button>
+              ))}
+              {loaded.kind !== "steam" && (
+                <>
+                  <button type="button" className={effectiveLibrarySort === "recent" ? "active" : ""} aria-pressed={effectiveLibrarySort === "recent"} onClick={() => setLibrarySort("recent")}>Recently played</button>
+                  <button type="button" className={effectiveLibrarySort === "largest" ? "active" : ""} aria-pressed={effectiveLibrarySort === "largest"} onClick={() => setLibrarySort("largest")}>Largest</button>
+                </>
+              )}
+            </div>
+          </div>
+
+          <div className="library-control-group">
+            <span className="library-control-label">Show</span>
+            <div className="library-chips" aria-label="Filter the whole shelf">
+              {([
+                ["all", "All"],
+                ["played", "Played"],
+                ["unplayed", "Never played"],
+              ] as const).map(([value, label]) => (
+                <button
+                  type="button"
+                  key={value}
+                  className={effectiveLibraryFilter === value ? "active" : ""}
+                  aria-pressed={effectiveLibraryFilter === value}
+                  onClick={() => setLibraryFilter(value)}
+                >
+                  {label}
+                </button>
+              ))}
+              {loaded.kind !== "steam" && (
+                <button type="button" className={effectiveLibraryFilter === "installed" ? "active" : ""} aria-pressed={effectiveLibraryFilter === "installed"} onClick={() => setLibraryFilter("installed")}>Installed</button>
+              )}
+            </div>
+          </div>
+
+          <div className="library-density" aria-label="Library row size">
+            <span className="library-control-label">Rows</span>
+            <div className="library-chips">
+              <button type="button" className={libraryDensity === "cozy" ? "active" : ""} aria-pressed={libraryDensity === "cozy"} onClick={() => setLibraryDensity("cozy")}>Cozy</button>
+              <button type="button" className={libraryDensity === "compact" ? "active" : ""} aria-pressed={libraryDensity === "compact"} onClick={() => setLibraryDensity("compact")}>Compact</button>
+            </div>
+          </div>
+        </div>
+
+        {visibleGames.length > 0 ? (
+          <div className={`rows library-rows ${libraryDensity}`}>
+            {visibleGames.map((g) => (
+              <div className={g.minutes === 0 ? "row cold" : "row"} key={g.appid}>
+                <span className="hrs">{hours(g.minutes)}h</span>
+                <span className="name">{g.name ?? <em>app {g.appid}</em>}</span>
+                <span className="sz">
+                  {g.bytes === null
+                    ? (g.installed ? "size unknown" : loaded.kind === "steam" ? "Steam profile" : "not installed")
+                    : `${gb(g.bytes)} GB`}
+                  {loaded.kind !== "steam" ? ` · ${ago(g.lastPlayed)}` : ""}
+                </span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="library-empty">
+            <span aria-hidden="true">♡</span>
+            <b>No games match this little corner of the shelf.</b>
+            <button type="button" onClick={() => { setLibraryQuery(""); setLibraryFilter("all"); setLibrarySort("most-played"); }}>Clear filters</button>
+          </div>
+        )}
       </section>
         </>
       ) : view === "analytics" ? (
