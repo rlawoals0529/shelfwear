@@ -575,9 +575,11 @@ export async function renderFamiliarCard(input: FamiliarCardInput): Promise<Blob
     const x = PAD + index * (signalWidth + gap);
     const y = 772;
     roundedRect(ctx, x, y, signalWidth, 142, 20);
-    ctx.fillStyle = index === 1
-      ? colorMixFallback(theme.panel, theme.accent2)
-      : colorMixFallback(theme.panel, theme.accent);
+    ctx.fillStyle = theme.panel;
+    ctx.fill();
+
+    ctx.fillStyle = index === 1 ? theme.accent2 : theme.accent;
+    roundedRect(ctx, x + 12, y + 12, 34, 6, 3);
     ctx.fill();
 
     ctx.strokeStyle = theme.edge;
@@ -619,21 +621,6 @@ export async function renderFamiliarCard(input: FamiliarCardInput): Promise<Blob
   ctx.textAlign = "left";
 
   return canvasBlob(canvas);
-}
-
-function colorMixFallback(base: string, accent: string): string {
-  // Canvas cannot resolve CSS color-mix(). A subtle transparent wash keeps the card
-  // theme-aware without depending on browser CSS parsing inside canvas.
-  const canvas = document.createElement("canvas");
-  const ctx = canvas.getContext("2d");
-  if (!ctx) return base;
-  ctx.fillStyle = base;
-  const safeBase = ctx.fillStyle;
-  ctx.fillStyle = accent;
-  const safeAccent = ctx.fillStyle;
-  // Return the base and use the accent as a translucent overlay at draw time is ideal,
-  // but a stable theme color is preferable to guessing RGB parsing here.
-  return safeAccent === "#000000" && accent !== "#000000" ? safeBase : safeBase;
 }
 
 export function downloadBlob(blob: Blob, filename: string): void {
