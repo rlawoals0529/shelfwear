@@ -88,6 +88,15 @@ function drawCover(ctx: CanvasRenderingContext2D, image: CanvasImageSource, x: n
   const sourceWidth = image instanceof HTMLImageElement ? image.naturalWidth : (image as ImageBitmap).width;
   const sourceHeight = image instanceof HTMLImageElement ? image.naturalHeight : (image as ImageBitmap).height;
   const sourceRatio = sourceWidth / sourceHeight;
+
+  // A near-square response is Steam's app icon fallback, not poster art. Keep it intact and
+  // let the caller's paper/gradient tile frame it instead of blowing a tiny logo up to a crop.
+  if (sourceRatio >= .82 && sourceRatio <= 1.18) {
+    const inset = size * .3;
+    ctx.drawImage(image, x + inset, y + inset, size - inset * 2, size - inset * 2);
+    return;
+  }
+
   let sx = 0;
   let sy = 0;
   let sw = sourceWidth;
