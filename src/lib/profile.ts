@@ -59,5 +59,10 @@ export function familiarFor(games: Game[]): Familiar {
 
 /** Official Steam library artwork for ordinary <img> display. Canvas export uses the Worker proxy. */
 export function steamCover(appid: string): string {
-  return `https://shared.steamstatic.com/store_item_assets/steam/apps/${encodeURIComponent(appid)}/library_600x900.jpg`;
+  return `https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/${encodeURIComponent(appid)}/library_600x900.jpg`;
+}
+
+/** Stable official Steam header artwork used only when portrait artwork is unavailable. */
+export function steamHeader(appid: string): string {
+  return `https://cdn.cloudflare.steamstatic.com/steam/apps/${encodeURIComponent(appid)}/header.jpg`;
 }
