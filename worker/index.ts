@@ -1,6 +1,12 @@
 interface Env { STEAM_WEB_API_KEY?: string }
 
 type SteamGame = { appid: number; name?: string; playtime_forever?: number };
+type SteamPlayer = {
+  steamid?: string;
+  personaname?: string;
+  profileurl?: string;
+  avatarfull?: string;
+};
 
 const json = (body: unknown, status = 200) => Response.json(body, {
   status,
@@ -37,20 +43,41 @@ async function library(profile: string, key: string): Promise<Response> {
   const steamid = await resolveSteamId(profile, key);
   if (!steamid) return json({ error: "That does not look like a Steam profile URL or SteamID." }, 400);
 
-  const url = new URL("https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/");
-  url.searchParams.set("key", key);
-  url.searchParams.set("steamid", steamid);
-  url.searchParams.set("include_appinfo", "true");
-  url.searchParams.set("include_played_free_games", "true");
-  const response = await fetch(url);
-  if (!response.ok) return json({ error: "Steam did not return this library." }, 502);
-  const data = await response.json() as { response?: { game_count?: number; games?: SteamGame[] } };
+  const ownedUrl = new URL("https://api.steampowered.com/IPlayerService/GetOwnedGames/v1/");
+  ownedUrl.searchParams.set("key", key);
+  ownedUrl.searchParams.set("steamid", steamid);
+  ownedUrl.searchParams.set("include_appinfo", "true");
+  ownedUrl.searchParams.set("include_played_free_games", "true");
+
+  const summaryUrl = new URL("https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/");
+  summaryUrl.searchParams.set("key", key);
+  summaryUrl.searchParams.set("steamids", steamid);
+
+  const [ownedResponse, summaryResponse] = await Promise.all([
+    fetch(ownedUrl),
+    fetch(summaryUrl),
+  ]);
+  if (!ownedResponse.ok) return json({ error: "Steam did not return this library." }, 502);
+
+  const data = await ownedResponse.json() as { response?: { game_count?: number; games?: SteamGame[] } };
   const games = data.response?.games;
   if (!games) return json({ error: "This Steam library is private or unavailable. Make Game details public and try again." }, 404);
+
+  let player: SteamPlayer | undefined;
+  if (summaryResponse.ok) {
+    const summary = await summaryResponse.json() as { response?: { players?: SteamPlayer[] } };
+    player = summary.response?.players?.[0];
+  }
 
   return json({
     steamid,
     gameCount: data.response?.game_count ?? games.length,
+    profile: {
+      steamid,
+      name: player?.personaname ?? null,
+      avatar: player?.avatarfull ?? null,
+      profileUrl: player?.profileurl ?? null,
+    },
     games: games.map((game) => ({
       appid: String(game.appid),
       name: game.name ?? null,
