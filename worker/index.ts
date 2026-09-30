@@ -99,33 +99,117 @@ async function library(profile: string, key: string, request: Request): Promise<
   });
 }
 
+
+type SteamStoreDetails = {
+  header_image?: string;
+  capsule_image?: string;
+  capsule_imagev5?: string;
+  background?: string;
+  background_raw?: string;
+};
+
+const STEAM_IMAGE_HOSTS = [
+  "steamstatic.com",
+  "steamcdn-a.akamaihd.net",
+] as const;
+
+function allowedSteamImage(value: string | undefined): string | null {
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    if (url.protocol !== "https:") return null;
+    const allowed = STEAM_IMAGE_HOSTS.some((host) =>
+      url.hostname === host || url.hostname.endsWith(`.${host}`)
+    );
+    return allowed ? url.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
+function siblingSteamAsset(source: string | undefined, filename: string): string | null {
+  const safe = allowedSteamImage(source);
+  if (!safe) return null;
+  const original = new URL(safe);
+  const sibling = new URL(filename, original);
+  sibling.search = original.search;
+  return allowedSteamImage(sibling.toString());
+}
+
+async function steamStoreArtwork(appid: string): Promise<string[]> {
+  const url = new URL("https://store.steampowered.com/api/appdetails/");
+  url.searchParams.set("appids", appid);
+  url.searchParams.set("cc", "us");
+  url.searchParams.set("l", "english");
+
+  try {
+    const response = await fetch(url, {
+      headers: { "accept": "application/json" },
+    });
+    if (!response.ok) return [];
+    const payload = await response.json() as Record<string, { success?: boolean; data?: SteamStoreDetails }>;
+    const data = payload[appid]?.success ? payload[appid]?.data : undefined;
+    if (!data) return [];
+
+    const candidates = [
+      siblingSteamAsset(data.header_image, "library_600x900_2x.jpg"),
+      siblingSteamAsset(data.header_image, "library_600x900.jpg"),
+      allowedSteamImage(data.capsule_image),
+      allowedSteamImage(data.capsule_imagev5),
+      allowedSteamImage(data.header_image),
+      allowedSteamImage(data.background),
+      allowedSteamImage(data.background_raw),
+    ].filter((value): value is string => Boolean(value));
+
+    return [...new Set(candidates)];
+  } catch {
+    return [];
+  }
+}
+
+async function imageResponse(source: string, request: Request): Promise<Response | null> {
+  const upstream = await fetch(source);
+  const contentType = upstream.headers.get("content-type") ?? "";
+  if (!upstream.ok || !contentType.toLowerCase().startsWith("image/")) return null;
+  return new Response(upstream.body, {
+    status: 200,
+    headers: {
+      "content-type": contentType,
+      "cache-control": "public, max-age=86400, stale-while-revalidate=604800",
+      "x-content-type-options": "nosniff",
+      ...corsHeaders(request),
+    },
+  });
+}
+
 async function steamCover(appid: string, request: Request): Promise<Response> {
   if (!/^\d{1,10}$/.test(appid)) return new Response(null, { status: 400 });
 
-  // Steam's portrait library asset is ideal for the 3×3, but newer store assets can move
-  // behind hashed paths. Stay on official Steam/CDN hosts and fall back to the stable header
-  // artwork rather than leaving a blank card.
-  const sources = [
+  // Most games still have the classic un-hashed portrait path, so try that first.
+  const directSources = [
     `https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/${appid}/library_600x900.jpg`,
     `https://shared.fastly.steamstatic.com/store_item_assets/steam/apps/${appid}/library_600x900.jpg`,
     `https://cdn.cloudflare.steamstatic.com/steam/apps/${appid}/library_600x900.jpg`,
-    `https://cdn.cloudflare.steamstatic.com/steam/apps/${appid}/header.jpg`,
   ];
-
-  for (const source of sources) {
-    const upstream = await fetch(source);
-    const contentType = upstream.headers.get("content-type") ?? "";
-    if (!upstream.ok || !contentType.toLowerCase().startsWith("image/")) continue;
-    return new Response(upstream.body, {
-      status: 200,
-      headers: {
-        "content-type": contentType,
-        "cache-control": "public, max-age=86400, stale-while-revalidate=604800",
-        "x-content-type-options": "nosniff",
-        ...corsHeaders(request),
-      },
-    });
+  for (const source of directSources) {
+    const response = await imageResponse(source, request);
+    if (response) return response;
   }
+
+  // Newer Steam releases can put artwork below a content-hash directory. Ask Steam's store
+  // details endpoint for its current official image URL, then try portrait siblings in that
+  // exact directory before falling back to Steam's supplied capsule/header art.
+  for (const source of await steamStoreArtwork(appid)) {
+    const response = await imageResponse(source, request);
+    if (response) return response;
+  }
+
+  // Stable legacy header as the final official-Steam fallback.
+  const legacyHeader = await imageResponse(
+    `https://cdn.cloudflare.steamstatic.com/steam/apps/${appid}/header.jpg`,
+    request,
+  );
+  if (legacyHeader) return legacyHeader;
 
   return new Response(null, {
     status: 404,
