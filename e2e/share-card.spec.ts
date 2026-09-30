@@ -36,7 +36,7 @@ test("downloads a hand-picked top-games scrapbook card", async ({ page }) => {
   await page.getByRole("button", { name: "My top games" }).click();
   await page.getByLabel("Game name to add").fill("Hades");
   await page.getByLabel("Optional Steam AppID or store link").fill("1145360");
-  await page.getByRole("button", { name: "Add game" }).click();
+  await page.getByRole("button", { name: "Add game", exact: true }).click();
 
   const downloadPromise = page.waitForEvent("download");
   await page.getByRole("button", { name: "Download 1080×1350 card" }).click();
