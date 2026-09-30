@@ -325,3 +325,10 @@ button:hover:not(:disabled) {
 .import-panel .profile-form input {
   font-variant-numeric: tabular-nums;
 }
+
+
+/* Inline file paths sit on a tinted code chip; use ink rather than muted prose so the
+   smallest labels remain AA-readable on the warm paper palette. */
+code {
+  color: var(--fg);
+}
