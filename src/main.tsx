@@ -6,4 +6,5 @@ import "./social.css";
 import "./cozy.css";
 import "./cozy-fixes.css";
 import "./cozy-polish.css";
+import "./cozy-fit.css";
 createRoot(document.getElementById("root")!).render(<StrictMode><App /></StrictMode>);
