@@ -14,4 +14,5 @@ import "./curated.css";
 import "./profile-input.css";
 import "./artwork-fallback.css";
 import "./ui-alignment.css";
+import "./playful-polish.css";
 createRoot(document.getElementById("root")!).render(<StrictMode><App /></StrictMode>);
