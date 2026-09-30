@@ -5,7 +5,7 @@ const pixel = Buffer.from(
   "base64",
 );
 
-test("starts with an easy vanity URL and fills the demo 3x3 with artwork", async ({ page }) => {
+test("accepts a short Steam vanity name and shows the connected profile", async ({ page }) => {
   await page.route("**/api/steam/cover/*", async (route) => {
     await route.fulfill({
       status: 200,
@@ -13,20 +13,45 @@ test("starts with an easy vanity URL and fills the demo 3x3 with artwork", async
       body: pixel,
     });
   });
+  let requestedProfile = "";
+  await page.route("**/api/steam/library?*", async (route) => {
+    requestedProfile = new URL(route.request().url()).searchParams.get("profile") ?? "";
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        steamid: "76561198000000000",
+        gameCount: 1,
+        profile: {
+          steamid: "76561198000000000",
+          name: "Cozy Player",
+          avatar: null,
+          profileUrl: "https://steamcommunity.com/id/rlawoals/",
+        },
+        games: [{ appid: "730", name: "Counter-Strike 2", minutes: 60 }],
+      }),
+    });
+  });
 
   await page.goto("/");
 
   const profile = page.getByLabel("Steam username, profile URL, or SteamID");
-  await expect(profile).toHaveValue("https://steamcommunity.com/id/");
+  await expect(profile).toHaveValue("");
+  await expect(page.locator(".steam-profile-prefix")).toHaveText("steamcommunity.com/id/");
 
   const read = page.getByRole("button", { name: "Read public profile" });
   await expect(read).toBeDisabled();
 
-  await profile.fill("https://steamcommunity.com/id/cozyplayer");
+  await profile.fill("rlawoals");
   await expect(read).toBeEnabled();
+  await read.click();
+
+  expect(requestedProfile).toBe("https://steamcommunity.com/id/rlawoals");
+  await expect(page.locator(".import-profile-preview")).toContainText("Cozy Player");
+  await expect(page.locator(".import-profile-preview")).toContainText("76561198000000000");
 
   const covers = page.locator(".nine-tile img");
-  await expect(covers).toHaveCount(9);
+  await expect(covers).toHaveCount(1);
   await expect(covers.first()).toHaveAttribute("src", "/api/steam/cover/730");
 });
 
@@ -199,4 +224,26 @@ test("builds a hand-picked top-games list with Steam art or cute fallbacks", asy
   await page.setViewportSize({ width: 390, height: 844 });
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   expect(overflow).toBeLessThanOrEqual(1);
+});
+
+
+test("Steam profile entry stays aligned on desktop and mobile", async ({ page }) => {
+  await page.setViewportSize({ width: 1366, height: 900 });
+  await page.goto("/");
+
+  const control = page.locator(".steam-profile-control");
+  const button = page.getByRole("button", { name: "Read public profile" });
+  const [controlBox, buttonBox] = await Promise.all([control.boundingBox(), button.boundingBox()]);
+  expect(controlBox).not.toBeNull();
+  expect(buttonBox).not.toBeNull();
+  expect(Math.abs((controlBox!.y + controlBox!.height) - (buttonBox!.y + buttonBox!.height))).toBeLessThanOrEqual(1);
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(overflow).toBeLessThanOrEqual(1);
+  const mobileControl = await control.boundingBox();
+  const mobileButton = await button.boundingBox();
+  expect(mobileControl).not.toBeNull();
+  expect(mobileButton).not.toBeNull();
+  expect(mobileButton!.y).toBeGreaterThan(mobileControl!.y + mobileControl!.height - 2);
 });
