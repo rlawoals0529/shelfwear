@@ -4,7 +4,7 @@ type SteamGame = { appid: number; name?: string; playtime_forever?: number };
 
 const json = (body: unknown, status = 200) => Response.json(body, {
   status,
-  headers: { "cache-control": status === 200 ? "public, max-age=300" : "no-store" },
+  headers: { "cache-control": "no-store" },
 });
 
 function profileParts(input: string): { steamid?: string; vanity?: string } | null {
