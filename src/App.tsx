@@ -906,7 +906,7 @@ function TopGamesPage({ loadedGames, initial }: { loadedGames: Game[]; initial: 
             />
           </label>
         </div>
-        <p className="note curated-privacy">Share links are stateless: the selected game names, optional Steam AppIDs, title, and caption live in the URL. Shelfwear does not store the list.</p>
+        <p className="note curated-privacy">Share links are stateless: the title, caption, selected game names, optional Steam AppIDs, and public Steam artwork references live in the URL. Shelfwear does not store the list.</p>
       </section>
 
       <section className="panel curated-builder">
