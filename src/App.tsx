@@ -1,6 +1,16 @@
 import { useCallback, useMemo, useRef, useState } from "react";
 import { readLocalConfig, readManifest, buildLibrary, summarise, shelve, hours, gb, type Game, type Spine } from "./lib/library.js";
 import { familiarFor, steamCover, topNine } from "./lib/profile.js";
+import { compareLibraries, type LibraryComparison } from "./lib/compare.js";
+import {
+  comparisonShareUrl,
+  fetchPublicSteamLibrary,
+  sharedComparisonFromSearch,
+  sharedSteamFromSearch,
+  steamShareUrl,
+  type PublicSteamLibrary,
+  type SteamProfileSummary,
+} from "./lib/steam.js";
 import { SAMPLE_CONFIG, SAMPLE_MANIFESTS } from "./lib/sample.js";
 import { Ticker, stagger } from "./lib/motion.js";
 import { Palette } from "./lib/palette.js";
@@ -9,7 +19,20 @@ import palettes from "./theme/palettes.json";
 type Manifest = NonNullable<ReturnType<typeof readManifest>>;
 type SourceKind = "sample" | "local" | "steam";
 
-interface Loaded { games: Game[]; source: string; skipped: number; kind: SourceKind }
+interface Loaded {
+  games: Game[];
+  source: string;
+  skipped: number;
+  kind: SourceKind;
+  steamid?: string;
+  profile?: SteamProfileSummary;
+}
+
+interface Compared {
+  left: PublicSteamLibrary;
+  right: PublicSteamLibrary;
+  result: LibraryComparison;
+}
 
 function load(files: { name: string; text: string }[]): Loaded {
   let play = new Map<string, { minutes: number; lastPlayed: number | null }>();
@@ -53,13 +76,29 @@ const ago = (unix: number | null): string => {
   return `${Math.floor(days / 365)}y ago`;
 };
 
+const displayName = (library: PublicSteamLibrary): string =>
+  library.profile.name ?? `Steam ${library.steamid.slice(-6)}`;
+
 export default function App() {
+  const shared = useMemo(() => ({
+    steam: sharedSteamFromSearch(window.location.search),
+    compare: sharedComparisonFromSearch(window.location.search),
+  }), []);
+
   const [loaded, setLoaded] = useState<Loaded>(SAMPLE);
   const [error, setError] = useState<string | null>(null);
+  const [steamError, setSteamError] = useState<string | null>(null);
   const [over, setOver] = useState(false);
-  const [steamProfile, setSteamProfile] = useState("");
+  const [steamProfile, setSteamProfile] = useState(shared.steam ?? "");
   const [importing, setImporting] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
+  const [compareLeft, setCompareLeft] = useState(shared.compare?.[0] ?? "");
+  const [compareRight, setCompareRight] = useState(shared.compare?.[1] ?? "");
+  const [comparing, setComparing] = useState(false);
+  const [compareError, setCompareError] = useState<string | null>(null);
+  const [comparison, setComparison] = useState<Compared | null>(null);
+  const [compareCopied, setCompareCopied] = useState(false);
   const picker = useRef<HTMLInputElement>(null);
 
   const accept = useCallback(async (list: File[]) => {
@@ -80,33 +119,46 @@ export default function App() {
   }, []);
 
   const importSteam = useCallback(async () => {
-    setError(null);
+    setSteamError(null);
     setImporting(true);
     try {
-      const response = await fetch(`/api/steam/library?profile=${encodeURIComponent(steamProfile.trim())}`);
-      const data = await response.json().catch(() => null) as {
-        steamid?: string;
-        error?: string;
-        games?: { appid: string; name: string | null; minutes: number }[];
-      } | null;
-      if (!data) {
-        // GitHub Pages has no Worker route. Keep the old deployment useful while Cloudflare
-        // is still optional instead of exposing an HTML-as-JSON parsing error to the visitor.
-        throw new Error("Public Steam import needs the Cloudflare Workers deployment. The local-file reader still works here.");
-      }
-      if (!response.ok || !data.games || !data.steamid) throw new Error(data.error ?? "Steam import failed.");
+      const data = await fetchPublicSteamLibrary(steamProfile);
       setLoaded({
-        source: `public Steam library ${data.steamid}`,
+        source: data.profile.name ?? `public Steam library ${data.steamid}`,
         skipped: 0,
         kind: "steam",
-        games: data.games.map((game) => ({ ...game, lastPlayed: null, bytes: null, installed: false })),
+        steamid: data.steamid,
+        profile: data.profile,
+        games: data.games,
       });
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setSteamError(e instanceof Error ? e.message : String(e));
     } finally {
       setImporting(false);
     }
   }, [steamProfile]);
+
+  const runComparison = useCallback(async () => {
+    setCompareError(null);
+    setComparison(null);
+    if (compareLeft.trim() === compareRight.trim()) {
+      setCompareError("Choose two different Steam profiles to compare.");
+      return;
+    }
+    setComparing(true);
+    try {
+      const [left, right] = await Promise.all([
+        fetchPublicSteamLibrary(compareLeft),
+        fetchPublicSteamLibrary(compareRight),
+      ]);
+      if (left.steamid === right.steamid) throw new Error("Those inputs resolve to the same Steam profile.");
+      setComparison({ left, right, result: compareLibraries(left.games, right.games) });
+    } catch (e) {
+      setCompareError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setComparing(false);
+    }
+  }, [compareLeft, compareRight]);
 
   const stats = useMemo(() => summarise(loaded.games), [loaded]);
   const shelf = useMemo(() => shelve(loaded.games), [loaded]);
@@ -127,6 +179,20 @@ export default function App() {
     window.setTimeout(() => setCopied(false), 1600);
   }, [nine, familiar]);
 
+  const copyShelfLink = useCallback(async () => {
+    if (!loaded.steamid) return;
+    await navigator.clipboard.writeText(steamShareUrl(window.location.href, loaded.steamid));
+    setShareCopied(true);
+    window.setTimeout(() => setShareCopied(false), 1600);
+  }, [loaded.steamid]);
+
+  const copyComparisonLink = useCallback(async () => {
+    if (!comparison) return;
+    await navigator.clipboard.writeText(comparisonShareUrl(window.location.href, comparison.left.steamid, comparison.right.steamid));
+    setCompareCopied(true);
+    window.setTimeout(() => setCompareCopied(false), 1600);
+  }, [comparison]);
+
   return (
     <div className="wrap rhythm">
       <h1 className="display">shelf<span>wear</span></h1>
@@ -138,6 +204,13 @@ export default function App() {
       {/* Whose library this is has to be settled before the first number is read, so it
           sits with the headline rather than down beside either import method. */}
       <p className="note source">Reading <b>{loaded.source}</b>.</p>
+      {loaded.kind === "steam" && loaded.profile && (
+        <div className="steam-identity">
+          {loaded.profile.avatar && <img src={loaded.profile.avatar} alt="" loading="lazy" />}
+          <span>{loaded.profile.name ?? loaded.profile.steamid}</span>
+          <span className="note">public Steam data</span>
+        </div>
+      )}
 
       {(shelf.untouched.length > 0 || shelf.played.length > 0) && (
         <section className="panel figure">
@@ -215,7 +288,12 @@ export default function App() {
               <h2>Your nine</h2>
               <p className="note">The nine games with the most recorded playtime.</p>
             </div>
-            <button onClick={() => void copyNine()}>{copied ? "Copied" : "Copy summary"}</button>
+            <div className="social-actions">
+              <button onClick={() => void copyNine()}>{copied ? "Copied" : "Copy summary"}</button>
+              {loaded.kind === "steam" && loaded.steamid && (
+                <button onClick={() => void copyShelfLink()}>{shareCopied ? "Link copied" : "Share shelf"}</button>
+              )}
+            </div>
           </div>
           <div className="nine-grid" aria-label="Top nine games by recorded playtime">
             {nine.map((game, i) => (
@@ -239,12 +317,13 @@ export default function App() {
         </section>
       )}
 
-      <section className="panel import-panel">
+      <section className="panel import-panel" id="steam">
         <h2>Bring in a Steam library</h2>
         <p className="prose">
           Paste a public Steam profile URL or 64-bit SteamID. The Worker asks Steam for public
           game/playtime data; your Steam password is never requested.
         </p>
+        {shared.steam && <p className="share-hint">A friend shared this public SteamID. Read it to rebuild their shelf live.</p>}
         <div className="profile-form">
           <input
             value={steamProfile}
@@ -253,13 +332,71 @@ export default function App() {
             aria-label="Steam profile URL or SteamID"
           />
           <button disabled={importing || !steamProfile.trim()} onClick={() => void importSteam()}>
-            {importing ? "Reading…" : "Read public profile"}
+            {importing ? "Reading…" : shared.steam ? "Load shared shelf" : "Read public profile"}
           </button>
         </div>
+        {steamError && <p className="err">{steamError}</p>}
         <p className="note">
           If Steam says the library is unavailable, set Profile → Privacy Settings → Game
-          details to Public, or use the local-file method below.
+          details to Public, or use the local-file method below. Share links contain only a
+          public SteamID; Shelfwear does not store a library snapshot.
         </p>
+      </section>
+
+      <section className="panel compare-panel" id="compare">
+        <h2>Compare two shelves</h2>
+        <p className="prose">
+          Put two public Steam profiles side by side. Overlap is the intersection divided by
+          the combined unique library; played-together counts only games with recorded time on both profiles.
+        </p>
+        {shared.compare && <p className="share-hint">This comparison came from a stateless link. Load it to rebuild both public libraries live.</p>}
+        <div className="compare-form">
+          <input value={compareLeft} onChange={(e) => setCompareLeft(e.target.value)} placeholder="First Steam profile" aria-label="First Steam profile" />
+          <span aria-hidden="true">×</span>
+          <input value={compareRight} onChange={(e) => setCompareRight(e.target.value)} placeholder="Second Steam profile" aria-label="Second Steam profile" />
+          <button disabled={comparing || !compareLeft.trim() || !compareRight.trim()} onClick={() => void runComparison()}>
+            {comparing ? "Comparing…" : shared.compare ? "Load comparison" : "Compare"}
+          </button>
+        </div>
+        {compareError && <p className="err">{compareError}</p>}
+
+        {comparison && (
+          <div className="comparison-result">
+            <div className="compare-heading">
+              <SteamPerson library={comparison.left} />
+              <span className="compare-cross">×</span>
+              <SteamPerson library={comparison.right} />
+              <button onClick={() => void copyComparisonLink()}>{compareCopied ? "Link copied" : "Share comparison"}</button>
+            </div>
+            <div className="compare-metrics">
+              <div className="metric"><b>{Math.round(comparison.result.overlapPercent)}%</b><span>library overlap</span></div>
+              <div className="metric"><b>{comparison.result.sharedCount}</b><span>owned by both</span></div>
+              <div className="metric"><b>{comparison.result.mutuallyPlayedCount}</b><span>played by both</span></div>
+            </div>
+            <div className="compare-signature familiar">
+              <span className="familiar-mark" aria-hidden="true">{comparison.result.signature.object}</span>
+              <div>
+                <p className="eyebrow">Shared shelf signature</p>
+                <h3>{comparison.result.signature.name}</h3>
+                <p>{comparison.result.signature.description}</p>
+                <p className="note">{comparison.result.signature.evidence} This describes the two public libraries, not the people.</p>
+              </div>
+            </div>
+            {comparison.result.mutuallyPlayed.length > 0 ? (
+              <div className="shared-games">
+                <h3>Games both actually played</h3>
+                {comparison.result.mutuallyPlayed.slice(0, 8).map((game) => (
+                  <div className="shared-game" key={game.appid}>
+                    <b>{game.name ?? `app ${game.appid}`}</b>
+                    <span>{displayName(comparison.left)} {hours(game.leftMinutes)}h · {displayName(comparison.right)} {hours(game.rightMinutes)}h</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="note">The profiles share no game with recorded playtime on both sides.</p>
+            )}
+          </div>
+        )}
       </section>
 
       {/* The local picker remains available even after the Worker path exists. It is the only
@@ -315,6 +452,15 @@ export default function App() {
         </div>
       </section>
       <Palette themes={palettes} storageKey="shelfwear:theme" />
+    </div>
+  );
+}
+
+function SteamPerson({ library }: { library: PublicSteamLibrary }) {
+  return (
+    <div className="steam-person">
+      {library.profile.avatar && <img src={library.profile.avatar} alt="" loading="lazy" />}
+      <div><b>{displayName(library)}</b><span>{library.gameCount} public games</span></div>
     </div>
   );
 }
