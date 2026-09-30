@@ -234,6 +234,7 @@ test("the whole shelf can be searched, filtered, sorted, and made compact", asyn
 });
 
 test("empty shelf searches have a clear reset instead of a blank list", async ({ page }) => {
+  await page.locator('input[type="file"]').setInputFiles(ALL);
   await page.getByLabel("Search games in the whole shelf").fill("definitely-not-a-game");
   await expect(page.locator(".library-empty")).toContainText("No games match");
   await page.getByRole("button", { name: "Clear filters" }).click();
