@@ -555,7 +555,7 @@ export default function App() {
           <div className="social-heading">
             <div className="social-title-wrap">
               <SectionTitle icon="nine" eyebrow="Your little game postcard" note="The nine games with the most recorded playtime.">Your nine</SectionTitle>
-              <span className="social-doodle" aria-hidden="true">♡ ✦</span>
+              <span className="social-doodle" aria-hidden="true"><CuteIcon name="heart" /><CuteIcon name="sparkles" /></span>
             </div>
             <div className="social-actions">
               <button disabled={cardRendering} onClick={() => void downloadCard()}><CuteIcon name="download" className="button-icon" />{cardRendering ? "Making card…" : "Download card"}</button>
@@ -962,8 +962,8 @@ function TopGamesPage({ loadedGames, initial }: { loadedGames: Game[]; initial: 
             <div className="curated-card-preview">
               <div className="curated-preview-heading">
                 <span className="curated-sticker">♡ shelfwear</span>
-                <span className="curated-doodle curated-doodle-star" aria-hidden="true">✦</span>
-                <span className="curated-doodle curated-doodle-heart" aria-hidden="true">♡</span>
+                <span className="curated-doodle curated-doodle-star" aria-hidden="true"><CuteIcon name="sparkles" /></span>
+                <span className="curated-doodle curated-doodle-heart" aria-hidden="true"><CuteIcon name="heart" /></span>
                 <h3>{list.title}</h3>
                 {list.caption && <p>{list.caption}</p>}
               </div>
