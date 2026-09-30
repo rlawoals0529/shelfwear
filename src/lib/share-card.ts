@@ -22,6 +22,12 @@ export interface ShareCardInput {
   theme?: Partial<ShareCardTheme>;
 }
 
+export interface FamiliarCardInput {
+  familiar: Familiar;
+  profileName?: string | null;
+  theme?: Partial<ShareCardTheme>;
+}
+
 const WIDTH = 1080;
 const HEIGHT = 1350;
 const PAD = 54;
@@ -489,6 +495,145 @@ export async function renderCuratedCard(input: CuratedTopGames): Promise<Blob> {
   ctx.textAlign = "left";
 
   return canvasBlob(canvas);
+}
+
+export function familiarCardFilename(name: string): string {
+  const stem = name
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 40) || "shelf";
+  return `shelfwear-${stem}-familiar.png`;
+}
+
+export async function renderFamiliarCard(input: FamiliarCardInput): Promise<Blob> {
+  if (typeof document === "undefined") throw new Error("Share cards require a browser.");
+  const theme = { ...DEFAULT_THEME, ...currentShareCardTheme(), ...input.theme };
+  const canvas = document.createElement("canvas");
+  canvas.width = WIDTH;
+  canvas.height = HEIGHT;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas is not available in this browser.");
+
+  ctx.fillStyle = theme.bg;
+  ctx.fillRect(0, 0, WIDTH, HEIGHT);
+
+  const wash = ctx.createLinearGradient(0, 0, WIDTH, HEIGHT);
+  wash.addColorStop(0, theme.panel);
+  wash.addColorStop(.58, theme.bg);
+  wash.addColorStop(1, theme.raised);
+  ctx.globalAlpha = .88;
+  ctx.fillStyle = wash;
+  ctx.fillRect(0, 0, WIDTH, HEIGHT);
+  ctx.globalAlpha = 1;
+
+  drawSparkle(ctx, WIDTH - 106, 80, 18, theme.accent);
+  drawSparkle(ctx, 112, 228, 10, theme.accent2);
+
+  ctx.fillStyle = theme.accent;
+  ctx.font = "800 22px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.fillText("SHELFWEAR  /  SHELF FAMILIAR", PAD, 58);
+
+  if (input.profileName) {
+    ctx.fillStyle = theme.dim;
+    ctx.font = "600 18px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+    const profile = wrapByMeasure(ctx, input.profileName, WIDTH - PAD * 2, 1)[0] ?? input.profileName;
+    ctx.fillText(profile, PAD, 94);
+  }
+
+  const glyphY = 345;
+  ctx.font = "240px 'Segoe UI Emoji', 'Apple Color Emoji', sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(input.familiar.glyph, WIDTH / 2, glyphY);
+  ctx.textAlign = "left";
+  ctx.textBaseline = "alphabetic";
+
+  ctx.fillStyle = theme.fg;
+  ctx.font = "800 68px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  const familiarName = wrapByMeasure(ctx, input.familiar.name, WIDTH - PAD * 2, 1)[0] ?? input.familiar.name;
+  const nameWidth = ctx.measureText(familiarName).width;
+  ctx.fillText(familiarName, (WIDTH - nameWidth) / 2, 555);
+
+  ctx.fillStyle = theme.dim;
+  ctx.font = "500 25px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  const description = wrapByMeasure(ctx, input.familiar.description, 820, 3);
+  description.forEach((line, index) => {
+    const width = ctx.measureText(line).width;
+    ctx.fillText(line, (WIDTH - width) / 2, 608 + index * 33);
+  });
+
+  ctx.fillStyle = theme.accent;
+  ctx.font = "800 17px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.fillText("WHY THIS ONE", PAD, 748);
+
+  const gap = 14;
+  const signalWidth = (WIDTH - PAD * 2 - gap * 2) / 3;
+  input.familiar.signals.slice(0, 3).forEach((signal, index) => {
+    const x = PAD + index * (signalWidth + gap);
+    const y = 772;
+    roundedRect(ctx, x, y, signalWidth, 142, 20);
+    ctx.fillStyle = index === 1
+      ? colorMixFallback(theme.panel, theme.accent2)
+      : colorMixFallback(theme.panel, theme.accent);
+    ctx.fill();
+
+    ctx.strokeStyle = theme.edge;
+    ctx.lineWidth = 2;
+    roundedRect(ctx, x, y, signalWidth, 142, 20);
+    ctx.stroke();
+
+    ctx.fillStyle = theme.dim;
+    ctx.font = "700 15px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+    ctx.fillText(signal.label.toUpperCase(), x + 18, y + 34);
+
+    ctx.fillStyle = theme.fg;
+    ctx.font = "800 28px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+    const value = wrapByMeasure(ctx, signal.value, signalWidth - 36, 2);
+    value.forEach((line, lineIndex) => ctx.fillText(line, x + 18, y + 75 + lineIndex * 31));
+  });
+
+  ctx.fillStyle = theme.fg;
+  ctx.font = "700 23px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  const evidence = wrapByMeasure(ctx, input.familiar.evidence, WIDTH - PAD * 2, 3);
+  evidence.forEach((line, index) => ctx.fillText(line, PAD, 976 + index * 31));
+
+  ctx.strokeStyle = theme.edge;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(PAD, 1110);
+  ctx.lineTo(WIDTH - PAD, 1110);
+  ctx.stroke();
+
+  ctx.fillStyle = theme.dim;
+  ctx.font = "500 18px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  const disclaimer = "A playful description of observable library patterns — not a personality test.";
+  wrapByMeasure(ctx, disclaimer, 720, 2).forEach((line, index) => ctx.fillText(line, PAD, 1154 + index * 26));
+
+  ctx.fillStyle = theme.accent;
+  ctx.font = "800 20px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.textAlign = "right";
+  ctx.fillText("shelfwear ♡", WIDTH - PAD, 1208);
+  ctx.textAlign = "left";
+
+  return canvasBlob(canvas);
+}
+
+function colorMixFallback(base: string, accent: string): string {
+  // Canvas cannot resolve CSS color-mix(). A subtle transparent wash keeps the card
+  // theme-aware without depending on browser CSS parsing inside canvas.
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return base;
+  ctx.fillStyle = base;
+  const safeBase = ctx.fillStyle;
+  ctx.fillStyle = accent;
+  const safeAccent = ctx.fillStyle;
+  // Return the base and use the accent as a translucent overlay at draw time is ideal,
+  // but a stable theme color is preferable to guessing RGB parsing here.
+  return safeAccent === "#000000" && accent !== "#000000" ? safeBase : safeBase;
 }
 
 export function downloadBlob(blob: Blob, filename: string): void {
