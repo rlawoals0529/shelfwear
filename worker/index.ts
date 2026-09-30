@@ -60,7 +60,8 @@ async function library(profile: string, key: string): Promise<Response> {
   if (!ownedResponse.ok) return json({ error: "Steam did not return this library." }, 502);
 
   const data = await ownedResponse.json() as { response?: { game_count?: number; games?: SteamGame[] } };
-  const games = data.response?.games;
+  const gameCount = data.response?.game_count;
+  const games = data.response?.games ?? (gameCount === 0 ? [] : undefined);
   if (!games) return json({ error: "This Steam library is private or unavailable. Make Game details public and try again." }, 404);
 
   let player: SteamPlayer | undefined;
@@ -71,7 +72,7 @@ async function library(profile: string, key: string): Promise<Response> {
 
   return json({
     steamid,
-    gameCount: data.response?.game_count ?? games.length,
+    gameCount: gameCount ?? games.length,
     profile: {
       steamid,
       name: player?.personaname ?? null,
