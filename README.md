@@ -1,42 +1,64 @@
 # shelfwear
 
-What your Steam library actually gets played, read from the files already on your machine.
+What your Steam library actually gets played, with a local-only mode and a shareable public-profile mode.
 
 ![The shelf: hours, never-launched count, and disk held by games that have never run](docs/screenshot.png)
 
-Drop in `localconfig.vdf` and your `appmanifest_*.acf` files. Nothing is uploaded, nothing
-is fetched, and no API key is involved, because everything it needs is already on disk.
+## Two ways in
 
-*Shelfwear* is the trade term for the damage stock takes from sitting unsold. It seemed
-like the right word.
+### Local files — most private
 
-## Try it
+Drop in `localconfig.vdf` and your `appmanifest_*.acf` files. They are parsed in the browser and are not uploaded. This mode can show local install size and disk held by games you have never launched.
 
-**[rlawoals0529.github.io/shelfwear](https://rlawoals0529.github.io/shelfwear/)** - drop in your Steam files, nothing is uploaded
+### Public Steam profile — easiest to share
+
+On a Cloudflare Workers deployment, paste a public Steam profile URL or 64-bit SteamID. The Worker keeps the Steam Web API key server-side and asks Steam only for public owned-game/playtime data. If Game details are private, Steam will not return the library.
+
+The social summary adds:
+
+- **Your nine** — the nine titles with the most recorded playtime, in a 3×3 grid.
+- **Shelf familiar** — a deterministic, playful description based only on observable playtime/library patterns. It describes the library shape, not the person.
+- **Copy summary** — a text version of the nine for sharing anywhere.
 
 ## What it tells you
 
-- **The shelf.** Every installed game as a spine, as wide as it is big on disk, with the ones
-  you have never launched stood on their own shelf above the rest. *Shelfwear* is what stock
-  takes from sitting unsold, so the untouched ones are the ones wearing it.
-- How many titles this client has a record of, and how many have **never been launched**.
-- **How much disk the unplayed ones are holding.** This is the number that stings.
-- How few titles make up half of all the hours you have spent. It is usually a much
-  smaller number than people expect.
+- **The shelf.** Installed games become spines sized by disk use; never-launched games stand apart.
+- How many titles are represented and how many have **never been launched**.
+- **How much disk the unplayed ones are holding** when local manifests provide size data.
+- How few titles make up half of all recorded hours.
 
-## Limitations
+## Data boundaries
 
-`localconfig.vdf` only lists apps this Steam client has a local record of. That is not
-your library. Anything you own but have never launched on this machine leaves no local
-trace at all, so **every count here is a floor, not a total** - and the page says so
-rather than presenting a confident number it has no basis for.
+Local mode and public-profile mode know different things and Shelfwear keeps that distinction visible.
 
-A game with no manifest is still a row: playtime with no install is a game you played and
-then removed, which is a fact worth keeping. Its size shows as *not installed*, which is
-not the same as zero, and it is not counted in the disk totals.
+`localconfig.vdf` only lists apps this Steam client has a local record of. Anything never seen by that client leaves no trace, so local counts are floors rather than account totals.
 
-If an installed game's manifest carries no `SizeOnDisk`, the byte figures say they are a
-floor and give the count of games missing from them.
+Public-profile mode uses Steam's `GetOwnedGames` response. It can be broader than the local files, but only when the profile's Game details are visible. It does not provide local disk usage.
+
+## Cloudflare Workers deployment
+
+The repository includes `worker/index.ts` and `wrangler.jsonc`. Static Vite output is served by the Worker and `/api/*` runs through the Worker first.
+
+Build the app:
+
+```bash
+npm install
+npm run build
+```
+
+Configure the Steam API key as a Worker secret rather than committing it:
+
+```bash
+npx wrangler secret put STEAM_WEB_API_KEY
+```
+
+Then deploy:
+
+```bash
+npx wrangler deploy
+```
+
+The checked-in Wrangler config uses the current Workers Static Assets model. GitHub Pages can remain in place until the Worker deployment has been verified.
 
 ## The files
 
@@ -49,21 +71,14 @@ Either alone works, with less to show. Together you get names against hours.
 
 ## Reading Valve's format
 
-Everything in a Steam install is KeyValues text. `src/lib/vdf.ts` is a parser for it,
-written against the shape the files actually have, because there is no specification.
+Everything in a Steam install is KeyValues text. `src/lib/vdf.ts` is a parser for the shape the files actually have.
 
-Two things in there are the difference between working and appearing to work:
+Two details matter:
 
-- **Key case is not consistent.** The same client writes `apps` and `Apps`, `Steam` and
-  `steam`. A case-sensitive lookup works on one machine and returns nothing on the next,
-  and nothing renders as an empty library, which looks exactly like a true answer.
-- **`\s` is not an escape.** Windows paths are full of sequences that are not escapes, and
-  a parser that swallows the backslash corrupts every path in the file while still
-  parsing cleanly.
+- **Key case is not consistent.** The same client can write `apps` and `Apps`, `Steam` and `steam`.
+- **`\s` is not an escape.** Windows paths contain backslash sequences that must survive parsing.
 
-An unterminated string or an unclosed block throws with a line number rather than
-returning the half of the file it managed to read. Half a library is a small library, and
-a small library is a believable lie.
+Malformed input fails rather than quietly producing a believable partial library.
 
 ## Run it
 
@@ -72,11 +87,9 @@ npm install
 npm run dev
 ```
 
-`npm test` is the parser and the arithmetic; `npm run e2e` drives a real browser against
-Steam-shaped fixtures, tabs and inconsistent capitalisation included.
+`npm test` covers parser/arithmetic/social-summary behavior; `npm run e2e` drives a browser against Steam-shaped fixtures.
 
-The page opens on a sample library so there is something to look at before you have given
-it anything, and it says it is a sample.
+The page opens on clearly labeled synthetic sample data so there is something to inspect before loading a library.
 
 ## Licence
 
