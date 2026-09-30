@@ -1,4 +1,5 @@
 import { hours, type Game } from "./library.js";
+import type { LibraryComparison } from "./compare.js";
 import type { Familiar } from "./profile.js";
 import { steamApiUrl } from "./steam.js";
 import type { CuratedTopGames } from "./top-games.js";
@@ -25,6 +26,13 @@ export interface ShareCardInput {
 export interface FamiliarCardInput {
   familiar: Familiar;
   profileName?: string | null;
+  theme?: Partial<ShareCardTheme>;
+}
+
+export interface ComparisonCardInput {
+  leftName: string;
+  rightName: string;
+  comparison: LibraryComparison;
   theme?: Partial<ShareCardTheme>;
 }
 
