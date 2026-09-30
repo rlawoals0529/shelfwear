@@ -1,6 +1,7 @@
 import { hours, type Game } from "./library.js";
 import type { Familiar } from "./profile.js";
 import { steamApiUrl } from "./steam.js";
+import type { CuratedTopGames } from "./top-games.js";
 
 export interface ShareCardTheme {
   bg: string;
@@ -283,6 +284,176 @@ export async function renderShareCard(input: ShareCardInput): Promise<Blob> {
   ctx.fillStyle = theme.dim;
   ctx.font = "400 15px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
   ctx.fillText("playtime, not a personality test", WIDTH - PAD, footerY + 108);
+  ctx.textAlign = "left";
+
+  return canvasBlob(canvas);
+}
+
+
+export function curatedCardFilename(title: string): string {
+  const stem = title
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 44) || "my-top-games";
+  return `shelfwear-${stem}.png`;
+}
+
+function drawSparkle(ctx: CanvasRenderingContext2D, x: number, y: number, size: number, color: string): void {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(0, -size);
+  ctx.quadraticCurveTo(size * .2, -size * .2, size, 0);
+  ctx.quadraticCurveTo(size * .2, size * .2, 0, size);
+  ctx.quadraticCurveTo(-size * .2, size * .2, -size, 0);
+  ctx.quadraticCurveTo(-size * .2, -size * .2, 0, -size);
+  ctx.fill();
+  ctx.restore();
+}
+
+export async function renderCuratedCard(input: CuratedTopGames): Promise<Blob> {
+  if (typeof document === "undefined") throw new Error("Share cards require a browser.");
+  const theme = currentShareCardTheme();
+  const canvas = document.createElement("canvas");
+  canvas.width = WIDTH;
+  canvas.height = HEIGHT;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas is not available in this browser.");
+
+  ctx.fillStyle = theme.bg;
+  ctx.fillRect(0, 0, WIDTH, HEIGHT);
+
+  const paper = ctx.createLinearGradient(0, 0, WIDTH, HEIGHT);
+  paper.addColorStop(0, theme.panel);
+  paper.addColorStop(.55, theme.bg);
+  paper.addColorStop(1, theme.raised);
+  ctx.globalAlpha = .8;
+  ctx.fillStyle = paper;
+  ctx.fillRect(0, 0, WIDTH, HEIGHT);
+  ctx.globalAlpha = 1;
+
+  // A few tiny scrapbook marks, kept away from the game art.
+  drawSparkle(ctx, WIDTH - 94, 74, 18, theme.accent);
+  drawSparkle(ctx, WIDTH - 133, 104, 8, theme.accent2);
+  drawSparkle(ctx, 72, HEIGHT - 80, 10, theme.accent);
+
+  ctx.fillStyle = theme.accent;
+  ctx.font = "700 22px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.fillText("SHELFWEAR  ♡", PAD, 54);
+
+  ctx.fillStyle = theme.fg;
+  ctx.font = "700 52px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  const heading = wrapByMeasure(ctx, input.title || "my top games", WIDTH - PAD * 2 - 100, 1)[0] ?? "my top games";
+  ctx.fillText(heading, PAD, 116);
+
+  ctx.fillStyle = theme.dim;
+  ctx.font = "400 20px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  const caption = input.caption || "nine games I wanted on one little card";
+  const captionLines = wrapByMeasure(ctx, caption, WIDTH - PAD * 2, 2);
+  captionLines.forEach((line, index) => ctx.fillText(line, PAD, 154 + index * 25));
+
+  const gridTop = captionLines.length > 1 ? 208 : 190;
+  const gridSize = WIDTH - PAD * 2;
+  const tile = (gridSize - GRID_GAP * 2) / 3;
+  const images = await Promise.all(
+    input.games.slice(0, 9).map((game) => game.appid ? loadImage(proxiedSteamCover(game.appid)) : Promise.resolve(null)),
+  );
+
+  for (let index = 0; index < 9; index++) {
+    const row = Math.floor(index / 3);
+    const col = index % 3;
+    const x = PAD + col * (tile + GRID_GAP);
+    const y = gridTop + row * (tile + GRID_GAP);
+    const game = input.games[index];
+    const cover = images[index] ?? null;
+
+    ctx.save();
+    roundedRect(ctx, x, y, tile, tile, 20);
+    ctx.clip();
+
+    const fallback = ctx.createLinearGradient(x, y, x + tile, y + tile);
+    fallback.addColorStop(0, index % 2 ? theme.raised : theme.panel);
+    fallback.addColorStop(1, index % 2 ? theme.accent2 : theme.accent);
+    ctx.globalAlpha = cover ? 1 : .48;
+    ctx.fillStyle = fallback;
+    ctx.fillRect(x, y, tile, tile);
+    ctx.globalAlpha = 1;
+
+    if (game && cover) drawCover(ctx, cover, x, y, tile);
+
+    if (game) {
+      const shade = ctx.createLinearGradient(0, y + tile * .34, 0, y + tile);
+      shade.addColorStop(0, "rgba(0,0,0,0)");
+      shade.addColorStop(.58, "rgba(0,0,0,.45)");
+      shade.addColorStop(1, "rgba(0,0,0,.88)");
+      ctx.fillStyle = shade;
+      ctx.fillRect(x, y, tile, tile);
+
+      ctx.fillStyle = "rgba(255,255,255,.92)";
+      ctx.beginPath();
+      ctx.arc(x + 32, y + 32, 20, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#231d20";
+      ctx.font = "800 17px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(String(index + 1), x + 32, y + 32);
+      ctx.textAlign = "left";
+      ctx.textBaseline = "alphabetic";
+
+      if (!cover) {
+        ctx.fillStyle = "rgba(255,255,255,.82)";
+        ctx.font = "800 66px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+        const initial = game.name.trim().charAt(0).toUpperCase() || "♡";
+        ctx.fillText(initial, x + 22, y + 95);
+      }
+
+      ctx.fillStyle = "#fff";
+      ctx.font = "700 24px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+      const titleLines = wrapByMeasure(ctx, game.name, tile - 42, 2);
+      const start = y + tile - 34 - (titleLines.length - 1) * 29;
+      titleLines.forEach((line, lineIndex) => ctx.fillText(line, x + 21, start + lineIndex * 29));
+    } else {
+      ctx.globalAlpha = .8;
+      ctx.strokeStyle = theme.edge;
+      ctx.lineWidth = 2;
+      ctx.setLineDash([8, 9]);
+      roundedRect(ctx, x + 8, y + 8, tile - 16, tile - 16, 16);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = theme.dim;
+      ctx.font = "600 17px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("little empty spot", x + tile / 2, y + tile / 2);
+      ctx.textAlign = "left";
+    }
+    ctx.restore();
+  }
+
+  const footerY = gridTop + gridSize + 32;
+  ctx.strokeStyle = theme.edge;
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(PAD, footerY);
+  ctx.lineTo(WIDTH - PAD, footerY);
+  ctx.stroke();
+
+  ctx.fillStyle = theme.fg;
+  ctx.font = "700 24px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.fillText("made with shelfwear", PAD, footerY + 45);
+  ctx.fillStyle = theme.dim;
+  ctx.font = "400 16px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.fillText("a hand-picked list · not ranked by playtime", PAD, footerY + 75);
+
+  ctx.fillStyle = theme.accent2;
+  ctx.font = "700 22px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.textAlign = "right";
+  ctx.fillText("૮ ˶ᵔ ᵕ ᵔ˶ ა", WIDTH - PAD, footerY + 55);
   ctx.textAlign = "left";
 
   return canvasBlob(canvas);

@@ -3,7 +3,7 @@ import { readLocalConfig, readManifest, buildLibrary, summarise, shelve, hours, 
 import { analyticsFor, type LibraryAnalytics } from "./lib/analytics.js";
 import { familiarFor, steamCover, steamHeader, topNine } from "./lib/profile.js";
 import { compareLibraries, type LibraryComparison } from "./lib/compare.js";
-import { downloadBlob, proxiedSteamCover, renderShareCard, shareCardFilename } from "./lib/share-card.js";
+import { curatedCardFilename, downloadBlob, proxiedSteamCover, renderCuratedCard, renderShareCard, shareCardFilename } from "./lib/share-card.js";
 import {
   comparisonShareUrl,
   fetchPublicSteamLibrary,
@@ -17,6 +17,7 @@ import {
   type SteamProfileSummary,
 } from "./lib/steam.js";
 import { SAMPLE_CONFIG, SAMPLE_MANIFESTS } from "./lib/sample.js";
+import { curatedFromSearch, curatedShareUrl, steamAppIdFromInput, type CuratedTopGames } from "./lib/top-games.js";
 import { Ticker, stagger } from "./lib/motion.js";
 import { Palette } from "./lib/palette.js";
 import palettes from "./theme/palettes.json";
@@ -98,7 +99,11 @@ type CuteIconName =
   | "copy"
   | "share"
   | "heart"
-  | "chart";
+  | "chart"
+  | "plus"
+  | "up"
+  | "down"
+  | "close";
 
 function CuteIcon({ name, className = "" }: { name: CuteIconName; className?: string }) {
   const common = {
@@ -141,6 +146,14 @@ function CuteIcon({ name, className = "" }: { name: CuteIconName; className?: st
       return <svg {...common}><path d="M12 20s-7-4.2-7-9.4A3.9 3.9 0 0 1 12 8a3.9 3.9 0 0 1 7 2.6C19 15.8 12 20 12 20Z"/></svg>;
     case "chart":
       return <svg {...common}><path d="M5 19V11M10 19V5M15 19v-8M20 19V8"/><path d="M3.5 19.5h18"/></svg>;
+    case "plus":
+      return <svg {...common}><path d="M12 5v14M5 12h14"/></svg>;
+    case "up":
+      return <svg {...common}><path d="m7 14 5-5 5 5"/></svg>;
+    case "down":
+      return <svg {...common}><path d="m7 10 5 5 5-5"/></svg>;
+    case "close":
+      return <svg {...common}><path d="m7 7 10 10M17 7 7 17"/></svg>;
   }
 }
 
@@ -203,6 +216,7 @@ export default function App() {
   const shared = useMemo(() => ({
     steam: sharedSteamFromSearch(window.location.search),
     compare: sharedComparisonFromSearch(window.location.search),
+    top: curatedFromSearch(window.location.search),
   }), []);
 
   const [loaded, setLoaded] = useState<Loaded>(SAMPLE);
@@ -221,7 +235,7 @@ export default function App() {
   const [compareError, setCompareError] = useState<string | null>(null);
   const [comparison, setComparison] = useState<Compared | null>(null);
   const [compareCopied, setCompareCopied] = useState(false);
-  const [view, setView] = useState<"shelf" | "analytics">("shelf");
+  const [view, setView] = useState<"shelf" | "analytics" | "top">(shared.top ? "top" : "shelf");
   const picker = useRef<HTMLInputElement>(null);
 
   const accept = useCallback(async (list: File[]) => {
@@ -371,6 +385,9 @@ export default function App() {
         </button>
         <button className={view === "analytics" ? "active" : ""} aria-pressed={view === "analytics"} onClick={() => setView("analytics")}>
           <CuteIcon name="chart" className="button-icon" /> Analytics
+        </button>
+        <button className={view === "top" ? "active" : ""} aria-pressed={view === "top"} onClick={() => setView("top")}>
+          <CuteIcon name="heart" className="button-icon" /> My top games
         </button>
       </nav>
 
@@ -656,11 +673,316 @@ export default function App() {
         </div>
       </section>
         </>
-      ) : (
+      ) : view === "analytics" ? (
         <AnalyticsPage analytics={analytics} stats={stats} kind={loaded.kind} source={loaded.source} />
+      ) : (
+        <TopGamesPage loadedGames={loaded.games} initial={shared.top} />
       )}
       <Palette themes={palettes} storageKey="shelfwear:theme:cozy-v2" initial="cherry-blossom-dusk" />
     </div>
+  );
+}
+
+
+
+function TopGamesPage({ loadedGames, initial }: { loadedGames: Game[]; initial: CuratedTopGames | null }) {
+  const [list, setList] = useState<CuratedTopGames>(() => initial ?? {
+    title: "my top games",
+    caption: "the games I wanted on one little card ♡",
+    games: [],
+  });
+  const [draftName, setDraftName] = useState("");
+  const [draftApp, setDraftApp] = useState("");
+  const [formError, setFormError] = useState<string | null>(null);
+  const [shareCopied, setShareCopied] = useState(false);
+  const [summaryCopied, setSummaryCopied] = useState(false);
+  const [rendering, setRendering] = useState(false);
+  const [renderError, setRenderError] = useState<string | null>(null);
+  const nameInput = useRef<HTMLInputElement>(null);
+
+  const suggestions = useMemo(() => {
+    const q = draftName.trim().toLowerCase();
+    if (!q) return [];
+    const chosen = new Set(list.games.map((game) => game.appid).filter(Boolean));
+    return loadedGames
+      .filter((game) => game.name && game.name.toLowerCase().includes(q) && !chosen.has(game.appid))
+      .sort((a, b) => b.minutes - a.minutes || (a.name ?? "").localeCompare(b.name ?? ""))
+      .slice(0, 6);
+  }, [draftName, list.games, loadedGames]);
+
+  const setMeta = (field: "title" | "caption", value: string) => {
+    const max = field === "title" ? 48 : 120;
+    setList((current) => ({ ...current, [field]: value.slice(0, max) }));
+  };
+
+  const add = (name = draftName, appidInput = draftApp) => {
+    setFormError(null);
+    if (list.games.length >= 9) {
+      setFormError("Your card already has nine games. Remove one before adding another.");
+      return;
+    }
+    const cleanName = name.replace(/\s+/g, " ").trim();
+    if (!cleanName) {
+      setFormError("Add a game name first.");
+      nameInput.current?.focus();
+      return;
+    }
+
+    const exactLibraryGame = loadedGames.find((game) =>
+      game.name?.localeCompare(cleanName, undefined, { sensitivity: "accent" }) === 0
+    );
+    const suppliedAppid = appidInput.trim() ? steamAppIdFromInput(appidInput) : null;
+    if (appidInput.trim() && !suppliedAppid) {
+      setFormError("For official artwork, paste a numeric Steam AppID or a store.steampowered.com/app/... link.");
+      return;
+    }
+    const appid = suppliedAppid ?? exactLibraryGame?.appid ?? null;
+    const duplicate = list.games.some((game) =>
+      game.name.toLowerCase() === cleanName.toLowerCase() && game.appid === appid
+    );
+    if (duplicate) {
+      setFormError("That game is already on this card.");
+      return;
+    }
+    setList((current) => ({ ...current, games: [...current.games, { name: cleanName.slice(0, 80), appid }].slice(0, 9) }));
+    setDraftName("");
+    setDraftApp("");
+    nameInput.current?.focus();
+  };
+
+  const addSuggestion = (game: Game) => {
+    if (!game.name) return;
+    add(game.name, game.appid);
+  };
+
+  const remove = (index: number) => {
+    setList((current) => ({ ...current, games: current.games.filter((_, i) => i !== index) }));
+  };
+
+  const move = (index: number, delta: -1 | 1) => {
+    setList((current) => {
+      const target = index + delta;
+      if (target < 0 || target >= current.games.length) return current;
+      const games = [...current.games];
+      [games[index], games[target]] = [games[target]!, games[index]!];
+      return { ...current, games };
+    });
+  };
+
+  const useCurrentNine = () => {
+    const games = topNine(loadedGames).map((game) => ({ name: game.name ?? `app ${game.appid}`, appid: game.appid }));
+    setList((current) => ({ ...current, games: games.slice(0, 9) }));
+    setFormError(null);
+  };
+
+  const copyLink = async () => {
+    if (!list.games.length) {
+      setFormError("Add at least one game before sharing.");
+      return;
+    }
+    await navigator.clipboard.writeText(curatedShareUrl(window.location.href, list));
+    setShareCopied(true);
+    window.setTimeout(() => setShareCopied(false), 1600);
+  };
+
+  const copySummary = async () => {
+    if (!list.games.length) return;
+    const text = [
+      list.title,
+      list.caption,
+      ...list.games.map((game, index) => `${index + 1}. ${game.name}`),
+      "made with Shelfwear ♡",
+    ].filter(Boolean).join("\n");
+    await navigator.clipboard.writeText(text);
+    setSummaryCopied(true);
+    window.setTimeout(() => setSummaryCopied(false), 1600);
+  };
+
+  const download = async () => {
+    if (!list.games.length) {
+      setFormError("Add at least one game before making a card.");
+      return;
+    }
+    setRenderError(null);
+    setRendering(true);
+    try {
+      const blob = await renderCuratedCard(list);
+      downloadBlob(blob, curatedCardFilename(list.title));
+    } catch (error) {
+      setRenderError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setRendering(false);
+    }
+  };
+
+  return (
+    <main className="curated-page">
+      <section className="panel curated-intro">
+        <SectionTitle
+          icon="heart"
+          eyebrow={initial ? "A shared little list" : "Hand-picked by you"}
+          note="This list is yours to curate. It does not have to match playtime."
+        >
+          My top games
+        </SectionTitle>
+        <div className="curated-meta-fields">
+          <label>
+            <span>Card title</span>
+            <input
+              value={list.title}
+              maxLength={48}
+              onChange={(event) => setMeta("title", event.target.value)}
+              aria-label="Top games card title"
+            />
+          </label>
+          <label>
+            <span>Little caption</span>
+            <input
+              value={list.caption}
+              maxLength={120}
+              onChange={(event) => setMeta("caption", event.target.value)}
+              placeholder="games that shaped me, comfort games, favorites…"
+              aria-label="Top games card caption"
+            />
+          </label>
+        </div>
+        <p className="note curated-privacy">Share links are stateless: the selected game names, optional Steam AppIDs, title, and caption live in the URL. Shelfwear does not store the list.</p>
+      </section>
+
+      <section className="panel curated-builder">
+        <div className="curated-builder-head">
+          <SectionTitle icon="plus" eyebrow="Pick up to nine">Build your card</SectionTitle>
+          <button type="button" onClick={useCurrentNine} disabled={!loadedGames.length}>
+            <CuteIcon name="sparkles" className="button-icon" /> Use current nine
+          </button>
+        </div>
+
+        <form className="curated-add-form" onSubmit={(event) => { event.preventDefault(); add(); }}>
+          <label className="curated-name-field">
+            <span>Game name</span>
+            <input
+              ref={nameInput}
+              value={draftName}
+              onChange={(event) => setDraftName(event.target.value)}
+              maxLength={80}
+              placeholder="Type any game…"
+              aria-label="Game name to add"
+            />
+          </label>
+          <label className="curated-app-field">
+            <span>Steam art <em>optional</em></span>
+            <input
+              value={draftApp}
+              onChange={(event) => setDraftApp(event.target.value)}
+              placeholder="AppID or Steam store link"
+              aria-label="Optional Steam AppID or store link"
+            />
+          </label>
+          <button type="submit" disabled={list.games.length >= 9}>
+            <CuteIcon name="plus" className="button-icon" /> Add game
+          </button>
+        </form>
+
+        {suggestions.length > 0 && (
+          <div className="curated-suggestions" aria-label="Games from current shelf">
+            <span>from this shelf</span>
+            <div>
+              {suggestions.map((game) => (
+                <button type="button" key={game.appid} onClick={() => addSuggestion(game)}>
+                  <CuteIcon name="plus" className="button-icon" /> {game.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+        {formError && <p className="err">{formError}</p>}
+
+        <div className="curated-layout">
+          <div className="curated-preview-wrap">
+            <div className="curated-card-preview">
+              <div className="curated-preview-heading">
+                <span className="curated-sticker">♡ shelfwear</span>
+                <h3>{list.title}</h3>
+                {list.caption && <p>{list.caption}</p>}
+              </div>
+              <div className="curated-nine-grid" aria-label="Curated top games preview">
+                {Array.from({ length: 9 }, (_, index) => {
+                  const game = list.games[index];
+                  return game ? (
+                    <article className="curated-game-tile" key={`${game.name}-${index}`}>
+                      {game.appid ? (
+                        <img
+                          src={proxiedSteamCover(game.appid)}
+                          alt=""
+                          loading="lazy"
+                          decoding="async"
+                          onError={(event) => {
+                            const image = event.currentTarget;
+                            if (!image.dataset.fallback) {
+                              image.dataset.fallback = "library";
+                              image.src = steamCover(game.appid!);
+                            } else if (image.dataset.fallback === "library") {
+                              image.dataset.fallback = "header";
+                              image.src = steamHeader(game.appid!);
+                            } else {
+                              image.hidden = true;
+                            }
+                          }}
+                        />
+                      ) : (
+                        <span className="curated-fallback-letter" aria-hidden="true">{game.name.charAt(0).toUpperCase()}</span>
+                      )}
+                      <span className="curated-rank">{index + 1}</span>
+                      <div className="curated-game-name">{game.name}</div>
+                    </article>
+                  ) : (
+                    <button
+                      type="button"
+                      className="curated-empty-tile"
+                      key={index}
+                      onClick={() => nameInput.current?.focus()}
+                      aria-label={`Add game in slot ${index + 1}`}
+                    >
+                      <span>{index + 1}</span>
+                      <CuteIcon name="plus" />
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="curated-preview-footer"><span>hand-picked, not playtime-ranked</span><span>૮ ˶ᵔ ᵕ ᵔ˶ ა</span></div>
+            </div>
+          </div>
+
+          <div className="curated-list">
+            <div className="curated-list-heading"><b>{list.games.length}/9 picked</b><span>use the arrows to rank them</span></div>
+            {list.games.length === 0 ? (
+              <div className="curated-empty-state"><span aria-hidden="true">૮₍ ˶•⤙•˶ ₎ა</span><p>Your little list is empty. Add any game, even if it is not in your Steam library.</p></div>
+            ) : list.games.map((game, index) => (
+              <div className="curated-list-row" key={`${game.name}-${index}`}>
+                <span className="curated-list-rank">{index + 1}</span>
+                <div><b>{game.name}</b><span>{game.appid ? `Steam art · app ${game.appid}` : "cute text tile"}</span></div>
+                <div className="curated-row-actions">
+                  <button type="button" onClick={() => move(index, -1)} disabled={index === 0} aria-label={`Move ${game.name} up`}><CuteIcon name="up" /></button>
+                  <button type="button" onClick={() => move(index, 1)} disabled={index === list.games.length - 1} aria-label={`Move ${game.name} down`}><CuteIcon name="down" /></button>
+                  <button type="button" onClick={() => remove(index)} aria-label={`Remove ${game.name}`}><CuteIcon name="close" /></button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="panel curated-share">
+        <SectionTitle icon="share" eyebrow="Send it to friends">Share your list</SectionTitle>
+        <div className="curated-share-actions">
+          <button type="button" onClick={() => void copyLink()} disabled={!list.games.length}><CuteIcon name="share" className="button-icon" />{shareCopied ? "Link copied" : "Copy share link"}</button>
+          <button type="button" onClick={() => void download()} disabled={!list.games.length || rendering}><CuteIcon name="download" className="button-icon" />{rendering ? "Making card…" : "Download 1080×1350 card"}</button>
+          <button type="button" onClick={() => void copySummary()} disabled={!list.games.length}><CuteIcon name="copy" className="button-icon" />{summaryCopied ? "Copied" : "Copy text list"}</button>
+        </div>
+        {renderError && <p className="err">{renderError}</p>}
+        <p className="note">Games with a Steam AppID use official Steam artwork through Shelfwear's image proxy. Anything else gets a designed fallback tile instead of guessed artwork.</p>
+      </section>
+    </main>
   );
 }
 
