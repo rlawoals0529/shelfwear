@@ -178,8 +178,13 @@ button:hover:not(:disabled) {
 }
 
 .nine-copy {
-  inset: auto 14px 13px;
+  inset: auto auto 12px 12px;
+  max-width: calc(100% - 24px);
   gap: 4px;
+  padding: 9px 11px 8px;
+  border-radius: 10px;
+  background-color: #1b1719;
+  box-shadow: 0 5px 16px rgba(0,0,0,.18);
 }
 
 .nine-copy b {
@@ -270,7 +275,10 @@ button:hover:not(:disabled) {
   }
 
   .nine-copy {
-    inset: auto 9px 9px;
+    inset: auto auto 8px 8px;
+    max-width: calc(100% - 16px);
+    padding: 7px 8px 6px;
+    border-radius: 8px;
   }
 }
 
