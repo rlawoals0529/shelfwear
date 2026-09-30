@@ -47,9 +47,9 @@ The `/api/steam/cover/:appid` route is different: it is a tightly scoped proxy f
 
 Shelfwear also has a **My top games** builder for lists that are personal rather than playtime-ranked. A visitor can add any title manually, quick-add games from the currently loaded shelf, optionally paste a Steam AppID or Steam Store app URL for official artwork, rank up to nine games, and customize the card title/caption.
 
-Sharing stays stateless. The share URL contains only the curated title, caption, selected game names, and optional numeric Steam AppIDs. Shelfwear does not create an account or store the list. Opening a shared `?top=...` link goes directly to the editable top-games view.
+Sharing stays stateless. The share URL contains only the curated title, caption, selected game names, optional numeric Steam AppIDs, and public Steam icon hashes when a loaded library provides them. Shelfwear does not create an account or store the list. Opening a shared `?top=...` link goes directly to the editable top-games view.
 
-The builder can export a 1080×1350 scrapbook-style PNG. Games with an AppID use the existing same-origin Steam artwork proxy; games without one intentionally use a designed text tile rather than guessed artwork.
+The builder can export a 1080×1350 scrapbook-style PNG. Games with an AppID use the existing same-origin Steam artwork proxy. If Steam has no portrait, Shelfwear prefers the public icon hash from GetOwnedGames and otherwise letterboxes an official wide Steam asset rather than cropping it into a blurry square. Games without an AppID intentionally use a designed text tile rather than guessed artwork.
 
 ## Analytics
 
