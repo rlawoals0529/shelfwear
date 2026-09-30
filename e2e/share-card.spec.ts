@@ -294,7 +294,8 @@ test("downloads a friend comparison card from two public Steam shelves", async (
   expect(drawnText).toContain("67%");
   expect(drawnText).toContain("Shared Quest");
   expect(drawnText).toContain("Shared Campfire");
-  expect(drawnText).toContain("Left Player-only: 1  ·  Right Player-only: 1");
+  expect(drawnText).toContain("Left Player only: 1");
+  expect(drawnText).toContain("Right Player only: 1");
   expect(drawnText).toContain("A comparison of public library data, not a compatibility score.");
   expect(coverRequests.some((url) => url.includes("/api/steam/cover/10") && url.includes("icon=" + iconHash))).toBe(true);
 });
