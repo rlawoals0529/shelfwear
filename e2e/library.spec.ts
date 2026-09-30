@@ -27,6 +27,13 @@ test("shows a real library before you have given it anything", async ({ page }) 
   await expect(page.locator(".hero-meta .source")).toContainText("the sample library");
   await expect(page.getByRole("heading", { name: "The shelf" })).toBeVisible();
   await expect(page.getByText("nothing is fetched")).toBeVisible();
+  await expect(page.getByText(/Demo local data is shown in the sample/)).toBeVisible();
+
+  // The sample contains synthetic local-shaped data for the illustration, but it must
+  // never look like Shelfwear discovered install state on this computer.
+  await expect(page.getByRole("button", { name: "Installed on this PC" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Largest installed" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Recently played on this PC" })).toHaveCount(0);
 });
 
 test("reads dropped Steam files, tabs and inconsistent capitalisation included", async ({ page }) => {
@@ -205,6 +212,10 @@ test("the whole shelf can be searched, filtered, sorted, and made compact", asyn
   const rows = page.locator(".library-rows .row");
   await expect(rows).toHaveCount(3);
   await expect(rows.first()).toContainText("Fixture Alpha");
+  await expect(page.getByText(/Install state, disk size, and recency come only from/)).toBeVisible();
+  await expect(page.getByRole("button", { name: "Installed on this PC" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Largest installed" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Recently played on this PC" })).toBeVisible();
 
   await page.getByRole("button", { name: "Least played" }).click();
   await expect(rows.first()).toContainText("Fixture Never Launched");
@@ -228,7 +239,7 @@ test("the whole shelf can be searched, filtered, sorted, and made compact", asyn
   const compactHeight = (await rows.first().boundingBox())!.height;
   expect(compactHeight).toBeLessThan(cozyHeight);
 
-  await page.getByRole("button", { name: "Installed", exact: true }).click();
+  await page.getByRole("button", { name: "Installed on this PC", exact: true }).click();
   await expect(rows).toHaveCount(2);
   await expect(page.locator(".library-result-count")).toContainText("showing 2 of 3");
 });
