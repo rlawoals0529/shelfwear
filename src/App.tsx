@@ -220,58 +220,69 @@ export default function App() {
 
   return (
     <div className="wrap rhythm">
-      <h1 className="display">shelf<span>wear</span></h1>
-      <p className="tagline prose">
-        See what your Steam library actually gets played, then turn the shape of it into
-        something worth sharing. Local-file mode stays in this browser: nothing is uploaded
-        and nothing is fetched.
-      </p>
-      {/* Whose library this is has to be settled before the first number is read, so it
-          sits with the headline rather than down beside either import method. */}
-      <p className="note source">Reading <b>{loaded.source}</b>.</p>
-      {loaded.kind === "steam" && loaded.profile && (
-        <div className="steam-identity">
-          {loaded.profile.avatar && <img src={loaded.profile.avatar} alt="" loading="lazy" />}
-          <span>{loaded.profile.name ?? loaded.profile.steamid}</span>
-          <span className="note">public Steam data</span>
+      <header className="hero">
+        <p className="hero-kicker">a cozy look at your Steam shelf</p>
+        <h1 className="display">shelf<span>wear</span></h1>
+        <p className="tagline prose">
+          See what your Steam library actually gets played, then turn the shape of it into
+          something worth sharing. Local-file mode stays in this browser: nothing is uploaded
+          and nothing is fetched.
+        </p>
+        {/* Whose library this is has to be settled before the first number is read, so it
+            sits with the headline rather than down beside either import method. */}
+        <div className="hero-meta">
+          <p className="note source">Reading <b>{loaded.source}</b>.</p>
+          {loaded.kind === "steam" && loaded.profile && (
+            <div className="steam-identity">
+              {loaded.profile.avatar && <img src={loaded.profile.avatar} alt="" loading="lazy" />}
+              <span>{loaded.profile.name ?? loaded.profile.steamid}</span>
+              <span className="note">public Steam data</span>
+            </div>
+          )}
         </div>
-      )}
+      </header>
 
       <section className="panel import-panel" id="steam">
-        <p className="eyebrow">Start here</p>
-        <h2>Bring in your Steam library</h2>
-        <p className="prose">
-          Type your Steam vanity name after the prefilled URL, or paste a full public Steam profile URL or 64-bit SteamID. The Worker asks Steam for public
-          game/playtime data; your Steam password is never requested.
-        </p>
-        {shared.steam && <p className="share-hint">A friend shared this public SteamID. Read it to rebuild their shelf live.</p>}
-        <div className="profile-form">
-          <input
-            value={steamProfile}
-            onChange={(e) => setSteamProfile(e.target.value)}
-            onFocus={(e) => {
-              if (e.currentTarget.value === STEAM_PROFILE_PREFIX) {
-                const end = e.currentTarget.value.length;
-                e.currentTarget.setSelectionRange(end, end);
-              }
-            }}
-            placeholder="https://steamcommunity.com/id/yourname"
-            aria-label="Steam username, profile URL, or SteamID"
-          />
-          <button disabled={importing || !hasSteamProfileInput(steamProfile)} onClick={() => void importSteam()}>
-            {importing ? "Reading…" : shared.steam ? "Load shared shelf" : "Read public profile"}
-          </button>
+        <div className="import-layout">
+          <div className="import-copy">
+            <p className="eyebrow">Start here</p>
+            <h2>Bring in your Steam library</h2>
+            <p className="prose">
+              Type your Steam vanity name after the prefilled URL, or paste a full public Steam profile URL or 64-bit SteamID. The Worker asks Steam for public
+              game/playtime data; your Steam password is never requested.
+            </p>
+            {shared.steam && <p className="share-hint">A friend shared this public SteamID. Read it to rebuild their shelf live.</p>}
+          </div>
+          <div className="import-action">
+            <div className="profile-form">
+              <input
+                value={steamProfile}
+                onChange={(e) => setSteamProfile(e.target.value)}
+                onFocus={(e) => {
+                  if (e.currentTarget.value === STEAM_PROFILE_PREFIX) {
+                    const end = e.currentTarget.value.length;
+                    e.currentTarget.setSelectionRange(end, end);
+                  }
+                }}
+                placeholder="https://steamcommunity.com/id/yourname"
+                aria-label="Steam username, profile URL, or SteamID"
+              />
+              <button disabled={importing || !hasSteamProfileInput(steamProfile)} onClick={() => void importSteam()}>
+                {importing ? "Reading…" : shared.steam ? "Load shared shelf" : "Read public profile"}
+              </button>
+            </div>
+            {steamError && <p className="err">{steamError}</p>}
+            <p className="note">
+              If Steam says the library is unavailable, set Profile → Privacy Settings → Game
+              details to Public, or use the local-file method below. Share links contain only a
+              public SteamID; Shelfwear does not store a library snapshot.
+            </p>
+          </div>
         </div>
-        {steamError && <p className="err">{steamError}</p>}
-        <p className="note">
-          If Steam says the library is unavailable, set Profile → Privacy Settings → Game
-          details to Public, or use the local-file method below. Share links contain only a
-          public SteamID; Shelfwear does not store a library snapshot.
-        </p>
       </section>
 
       {(shelf.untouched.length > 0 || shelf.played.length > 0) && (
-        <section className="panel figure">
+        <section className="panel figure shelf-panel">
           <h2>The shelf</h2>
           {/* Two shelves, untouched on top. Shelfwear is the trade term for what stock takes
               from sitting unsold, so the games that have never run are the ones wearing it:
@@ -298,7 +309,7 @@ export default function App() {
         </section>
       )}
 
-      <section className="panel">
+      <section className="panel stats-panel">
         <h2>What it adds up to</h2>
         <div className="grid">
           <div className="metric"><b><Ticker value={stats.games} /></b><span>games here</span></div>
@@ -455,7 +466,7 @@ export default function App() {
 
       {/* The local picker remains available even after the Worker path exists. It is the only
           mode that can say anything about the machine's disk, and it sends nothing away. */}
-      <section className="panel">
+      <section className="panel local-panel">
         <h2>Or keep it completely local</h2>
         <div
           className={over ? "drop over" : "drop"}
@@ -488,7 +499,7 @@ export default function App() {
         </p>
       </section>
 
-      <section className="panel">
+      <section className="panel library-panel">
         <h2>Everything ({loaded.games.length})</h2>
         <div className="rows">
           {loaded.games.map((g) => (
