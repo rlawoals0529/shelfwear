@@ -244,6 +244,27 @@ test("the whole shelf can be searched, filtered, sorted, and made compact", asyn
   await expect(page.locator(".library-result-count")).toContainText("showing 2 of 3");
 });
 
+test("shelf browsing preferences stay in this browser across reloads", async ({ page }) => {
+  await page.locator('input[type="file"]').setInputFiles(ALL);
+  await page.getByRole("button", { name: "Least played" }).click();
+  await page.getByRole("button", { name: "Compact" }).click();
+
+  await expect(page.getByRole("button", { name: "Least played" })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator(".library-rows")).toHaveClass(/compact/);
+
+  await page.reload();
+
+  await expect(page.getByRole("button", { name: "Least played" })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("button", { name: "Compact" })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator(".library-rows")).toHaveClass(/compact/);
+
+  const saved = await page.evaluate(() => ({
+    sort: localStorage.getItem("shelfwear:library-sort"),
+    density: localStorage.getItem("shelfwear:library-density"),
+  }));
+  expect(saved).toEqual({ sort: "least-played", density: "compact" });
+});
+
 test("empty shelf searches have a clear reset instead of a blank list", async ({ page }) => {
   await page.locator('input[type="file"]').setInputFiles(ALL);
   await page.getByLabel("Search games in the whole shelf").fill("definitely-not-a-game");
