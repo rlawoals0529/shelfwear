@@ -87,14 +87,37 @@ async function library(profile: string, key: string): Promise<Response> {
   });
 }
 
+async function steamCover(appid: string): Promise<Response> {
+  if (!/^\d{1,10}$/.test(appid)) return new Response(null, { status: 400 });
+  const source = `https://shared.steamstatic.com/store_item_assets/steam/apps/${appid}/library_600x900.jpg`;
+  const upstream = await fetch(source);
+  const contentType = upstream.headers.get("content-type") ?? "";
+  if (!upstream.ok || !contentType.toLowerCase().startsWith("image/")) {
+    return new Response(null, { status: 404, headers: { "cache-control": "public, max-age=300" } });
+  }
+  return new Response(upstream.body, {
+    status: 200,
+    headers: {
+      "content-type": contentType,
+      "cache-control": "public, max-age=86400, stale-while-revalidate=604800",
+      "x-content-type-options": "nosniff",
+    },
+  });
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
-    if (request.method === "GET" && url.pathname === "/api/steam/library") {
-      if (!env.STEAM_WEB_API_KEY) return json({ error: "Steam import is not configured on this deployment." }, 503);
-      const profile = url.searchParams.get("profile") ?? "";
-      if (!profile || profile.length > 240) return json({ error: "Add a Steam profile URL or SteamID." }, 400);
-      return library(profile, env.STEAM_WEB_API_KEY);
+    if (request.method === "GET") {
+      const cover = url.pathname.match(/^\/api\/steam\/cover\/(\d{1,10})$/);
+      if (cover?.[1]) return steamCover(cover[1]);
+
+      if (url.pathname === "/api/steam/library") {
+        if (!env.STEAM_WEB_API_KEY) return json({ error: "Steam import is not configured on this deployment." }, 503);
+        const profile = url.searchParams.get("profile") ?? "";
+        if (!profile || profile.length > 240) return json({ error: "Add a Steam profile URL or SteamID." }, 400);
+        return library(profile, env.STEAM_WEB_API_KEY);
+      }
     }
     return new Response(null, { status: 404 });
   },

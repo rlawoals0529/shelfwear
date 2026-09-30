@@ -17,6 +17,7 @@ On a Cloudflare Workers deployment, paste a public Steam profile URL or 64-bit S
 The social summary adds:
 
 - **Your nine** — the nine titles with the most recorded playtime, in a 3×3 grid.
+- **Download card** — a 1080×1350 PNG rendered in the current Shelfwear palette. Local/sample mode is fully browser-only; Steam mode asks Shelfwear's same-origin Worker cover endpoint for public artwork and falls back to typographic tiles when artwork is unavailable.
 - **Shelf familiar** — a deterministic, playful description based only on observable playtime/library patterns. It describes the library shape, not the person.
 - **Copy summary** — a text version of the nine for sharing anywhere.
 - **Share shelf** — a stateless URL containing only the resolved public SteamID. Opening it prefills the profile so Shelfwear can rebuild the result live; no library snapshot is stored.
@@ -36,7 +37,9 @@ Local mode and public-profile mode know different things and Shelfwear keeps tha
 
 `localconfig.vdf` only lists apps this Steam client has a local record of. Anything never seen by that client leaves no trace, so local counts are floors rather than account totals.
 
-Public-profile mode uses Steam's `GetOwnedGames` response. It can be broader than the local files, but only when the profile's Game details are visible. It does not provide local disk usage or last-played timestamps. The Worker also uses `GetPlayerSummaries` for public display metadata. API responses use `Cache-Control: no-store`, and Shelfwear does not persist imported libraries in KV, D1, or another database.
+Public-profile mode uses Steam's `GetOwnedGames` response. It can be broader than the local files, but only when the profile's Game details are visible. It does not provide local disk usage or last-played timestamps. The Worker also uses `GetPlayerSummaries` for public display metadata. Library/profile API responses use `Cache-Control: no-store`, and Shelfwear does not persist imported libraries in KV, D1, or another database.
+
+The `/api/steam/cover/:appid` route is different: it is a tightly scoped proxy for public Steam artwork, accepts only a numeric app ID, and may be cached because it contains no user-specific library data. It exists so exported canvas cards remain origin-clean instead of depending on third-party CORS behavior.
 
 ## Cloudflare Workers deployment
 
@@ -61,7 +64,7 @@ Then deploy:
 npx wrangler deploy
 ```
 
-The checked-in Wrangler config uses the current Workers Static Assets model. GitHub Pages can remain in place until the Worker deployment has been verified; on Pages, local mode still works and Worker-backed actions explain that a Cloudflare deployment is required.
+The checked-in Wrangler config uses the current Workers Static Assets model. GitHub Pages can remain in place until the Worker deployment has been verified; on Pages, local/sample mode and PNG export still work, while Worker-backed Steam actions explain that a Cloudflare deployment is required.
 
 ## The files
 
@@ -90,7 +93,7 @@ npm install
 npm run dev
 ```
 
-`npm test` covers parser/arithmetic/social-summary/share-link/comparison behavior; `npm run e2e` drives a browser against Steam-shaped fixtures.
+`npm test` covers parser/arithmetic/social-summary/share-link/comparison/export helpers; `npm run e2e` drives a browser against Steam-shaped fixtures and verifies the generated share card is a real 1080×1350 PNG.
 
 The page opens on clearly labeled synthetic sample data so there is something to inspect before loading a library.
 

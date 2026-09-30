@@ -2,6 +2,7 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { readLocalConfig, readManifest, buildLibrary, summarise, shelve, hours, gb, type Game, type Spine } from "./lib/library.js";
 import { familiarFor, steamCover, topNine } from "./lib/profile.js";
 import { compareLibraries, type LibraryComparison } from "./lib/compare.js";
+import { downloadBlob, renderShareCard, shareCardFilename } from "./lib/share-card.js";
 import {
   comparisonShareUrl,
   fetchPublicSteamLibrary,
@@ -93,6 +94,8 @@ export default function App() {
   const [importing, setImporting] = useState(false);
   const [copied, setCopied] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
+  const [cardRendering, setCardRendering] = useState(false);
+  const [cardError, setCardError] = useState<string | null>(null);
   const [compareLeft, setCompareLeft] = useState(shared.compare?.[0] ?? "");
   const [compareRight, setCompareRight] = useState(shared.compare?.[1] ?? "");
   const [comparing, setComparing] = useState(false);
@@ -178,6 +181,25 @@ export default function App() {
     setCopied(true);
     window.setTimeout(() => setCopied(false), 1600);
   }, [nine, familiar]);
+
+  const downloadCard = useCallback(async () => {
+    setCardError(null);
+    setCardRendering(true);
+    try {
+      const profileName = loaded.kind === "steam" ? loaded.profile?.name ?? null : null;
+      const blob = await renderShareCard({
+        games: nine,
+        familiar,
+        profileName,
+        useSteamCovers: loaded.kind === "steam",
+      });
+      downloadBlob(blob, shareCardFilename(profileName));
+    } catch (e) {
+      setCardError(e instanceof Error ? e.message : String(e));
+    } finally {
+      setCardRendering(false);
+    }
+  }, [familiar, loaded.kind, loaded.profile?.name, nine]);
 
   const copyShelfLink = useCallback(async () => {
     if (!loaded.steamid) return;
@@ -289,12 +311,14 @@ export default function App() {
               <p className="note">The nine games with the most recorded playtime.</p>
             </div>
             <div className="social-actions">
+              <button disabled={cardRendering} onClick={() => void downloadCard()}>{cardRendering ? "Making card…" : "Download card"}</button>
               <button onClick={() => void copyNine()}>{copied ? "Copied" : "Copy summary"}</button>
               {loaded.kind === "steam" && loaded.steamid && (
                 <button onClick={() => void copyShelfLink()}>{shareCopied ? "Link copied" : "Share shelf"}</button>
               )}
             </div>
           </div>
+          {cardError && <p className="err">{cardError}</p>}
           <div className="nine-grid" aria-label="Top nine games by recorded playtime">
             {nine.map((game, i) => (
               <article className="nine-tile" key={game.appid}>
@@ -305,6 +329,7 @@ export default function App() {
               </article>
             ))}
           </div>
+          <p className="note">Download card exports a 1080×1350 PNG using the current Shelfwear palette. Missing cover art falls back to a typographic tile.</p>
           <div className="familiar">
             <span className="familiar-mark" aria-hidden="true">{familiar.animal}</span>
             <div>
