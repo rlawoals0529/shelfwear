@@ -2,7 +2,7 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import { readLocalConfig, readManifest, buildLibrary, summarise, shelve, hours, gb, type Game, type Spine } from "./lib/library.js";
 import { familiarFor, steamCover, topNine } from "./lib/profile.js";
 import { compareLibraries, type LibraryComparison } from "./lib/compare.js";
-import { downloadBlob, renderShareCard, shareCardFilename } from "./lib/share-card.js";
+import { downloadBlob, proxiedSteamCover, renderShareCard, shareCardFilename } from "./lib/share-card.js";
 import {
   comparisonShareUrl,
   fetchPublicSteamLibrary,
@@ -191,7 +191,7 @@ export default function App() {
         games: nine,
         familiar,
         profileName,
-        useSteamCovers: loaded.kind === "steam",
+        useSteamCovers: loaded.kind !== "local",
       });
       downloadBlob(blob, shareCardFilename(profileName));
     } catch (e) {
@@ -297,7 +297,7 @@ export default function App() {
                   {stats.unknownSize === 1 ? " reports" : "s report"} no size, so the disk figures
                   are a floor rather than a total.</>
               )}
-              {loaded.kind === "sample" && <> This screen uses synthetic sample data.</>}
+              {loaded.kind === "sample" && <> The demo uses real Steam game artwork, but its playtime, dates, and disk figures are synthetic.</>}
             </>
           )}
         </p>
@@ -322,7 +322,23 @@ export default function App() {
           <div className="nine-grid" aria-label="Top nine games by recorded playtime">
             {nine.map((game, i) => (
               <article className="nine-tile" key={game.appid}>
-                {loaded.kind === "steam" && <img src={steamCover(game.appid)} alt="" loading="lazy" />}
+                {loaded.kind !== "local" && (
+                  <img
+                    src={proxiedSteamCover(game.appid)}
+                    alt=""
+                    loading="lazy"
+                    decoding="async"
+                    onError={(event) => {
+                      const image = event.currentTarget;
+                      if (image.dataset.fallback !== "direct") {
+                        image.dataset.fallback = "direct";
+                        image.src = steamCover(game.appid);
+                      } else {
+                        image.hidden = true;
+                      }
+                    }}
+                  />
+                )}
                 <div className="nine-shade" />
                 <span className="nine-rank">{i + 1}</span>
                 <div className="nine-copy"><b>{game.name}</b><span>{hours(game.minutes)}h</span></div>
@@ -476,7 +492,7 @@ export default function App() {
           ))}
         </div>
       </section>
-      <Palette themes={palettes} storageKey="shelfwear:theme" />
+      <Palette themes={palettes} storageKey="shelfwear:theme:cozy-v2" initial="cherry-blossom-dusk" />
     </div>
   );
 }
