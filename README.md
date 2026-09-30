@@ -50,11 +50,13 @@ The **Everything** section is interactive rather than a fixed dump of games. Vis
 
 ## Shelf Stories
 
-**Shelf Stories** turns the hand-picked card builder into a small prompt-driven collection maker. Start from **Games that shaped me**, **My comfort games**, **Currently obsessed**, **Childhood favorites**, **Multiplayer memories**, or **Play again for the first time**. Choosing a prompt sets a suggested title and caption without replacing games you already picked. You can then add titles manually or pull them from the loaded shelf, attach a Steam AppID or Store URL when you want official artwork, and order up to nine games.
+**Shelf Stories** turns the hand-picked card builder into a small prompt-driven collection maker. Start from **Games that shaped me**, **My comfort games**, **Currently obsessed**, **Childhood favorites**, **Multiplayer memories**, or **Play again for the first time**. Choosing a prompt sets a suggested title and caption without replacing games you already picked. You can then add titles manually or pull them from the loaded shelf, attach a Steam AppID or Store URL when you want official artwork, order up to nine games, and add a short optional **why this one?** note to each pick.
 
-Sharing stays stateless. New share URLs use `?story=...` and contain only the story title, caption, selected game names, optional numeric Steam AppIDs, and public Steam icon hashes when a loaded library provides them. Shelfwear does not create an account or store the story. Existing `?top=...` links remain supported and open the same editable Shelf Stories view.
+Stories also have three visual treatments: **Scrapbook**, **Polaroid**, and **Poster**. The chosen look changes both the live preview and the exported card; it never changes or invents game data.
 
-The builder can export a 1080×1350 scrapbook-style PNG. Games with an AppID use the existing same-origin Steam artwork proxy. If Steam has no portrait, Shelfwear prefers the public icon hash from GetOwnedGames and otherwise letterboxes an official wide Steam asset rather than cropping it into a blurry square. Games without an AppID intentionally use a designed text tile rather than guessed artwork.
+Sharing stays stateless. New share URLs use `?story=...` and contain only the story title, caption, selected card look, selected game names, optional per-game notes, numeric Steam AppIDs, and public Steam icon hashes when a loaded library provides them. Shelfwear does not create an account or store the story. Existing `?top=...` links remain supported and open the same editable Shelf Stories view.
+
+The builder can export a 1080×1350 PNG carrying the selected card look and authored notes. Games with an AppID use the existing same-origin Steam artwork proxy. If Steam has no portrait, Shelfwear prefers the public icon hash from GetOwnedGames and otherwise letterboxes an official wide Steam asset rather than cropping it into a blurry square. Games without an AppID intentionally use a designed text tile rather than guessed artwork.
 
 ## Analytics
 
