@@ -231,7 +231,7 @@ test("downloads a friend comparison card from two public Steam shelves", async (
       contentType: "application/json",
       body: JSON.stringify({
         steamid: left ? "76561198000000001" : "76561198000000002",
-        gameCount: left ? 4 : 4,
+        gameCount: 5,
         profile: {
           steamid: left ? "76561198000000001" : "76561198000000002",
           name: left ? "Left Player" : "Right Player",
@@ -242,11 +242,13 @@ test("downloads a friend comparison card from two public Steam shelves", async (
           { appid: "10", name: "Shared Quest", minutes: 1200, iconHash },
           { appid: "11", name: "Night Queue", minutes: 480 },
           { appid: "12", name: "Co-op Garden", minutes: 300 },
+          { appid: "13", name: "Teach Me This", minutes: 240 },
           { appid: "20", name: "Left Only", minutes: 90 },
         ] : [
           { appid: "10", name: "Shared Quest", minutes: 900, iconHash },
           { appid: "11", name: "Night Queue", minutes: 360 },
           { appid: "12", name: "Co-op Garden", minutes: 240 },
+          { appid: "13", name: "Teach Me This", minutes: 0 },
           { appid: "30", name: "Right Only", minutes: 110 },
         ],
       }),
@@ -266,6 +268,10 @@ test("downloads a friend comparison card from two public Steam shelves", async (
   await expect(page.locator(".comparison-result")).toContainText("Left Player");
   await expect(page.locator(".comparison-result")).toContainText("Right Player");
   await expect(page.locator(".compare-highlight")).toContainText("Shared Quest");
+  await expect(page.locator(".compare-corners")).toContainText("Only on Left Player’s shelf");
+  await expect(page.locator(".compare-corners")).toContainText("Only on Right Player’s shelf");
+  await expect(page.locator(".compare-handoffs")).toContainText("Teach Me This");
+  await expect(page.locator(".compare-handoffs")).toContainText("Right Player 0h recorded");
   await expect(page.getByRole("button", { name: "Download comparison card" })).toBeEnabled();
 
   const downloadPromise = page.waitForEvent("download");
@@ -285,9 +291,10 @@ test("downloads a friend comparison card from two public Steam shelves", async (
     (window as unknown as { __comparisonFillText: string[] }).__comparisonFillText,
   );
   expect(drawnText).toContain("Left Player × Right Player");
-  expect(drawnText).toContain("60%");
+  expect(drawnText).toContain("67%");
   expect(drawnText).toContain("Shared Quest");
   expect(drawnText).toContain("Shared Campfire");
+  expect(drawnText).toContain("Left Player-only: 1  ·  Right Player-only: 1");
   expect(drawnText).toContain("A comparison of public library data, not a compatibility score.");
   expect(coverRequests.some((url) => url.includes("/api/steam/cover/10") && url.includes("icon=" + iconHash))).toBe(true);
 });
