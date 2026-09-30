@@ -141,6 +141,46 @@ test("Shelf Story prompts update the card without replacing picked games", async
   await expect(page.locator(".curated-list-row")).toContainText("Hades");
 });
 
+test("Shelf Story notes and card styles survive sharing and appear in exports", async ({ page, context }) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.addInitScript(() => {
+    const seen: string[] = [];
+    (window as unknown as { __storyFillText: string[] }).__storyFillText = seen;
+    const original = CanvasRenderingContext2D.prototype.fillText;
+    CanvasRenderingContext2D.prototype.fillText = function (...args) {
+      seen.push(String(args[0]));
+      return original.apply(this, args as Parameters<CanvasRenderingContext2D["fillText"]>);
+    };
+  });
+
+  await page.goto("/");
+  await page.getByRole("button", { name: "Shelf stories" }).click();
+  await page.getByLabel("Game name to add").fill("Hades");
+  await page.getByRole("button", { name: "Add game", exact: true }).click();
+  await page.getByLabel("Why Hades belongs in this story").fill("roguelikes finally clicked");
+  await page.getByRole("button", { name: /^Poster/ }).click();
+
+  await expect(page.locator(".curated-card-preview")).toHaveClass(/story-style-poster/);
+  await expect(page.locator(".curated-game-note")).toHaveText("roguelikes finally clicked");
+
+  await page.getByRole("button", { name: "Copy story link" }).click();
+  const copied = await page.evaluate(() => navigator.clipboard.readText());
+  await page.goto(copied);
+
+  await expect(page.getByRole("button", { name: /^Poster/ })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByLabel("Why Hades belongs in this story")).toHaveValue("roguelikes finally clicked");
+
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Download 1080×1350 card" }).click();
+  await downloadPromise;
+
+  const drawnText = await page.evaluate(() =>
+    (window as unknown as { __storyFillText: string[] }).__storyFillText,
+  );
+  expect(drawnText).toContain("roguelikes finally clicked");
+  expect(drawnText).toContain("a hand-picked story · poster card · not ranked by playtime");
+});
+
 test("new story links use story= and old top= links still open", async ({ page, context }) => {
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   await page.goto("/");

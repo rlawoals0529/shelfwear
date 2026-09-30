@@ -17,7 +17,7 @@ import {
   type SteamProfileSummary,
 } from "./lib/steam.js";
 import { SAMPLE_CONFIG, SAMPLE_MANIFESTS } from "./lib/sample.js";
-import { curatedFromSearch, curatedShareUrl, SHELF_STORY_PRESETS, steamAppIdFromInput, type CuratedTopGames } from "./lib/top-games.js";
+import { curatedFromSearch, curatedShareUrl, SHELF_STORY_PRESETS, SHELF_STORY_STYLES, steamAppIdFromInput, type CuratedTopGames } from "./lib/top-games.js";
 import { Ticker, stagger } from "./lib/motion.js";
 import { Palette } from "./lib/palette.js";
 import palettes from "./theme/palettes.json";
@@ -964,6 +964,7 @@ function TopGamesPage({ loadedGames, initial }: { loadedGames: Game[]; initial: 
     title: "games that shaped me",
     caption: "the games that became part of my gaming history",
     games: [],
+    style: "scrapbook",
   });
   const [activePreset, setActivePreset] = useState<string | null>(() => initial ? null : "shaped-me");
   const [draftName, setDraftName] = useState("");
@@ -1042,6 +1043,19 @@ function TopGamesPage({ loadedGames, initial }: { loadedGames: Game[]; initial: 
     add(game.name, game.appid);
   };
 
+  const updateGameNote = (index: number, value: string) => {
+    setList((current) => ({
+      ...current,
+      games: current.games.map((game, i) =>
+        i === index ? { ...game, note: value.replace(/\s+/g, " ").slice(0, 42) } : game
+      ),
+    }));
+  };
+
+  const setStoryStyle = (style: NonNullable<CuratedTopGames["style"]>) => {
+    setList((current) => ({ ...current, style }));
+  };
+
   const remove = (index: number) => {
     setList((current) => ({ ...current, games: current.games.filter((_, i) => i !== index) }));
   };
@@ -1081,7 +1095,7 @@ function TopGamesPage({ loadedGames, initial }: { loadedGames: Game[]; initial: 
     const text = [
       list.title,
       list.caption,
-      ...list.games.map((game, index) => `${index + 1}. ${game.name}`),
+      ...list.games.map((game, index) => `${index + 1}. ${game.name}${game.note ? ` — ${game.note}` : ""}`),
       "made as a Shelfwear story ♡",
     ].filter(Boolean).join("\n");
     await navigator.clipboard.writeText(text);
@@ -1156,7 +1170,25 @@ function TopGamesPage({ loadedGames, initial }: { loadedGames: Game[]; initial: 
             />
           </label>
         </div>
-        <p className="note curated-privacy">Story links are stateless: the title, caption, selected game names, optional Steam AppIDs, and public Steam artwork references live in the URL. Shelfwear does not store the list. Old <code>?top=</code> links still open normally.</p>
+
+        <div className="story-style-picker">
+          <span className="library-control-label">Card look</span>
+          <div className="story-style-options" aria-label="Shelf story card style">
+            {SHELF_STORY_STYLES.map((style) => (
+              <button
+                type="button"
+                key={style.id}
+                className={(list.style ?? "scrapbook") === style.id ? "active" : ""}
+                aria-pressed={(list.style ?? "scrapbook") === style.id}
+                onClick={() => setStoryStyle(style.id)}
+              >
+                <b>{style.label}</b>
+                <span>{style.description}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+        <p className="note curated-privacy">Story links are stateless: the title, caption, card look, selected game names, optional notes, Steam AppIDs, and public Steam artwork references live in the URL. Shelfwear does not store the list. Old <code>?top=</code> links still open normally.</p>
       </section>
 
       <section className="panel curated-builder">
@@ -1209,7 +1241,7 @@ function TopGamesPage({ loadedGames, initial }: { loadedGames: Game[]; initial: 
 
         <div className="curated-layout">
           <div className="curated-preview-wrap">
-            <div className="curated-card-preview">
+            <div className={`curated-card-preview story-style-${list.style ?? "scrapbook"}`}>
               <div className="curated-preview-heading">
                 <span className="curated-sticker">♡ shelfwear</span>
                 <span className="curated-doodle curated-doodle-star" aria-hidden="true"><CuteIcon name="sparkles" /></span>
@@ -1249,7 +1281,8 @@ function TopGamesPage({ loadedGames, initial }: { loadedGames: Game[]; initial: 
                         <span className="curated-fallback-letter" aria-hidden="true">{game.name.charAt(0).toUpperCase()}</span>
                       )}
                       <span className="curated-rank">{index + 1}</span>
-                      <div className="curated-game-name">{game.name}</div>
+                      <div className={game.note ? "curated-game-name has-note" : "curated-game-name"}>{game.name}</div>
+                      {game.note && <div className="curated-game-note">{game.note}</div>}
                     </article>
                   ) : (
                     <button
@@ -1276,7 +1309,17 @@ function TopGamesPage({ loadedGames, initial }: { loadedGames: Game[]; initial: 
             ) : list.games.map((game, index) => (
               <div className="curated-list-row" key={`${game.name}-${index}`}>
                 <span className="curated-list-rank">{index + 1}</span>
-                <div><b>{game.name}</b><span>{game.appid ? `Steam art · app ${game.appid}` : "cute text tile"}</span></div>
+                <div className="curated-list-copy">
+                  <b>{game.name}</b>
+                  <span>{game.appid ? `Steam art · app ${game.appid}` : "cute text tile"}</span>
+                  <input
+                    value={game.note ?? ""}
+                    maxLength={42}
+                    onChange={(event) => updateGameNote(index, event.target.value)}
+                    placeholder="why this one? optional"
+                    aria-label={`Why ${game.name} belongs in this story`}
+                  />
+                </div>
                 <div className="curated-row-actions">
                   <button type="button" onClick={() => move(index, -1)} disabled={index === 0} aria-label={`Move ${game.name} up`}><CuteIcon name="up" /></button>
                   <button type="button" onClick={() => move(index, 1)} disabled={index === list.games.length - 1} aria-label={`Move ${game.name} down`}><CuteIcon name="down" /></button>

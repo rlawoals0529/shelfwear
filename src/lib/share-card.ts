@@ -352,6 +352,7 @@ function drawSparkle(ctx: CanvasRenderingContext2D, x: number, y: number, size: 
 export async function renderCuratedCard(input: CuratedTopGames): Promise<Blob> {
   if (typeof document === "undefined") throw new Error("Share cards require a browser.");
   const theme = currentShareCardTheme();
+  const style = input.style ?? "scrapbook";
   const canvas = document.createElement("canvas");
   canvas.width = WIDTH;
   canvas.height = HEIGHT;
@@ -362,17 +363,29 @@ export async function renderCuratedCard(input: CuratedTopGames): Promise<Blob> {
   ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
   const paper = ctx.createLinearGradient(0, 0, WIDTH, HEIGHT);
-  paper.addColorStop(0, theme.panel);
-  paper.addColorStop(.55, theme.bg);
-  paper.addColorStop(1, theme.raised);
-  ctx.globalAlpha = .8;
+  if (style === "poster") {
+    paper.addColorStop(0, theme.bg);
+    paper.addColorStop(.45, theme.panel);
+    paper.addColorStop(1, theme.raised);
+  } else if (style === "polaroid") {
+    paper.addColorStop(0, theme.panel);
+    paper.addColorStop(.7, theme.panel);
+    paper.addColorStop(1, theme.bg);
+  } else {
+    paper.addColorStop(0, theme.panel);
+    paper.addColorStop(.55, theme.bg);
+    paper.addColorStop(1, theme.raised);
+  }
+  ctx.globalAlpha = style === "poster" ? .95 : .8;
   ctx.fillStyle = paper;
   ctx.fillRect(0, 0, WIDTH, HEIGHT);
   ctx.globalAlpha = 1;
 
-  // A few tiny scrapbook marks, kept away from the game art.
-  drawSparkle(ctx, WIDTH - 94, 74, 18, theme.accent);
-  drawSparkle(ctx, WIDTH - 133, 104, 8, theme.accent2);
+  if (style === "scrapbook") {
+    // A few tiny scrapbook marks, kept away from the game art.
+    drawSparkle(ctx, WIDTH - 94, 74, 18, theme.accent);
+    drawSparkle(ctx, WIDTH - 133, 104, 8, theme.accent2);
+  }
 
   ctx.fillStyle = theme.accent;
   ctx.font = "700 22px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
@@ -392,6 +405,7 @@ export async function renderCuratedCard(input: CuratedTopGames): Promise<Blob> {
   const gridTop = captionLines.length > 1 ? 208 : 190;
   const gridSize = WIDTH - PAD * 2;
   const tile = (gridSize - GRID_GAP * 2) / 3;
+  const tileRadius = style === "poster" ? 6 : style === "polaroid" ? 10 : 20;
   const images = await Promise.all(
     input.games.slice(0, 9).map((game) =>
       game.appid ? loadImage(proxiedSteamCover(game.appid, game.iconHash)) : Promise.resolve(null)
@@ -407,7 +421,7 @@ export async function renderCuratedCard(input: CuratedTopGames): Promise<Blob> {
     const cover = images[index] ?? null;
 
     ctx.save();
-    roundedRect(ctx, x, y, tile, tile, 20);
+    roundedRect(ctx, x, y, tile, tile, tileRadius);
     ctx.clip();
 
     const fallback = ctx.createLinearGradient(x, y, x + tile, y + tile);
@@ -450,8 +464,16 @@ export async function renderCuratedCard(input: CuratedTopGames): Promise<Blob> {
       ctx.fillStyle = "#fff";
       ctx.font = "700 24px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
       const titleLines = wrapByMeasure(ctx, game.name, tile - 42, 2);
-      const start = y + tile - 34 - (titleLines.length - 1) * 29;
+      const hasNote = Boolean(game.note);
+      const start = y + tile - (hasNote ? 58 : 34) - (titleLines.length - 1) * 29;
       titleLines.forEach((line, lineIndex) => ctx.fillText(line, x + 21, start + lineIndex * 29));
+
+      if (game.note) {
+        ctx.fillStyle = "rgba(255,255,255,.78)";
+        ctx.font = "600 15px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+        const note = wrapByMeasure(ctx, game.note, tile - 42, 1)[0] ?? game.note;
+        ctx.fillText(note, x + 21, y + tile - 20);
+      }
     } else {
       ctx.globalAlpha = .8;
       ctx.strokeStyle = theme.edge;
@@ -466,6 +488,17 @@ export async function renderCuratedCard(input: CuratedTopGames): Promise<Blob> {
       ctx.textAlign = "center";
       ctx.fillText("little empty spot", x + tile / 2, y + tile / 2);
       ctx.textAlign = "left";
+    }
+    if (style === "polaroid" && game) {
+      ctx.strokeStyle = "rgba(255,255,255,.34)";
+      ctx.lineWidth = 8;
+      roundedRect(ctx, x + 4, y + 4, tile - 8, tile - 8, Math.max(4, tileRadius - 3));
+      ctx.stroke();
+    } else if (style === "poster") {
+      ctx.strokeStyle = theme.edge;
+      ctx.lineWidth = 2;
+      roundedRect(ctx, x + 1, y + 1, tile - 2, tile - 2, tileRadius);
+      ctx.stroke();
     }
     ctx.restore();
   }
@@ -483,7 +516,7 @@ export async function renderCuratedCard(input: CuratedTopGames): Promise<Blob> {
   ctx.fillText("made with shelfwear", PAD, footerY + 45);
   ctx.fillStyle = theme.dim;
   ctx.font = "400 16px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  ctx.fillText("a hand-picked list · not ranked by playtime", PAD, footerY + 75);
+  ctx.fillText(`a hand-picked story · ${style} card · not ranked by playtime`, PAD, footerY + 75);
 
   ctx.fillStyle = theme.accent;
   ctx.font = "700 16px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
