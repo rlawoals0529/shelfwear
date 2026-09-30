@@ -17,7 +17,7 @@ import {
   type SteamProfileSummary,
 } from "./lib/steam.js";
 import { SAMPLE_CONFIG, SAMPLE_MANIFESTS } from "./lib/sample.js";
-import { curatedFromSearch, curatedShareUrl, steamAppIdFromInput, type CuratedTopGames } from "./lib/top-games.js";
+import { curatedFromSearch, curatedShareUrl, SHELF_STORY_PRESETS, steamAppIdFromInput, type CuratedTopGames } from "./lib/top-games.js";
 import { Ticker, stagger } from "./lib/motion.js";
 import { Palette } from "./lib/palette.js";
 import palettes from "./theme/palettes.json";
@@ -512,7 +512,7 @@ export default function App() {
           <CuteIcon name="chart" className="button-icon" /> Analytics
         </button>
         <button className={view === "top" ? "active" : ""} aria-pressed={view === "top"} onClick={() => setView("top")}>
-          <CuteIcon name="heart" className="button-icon" /> My top games
+          <CuteIcon name="heart" className="button-icon" /> Shelf stories
         </button>
       </nav>
 
@@ -919,10 +919,11 @@ export default function App() {
 
 function TopGamesPage({ loadedGames, initial }: { loadedGames: Game[]; initial: CuratedTopGames | null }) {
   const [list, setList] = useState<CuratedTopGames>(() => initial ?? {
-    title: "my top games",
-    caption: "the games I wanted on one little card ♡",
+    title: "games that shaped me",
+    caption: "the games that became part of my gaming history",
     games: [],
   });
+  const [activePreset, setActivePreset] = useState<string | null>(() => initial ? null : "shaped-me");
   const [draftName, setDraftName] = useState("");
   const [draftApp, setDraftApp] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
@@ -944,7 +945,18 @@ function TopGamesPage({ loadedGames, initial }: { loadedGames: Game[]; initial: 
 
   const setMeta = (field: "title" | "caption", value: string) => {
     const max = field === "title" ? 48 : 120;
+    setActivePreset(null);
     setList((current) => ({ ...current, [field]: value.slice(0, max) }));
+  };
+
+  const applyPreset = (preset: (typeof SHELF_STORY_PRESETS)[number]) => {
+    setActivePreset(preset.id);
+    setList((current) => ({
+      ...current,
+      title: preset.title,
+      caption: preset.caption,
+    }));
+    setFormError(null);
   };
 
   const add = (name = draftName, appidInput = draftApp) => {
@@ -1028,7 +1040,7 @@ function TopGamesPage({ loadedGames, initial }: { loadedGames: Game[]; initial: 
       list.title,
       list.caption,
       ...list.games.map((game, index) => `${index + 1}. ${game.name}`),
-      "made with Shelfwear ♡",
+      "made as a Shelfwear story ♡",
     ].filter(Boolean).join("\n");
     await navigator.clipboard.writeText(text);
     setSummaryCopied(true);
@@ -1057,11 +1069,30 @@ function TopGamesPage({ loadedGames, initial }: { loadedGames: Game[]; initial: 
       <section className="panel curated-intro">
         <SectionTitle
           icon="heart"
-          eyebrow={initial ? "A shared little list" : "Hand-picked by you"}
-          note="This list is yours to curate. It does not have to match playtime."
+          eyebrow={initial ? "A shared shelf story" : "Make something worth sending"}
+          note="Pick a prompt, choose the games that belong in it, then turn the result into a card or share link."
         >
-          My top games
+          Shelf stories
         </SectionTitle>
+        <p className="prose curated-story-lead">
+          This is the part you choose yourself. Playtime can suggest games, but it does not decide which ones mattered.
+        </p>
+
+        <div className="story-presets" aria-label="Shelf story prompts">
+          {SHELF_STORY_PRESETS.map((preset) => (
+            <button
+              type="button"
+              key={preset.id}
+              className={activePreset === preset.id ? "active" : ""}
+              aria-pressed={activePreset === preset.id}
+              onClick={() => applyPreset(preset)}
+            >
+              <b>{preset.title}</b>
+              <span>{preset.prompt}</span>
+            </button>
+          ))}
+        </div>
+
         <div className="curated-meta-fields">
           <label>
             <span>Card title</span>
@@ -1069,7 +1100,7 @@ function TopGamesPage({ loadedGames, initial }: { loadedGames: Game[]; initial: 
               value={list.title}
               maxLength={48}
               onChange={(event) => setMeta("title", event.target.value)}
-              aria-label="Top games card title"
+              aria-label="Shelf story card title"
             />
           </label>
           <label>
@@ -1078,19 +1109,19 @@ function TopGamesPage({ loadedGames, initial }: { loadedGames: Game[]; initial: 
               value={list.caption}
               maxLength={120}
               onChange={(event) => setMeta("caption", event.target.value)}
-              placeholder="games that shaped me, comfort games, favorites…"
-              aria-label="Top games card caption"
+              placeholder="Add a short line about why these games belong together…"
+              aria-label="Shelf story card caption"
             />
           </label>
         </div>
-        <p className="note curated-privacy">Share links are stateless: the title, caption, selected game names, optional Steam AppIDs, and public Steam artwork references live in the URL. Shelfwear does not store the list.</p>
+        <p className="note curated-privacy">Story links are stateless: the title, caption, selected game names, optional Steam AppIDs, and public Steam artwork references live in the URL. Shelfwear does not store the list. Old <code>?top=</code> links still open normally.</p>
       </section>
 
       <section className="panel curated-builder">
         <div className="curated-builder-head">
-          <SectionTitle icon="plus" eyebrow="Pick up to nine">Build your card</SectionTitle>
+          <SectionTitle icon="plus" eyebrow="Pick up to nine">Choose the games in this story</SectionTitle>
           <button type="button" onClick={useCurrentNine} disabled={!loadedGames.length}>
-            <CuteIcon name="sparkles" className="button-icon" /> Use current nine
+            <CuteIcon name="sparkles" className="button-icon" /> Fill from playtime
           </button>
         </div>
 
@@ -1192,14 +1223,14 @@ function TopGamesPage({ loadedGames, initial }: { loadedGames: Game[]; initial: 
                   );
                 })}
               </div>
-              <div className="curated-preview-footer"><span>hand-picked, not playtime-ranked</span><span>૮ ˶ᵔ ᵕ ᵔ˶ ა</span></div>
+              <div className="curated-preview-footer"><span>picked for this story, not decided by playtime</span><span>૮ ˶ᵔ ᵕ ᵔ˶ ა</span></div>
             </div>
           </div>
 
           <div className="curated-list">
-            <div className="curated-list-heading"><b>{list.games.length}/9 picked</b><span>use the arrows to rank them</span></div>
+            <div className="curated-list-heading"><b>{list.games.length}/9 picked</b><span>the order becomes part of the story</span></div>
             {list.games.length === 0 ? (
-              <div className="curated-empty-state"><span aria-hidden="true">૮₍ ˶•⤙•˶ ₎ა</span><p>Your little list is empty. Add any game, even if it is not in your Steam library.</p></div>
+              <div className="curated-empty-state"><span aria-hidden="true">૮₍ ˶•⤙•˶ ₎ა</span><p>No games yet. Start with the ones that immediately came to mind when you picked the prompt.</p></div>
             ) : list.games.map((game, index) => (
               <div className="curated-list-row" key={`${game.name}-${index}`}>
                 <span className="curated-list-rank">{index + 1}</span>
@@ -1216,9 +1247,9 @@ function TopGamesPage({ loadedGames, initial }: { loadedGames: Game[]; initial: 
       </section>
 
       <section className="panel curated-share">
-        <SectionTitle icon="share" eyebrow="Send it to friends">Share your list</SectionTitle>
+        <SectionTitle icon="share" eyebrow="Send it to friends">Share this shelf story</SectionTitle>
         <div className="curated-share-actions">
-          <button type="button" onClick={() => void copyLink()} disabled={!list.games.length}><CuteIcon name="share" className="button-icon" />{shareCopied ? "Link copied" : "Copy share link"}</button>
+          <button type="button" onClick={() => void copyLink()} disabled={!list.games.length}><CuteIcon name="share" className="button-icon" />{shareCopied ? "Link copied" : "Copy story link"}</button>
           <button type="button" onClick={() => void download()} disabled={!list.games.length || rendering}><CuteIcon name="download" className="button-icon" />{rendering ? "Making card…" : "Download 1080×1350 card"}</button>
           <button type="button" onClick={() => void copySummary()} disabled={!list.games.length}><CuteIcon name="copy" className="button-icon" />{summaryCopied ? "Copied" : "Copy text list"}</button>
         </div>

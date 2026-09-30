@@ -17,6 +17,68 @@
     var(--panel);
 }
 
+.curated-story-lead {
+  max-width: 66ch;
+  margin: -6px 0 18px 51px;
+  color: var(--dim);
+}
+
+.story-presets {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 9px;
+  max-width: 980px;
+  margin: 0 0 20px 51px;
+}
+
+.story-presets button {
+  min-height: 112px;
+  display: grid;
+  align-content: start;
+  justify-items: start;
+  gap: 7px;
+  padding: 13px 14px;
+  border-radius: 16px 13px 17px 14px;
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--panel) 94%, var(--raised)), color-mix(in srgb, var(--accent-2) 4%, var(--panel)));
+  box-shadow: none;
+  text-align: left;
+}
+
+.story-presets button:nth-child(3n + 1) {
+  transform: rotate(-.18deg);
+}
+
+.story-presets button:nth-child(3n) {
+  transform: rotate(.18deg);
+}
+
+.story-presets button b {
+  color: var(--fg);
+  font-family: var(--font-round);
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.story-presets button span {
+  color: var(--dim);
+  font-size: 10px;
+  font-weight: 500;
+  line-height: 1.45;
+}
+
+.story-presets button.active {
+  border-color: color-mix(in srgb, var(--accent) 56%, var(--edge));
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--accent) 10%, var(--panel)), color-mix(in srgb, var(--accent-2) 6%, var(--panel)));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--accent) 12%, transparent);
+}
+
+.story-presets button.active b::before {
+  content: "♡ ";
+  color: var(--accent-text);
+}
+
 .curated-meta-fields {
   display: grid;
   grid-template-columns: minmax(220px, .7fr) minmax(280px, 1.3fr);
@@ -526,6 +588,10 @@
 }
 
 @media (max-width: 860px) {
+  .story-presets {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .curated-layout {
     grid-template-columns: 1fr;
   }
@@ -545,6 +611,11 @@
     flex: 1 1 calc(33.333% - 6px);
     min-width: 0;
     padding-inline: 9px;
+  }
+
+  .curated-story-lead,
+  .story-presets {
+    margin-left: 0;
   }
 
   .curated-meta-fields,
@@ -569,6 +640,14 @@
 @media (max-width: 520px) {
   .view-tabs {
     position: static;
+  }
+
+  .story-presets {
+    grid-template-columns: 1fr;
+  }
+
+  .story-presets button {
+    min-height: 0;
   }
 
   .view-tabs button {
@@ -643,6 +722,8 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .story-presets button:nth-child(3n + 1),
+  .story-presets button:nth-child(3n),
   .curated-game-tile:nth-child(3n + 1),
   .curated-game-tile:nth-child(3n),
   .curated-sticker,

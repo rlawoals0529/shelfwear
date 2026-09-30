@@ -3,6 +3,7 @@ import {
   curatedFromSearch,
   curatedShareUrl,
   decodeCuratedTopGames,
+  SHELF_STORY_PRESETS,
   encodeCuratedTopGames,
   normaliseCuratedTopGames,
   steamAppIdFromInput,
@@ -35,11 +36,30 @@ describe("curated top games", () => {
     expect(decodeCuratedTopGames(encoded)).toEqual({ ...list, caption: "cozy ♡ 게임" });
   });
 
-  it("creates and reads a stateless top-games share URL", () => {
+  it("creates and reads a stateless Shelf Story URL", () => {
     const url = curatedShareUrl("https://example.com/?steam=123#x", list);
     expect(url).not.toContain("steam=");
     expect(url).not.toContain("#x");
+    expect(url).toContain("?story=");
+    expect(url).not.toContain("?top=");
     expect(curatedFromSearch(new URL(url).search)).toEqual(list);
+  });
+
+  it("keeps old top= share links working", () => {
+    const encoded = encodeCuratedTopGames(list);
+    expect(curatedFromSearch(`?top=${encoded}`)).toEqual(list);
+  });
+
+  it("ships distinct prompts for the first Shelf Stories release", () => {
+    expect(SHELF_STORY_PRESETS.map((preset) => preset.id)).toEqual([
+      "shaped-me",
+      "comfort",
+      "obsessed",
+      "childhood",
+      "multiplayer",
+      "first-time",
+    ]);
+    expect(new Set(SHELF_STORY_PRESETS.map((preset) => preset.title)).size).toBe(SHELF_STORY_PRESETS.length);
   });
 
   it("caps the list at nine and removes duplicate entries", () => {

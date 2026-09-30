@@ -51,7 +51,7 @@ test("downloads a hand-picked top-games scrapbook card", async ({ page }) => {
   });
 
   await page.goto("/");
-  await page.getByRole("button", { name: "My top games" }).click();
+  await page.getByRole("button", { name: "Shelf stories" }).click();
   await page.getByLabel("Game name to add").fill("Hades");
   await page.getByLabel("Optional Steam AppID or store link").fill("1145360");
   await page.getByRole("button", { name: "Add game", exact: true }).click();
@@ -60,7 +60,7 @@ test("downloads a hand-picked top-games scrapbook card", async ({ page }) => {
   await page.getByRole("button", { name: "Download 1080×1350 card" }).click();
   const download = await downloadPromise;
 
-  expect(download.suggestedFilename()).toBe("shelfwear-my-top-games.png");
+  expect(download.suggestedFilename()).toBe("shelfwear-games-that-shaped-me.png");
   const path = await download.path();
   expect(path).not.toBeNull();
 
@@ -110,8 +110,8 @@ test("curated export keeps the library-provided Steam icon fallback", async ({ p
   await page.goto("/");
   await page.getByLabel("Steam username, profile URL, or SteamID").fill("cozyplayer");
   await page.getByRole("button", { name: "Read public profile" }).click();
-  await page.getByRole("button", { name: "My top games" }).click();
-  await page.getByRole("button", { name: "Use current nine" }).click();
+  await page.getByRole("button", { name: "Shelf stories" }).click();
+  await page.getByRole("button", { name: "Fill from playtime" }).click();
 
   const downloadPromise = page.waitForEvent("download");
   await page.getByRole("button", { name: "Download 1080×1350 card" }).click();
@@ -120,4 +120,45 @@ test("curated export keeps the library-provided Steam icon fallback", async ({ p
   expect(coverRequests.some((url) =>
     url.includes("/api/steam/cover/3681810") && url.includes(`icon=${iconHash}`)
   )).toBe(true);
+});
+
+
+test("Shelf Story prompts update the card without replacing picked games", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Shelf stories" }).click();
+
+  await expect(page.getByRole("heading", { name: "Shelf stories" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /games that shaped me/i })).toHaveAttribute("aria-pressed", "true");
+
+  await page.getByLabel("Game name to add").fill("Hades");
+  await page.getByRole("button", { name: "Add game", exact: true }).click();
+  await expect(page.locator(".curated-list-row")).toHaveCount(1);
+
+  await page.getByRole("button", { name: /my comfort games/i }).click();
+  await expect(page.getByLabel("Shelf story card title")).toHaveValue("my comfort games");
+  await expect(page.getByLabel("Shelf story card caption")).toHaveValue("the ones I always know I can come back to");
+  await expect(page.locator(".curated-list-row")).toHaveCount(1);
+  await expect(page.locator(".curated-list-row")).toContainText("Hades");
+});
+
+test("new story links use story= and old top= links still open", async ({ page, context }) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.goto("/");
+  await page.getByRole("button", { name: "Shelf stories" }).click();
+  await page.getByLabel("Game name to add").fill("Hades");
+  await page.getByRole("button", { name: "Add game", exact: true }).click();
+  await page.getByRole("button", { name: "Copy story link" }).click();
+
+  const copied = await page.evaluate(() => navigator.clipboard.readText());
+  expect(copied).toContain("?story=");
+  expect(copied).not.toContain("?top=");
+
+  const storyUrl = new URL(copied);
+  const payload = storyUrl.searchParams.get("story");
+  expect(payload).toBeTruthy();
+
+  await page.goto(`/?top=${payload}`);
+  await expect(page.getByRole("button", { name: "Shelf stories" })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByLabel("Shelf story card title")).toHaveValue("games that shaped me");
+  await expect(page.locator(".curated-list-row")).toContainText("Hades");
 });

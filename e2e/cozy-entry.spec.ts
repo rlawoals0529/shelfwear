@@ -189,7 +189,7 @@ test("stat cards keep values and labels aligned even when captions wrap", async 
 });
 
 
-test("builds a hand-picked top-games list with Steam art or cute fallbacks", async ({ page }) => {
+test("builds a hand-picked Shelf Story with Steam art or cute fallbacks", async ({ page }) => {
   await page.route("**/api/steam/cover/*", async (route) => {
     await route.fulfill({
       status: 200,
@@ -199,8 +199,8 @@ test("builds a hand-picked top-games list with Steam art or cute fallbacks", asy
   });
 
   await page.goto("/");
-  await page.getByRole("button", { name: "My top games" }).click();
-  await expect(page.getByRole("heading", { name: "My top games", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Shelf stories" }).click();
+  await expect(page.getByRole("heading", { name: "Shelf stories", exact: true })).toBeVisible();
 
   await page.getByLabel("Game name to add").fill("Hades");
   await page.getByLabel("Optional Steam AppID or store link").fill("1145360");
@@ -218,7 +218,7 @@ test("builds a hand-picked top-games list with Steam art or cute fallbacks", asy
   const names = await page.locator(".curated-list-row > div:nth-child(2) > b").allTextContents();
   expect(names.slice(0, 2)).toEqual(["A tiny custom game", "Hades"]);
 
-  await expect(page.getByRole("button", { name: "Copy share link" })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Copy story link" })).toBeEnabled();
   await expect(page.getByRole("button", { name: /Download 1080×1350 card/ })).toBeEnabled();
 
   await page.setViewportSize({ width: 390, height: 844 });
@@ -301,7 +301,7 @@ test("long Steam names truncate cleanly and the main view buttons stay aligned",
 });
 
 
-test("use current nine preserves Steam icon fallbacks and styles them as badges", async ({ page }) => {
+test("fill from playtime preserves Steam icon fallbacks and styles them as badges", async ({ page }) => {
   const iconHash = "8c7fc95092f64b0a99c4e02263caf254da89b7bb";
   await page.route("**/api/steam/library?*", async (route) => {
     await route.fulfill({
@@ -336,8 +336,8 @@ test("use current nine preserves Steam icon fallbacks and styles them as badges"
   await page.goto("/");
   await page.getByLabel("Steam username, profile URL, or SteamID").fill("cozyplayer");
   await page.getByRole("button", { name: "Read public profile" }).click();
-  await page.getByRole("button", { name: "My top games" }).click();
-  await page.getByRole("button", { name: "Use current nine" }).click();
+  await page.getByRole("button", { name: "Shelf stories" }).click();
+  await page.getByRole("button", { name: "Fill from playtime" }).click();
 
   const art = page.locator(".curated-game-tile img").first();
   await expect(art).toHaveAttribute("src", new RegExp(`/api/steam/cover/3681810\\?icon=${iconHash}`));

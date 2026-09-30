@@ -325,7 +325,7 @@ export function curatedCardFilename(title: string): string {
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
-    .slice(0, 44) || "my-top-games";
+    .slice(0, 44) || "shelf-story";
   return `shelfwear-${stem}.png`;
 }
 
@@ -374,12 +374,12 @@ export async function renderCuratedCard(input: CuratedTopGames): Promise<Blob> {
 
   ctx.fillStyle = theme.fg;
   ctx.font = "700 52px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  const heading = wrapByMeasure(ctx, input.title || "my top games", WIDTH - PAD * 2 - 100, 1)[0] ?? "my top games";
+  const heading = wrapByMeasure(ctx, input.title || "shelf story", WIDTH - PAD * 2 - 100, 1)[0] ?? "shelf story";
   ctx.fillText(heading, PAD, 116);
 
   ctx.fillStyle = theme.dim;
   ctx.font = "400 20px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  const caption = input.caption || "nine games I wanted on one little card";
+  const caption = input.caption || "a little collection from my shelf";
   const captionLines = wrapByMeasure(ctx, caption, WIDTH - PAD * 2, 2);
   captionLines.forEach((line, index) => ctx.fillText(line, PAD, 154 + index * 25));
 
