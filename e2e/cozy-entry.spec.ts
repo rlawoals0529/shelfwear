@@ -129,7 +129,7 @@ test("analytics view is aligned, responsive, and derived from the loaded library
   await expect(page.getByText("How deep the library goes")).toBeVisible();
   await expect(page.getByText("Where the hours go")).toBeVisible();
   await expect(page.locator(".analytics-kpi > i")).toHaveText(["01", "02", "03", "04"]);
-  await expect(page.locator(".analytics-section-code")).toHaveText(["SHELF DEPTH / 01", "HOUR LEDGER / 02"]);
+  await expect(page.locator(".analytics-section-code")).toHaveText(["SHELF DEPTH / 01", "HOUR LEDGER / 02", "LOCAL INSERT / 03"]);
 
   await page.setViewportSize({ width: 390, height: 844 });
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
