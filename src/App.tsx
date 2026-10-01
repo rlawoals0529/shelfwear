@@ -846,14 +846,14 @@ export default function App() {
     ? selectedLibraryResultIndex + 1
     : null;
 
-  const navigateLibraryIndex = useCallback((direction: -1 | 1) => {
+  const navigateLibraryIndex = useCallback((offset: number) => {
     if (!visibleGames.length) return;
     const currentIndex = selectedLibraryGameAppId
       ? visibleGames.findIndex((game) => game.appid === selectedLibraryGameAppId)
       : -1;
     const targetIndex = currentIndex < 0
-      ? (direction > 0 ? 0 : visibleGames.length - 1)
-      : Math.min(visibleGames.length - 1, Math.max(0, currentIndex + direction));
+      ? (offset > 0 ? 0 : visibleGames.length - 1)
+      : Math.min(visibleGames.length - 1, Math.max(0, currentIndex + offset));
     const target = visibleGames[targetIndex];
     if (!target || targetIndex === currentIndex) return;
     setLibraryRandomMessage(null);
@@ -895,14 +895,22 @@ export default function App() {
       if (editing) return;
 
       const key = event.key.toLowerCase();
-      if (key !== "j" && key !== "k") return;
+      const offset =
+        key === "j" || event.key === "ArrowDown" ? 1
+          : key === "k" || event.key === "ArrowUp" ? -1
+            : event.key === "PageDown" ? 10
+              : event.key === "PageUp" ? -10
+                : event.key === "Home" ? visibleGames.length
+                  : event.key === "End" ? visibleGames.length
+                    : null;
+      if (offset === null) return;
       event.preventDefault();
-      navigateLibraryIndex(key === "j" ? 1 : -1);
+      navigateLibraryIndex(event.key === "Home" ? -visibleGames.length : offset);
     };
 
     window.addEventListener("keydown", onBrowseKeyDown);
     return () => window.removeEventListener("keydown", onBrowseKeyDown);
-  }, [navigateLibraryIndex, selectedLibraryGameAppId, view]);
+  }, [navigateLibraryIndex, selectedLibraryGameAppId, view, visibleGames.length]);
 
   const renderedLibraryGames = useMemo(
     () => visibleGames.slice(0, libraryVisibleLimit),
@@ -2314,6 +2322,7 @@ export default function App() {
             tabIndex={-1}
             className="library-catalog-drawer"
             aria-label={`Details for ${selectedLibraryGame.name ?? `app ${selectedLibraryGame.appid}`}`}
+            aria-keyshortcuts="ArrowUp ArrowDown K J PageUp PageDown Home End"
           >
             <div className="library-catalog-meta">
               <span>
@@ -2323,7 +2332,7 @@ export default function App() {
                 )}
               </span>
               <div className="library-catalog-nav">
-                <span className="library-catalog-shortcut" aria-hidden="true"><kbd>K</kbd>/<kbd>J</kbd> browse</span>
+                <span className="library-catalog-shortcut" aria-hidden="true"><kbd>K</kbd>/<kbd>J</kbd> · ↑/↓ · Pg ±10 · Home/End</span>
                 <button
                   type="button"
                   disabled={selectedLibraryResultIndex <= 0}
