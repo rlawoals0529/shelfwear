@@ -21,7 +21,7 @@ For sharing, Shelfwear can make:
 - **Your nine** — the nine titles with the most recorded playtime, in a 3×3 grid.
 - **Shelf Stories** — prompt-driven, hand-picked collections such as Games that shaped me, comfort games, and multiplayer memories.
 - **Download card** — a 1080×1350 PNG rendered in the current Shelfwear palette. Local/sample mode is fully browser-only; Steam mode asks Shelfwear's same-origin Worker cover endpoint for public artwork and falls back to typographic tiles when artwork is unavailable.
-- **Shelf familiar** — a deterministic mascot based only on observable library patterns, with three visible signals explaining why it was chosen and its own downloadable 1080×1350 card. It describes the library shape, not the person.
+- **Shelf familiar** — a deterministic mascot based only on observable library patterns, presented as a cataloged library specimen with three visible evidence fields, a field note explaining why it was chosen, and its own downloadable 1080×1350 bookplate card. It describes the library shape, not the person.
 - **Copy summary** — a text version of the nine for sharing anywhere.
 - **Share shelf** — a stateless URL containing only the resolved public SteamID. Opening it prefills the profile so Shelfwear can rebuild the result live; no library snapshot is stored.
 - **Compare two shelves** — ownership overlap, each shelf’s unique corner, games with recorded playtime on both profiles, “easy handoffs” where only one profile has recorded time in a jointly owned game, a shared-shelf signature, and a downloadable 1080×1350 friend comparison card. Finished comparison links contain only the two public SteamIDs.
@@ -58,6 +58,12 @@ Stories also have three visual treatments: **Scrapbook**, **Polaroid**, and **Po
 Sharing stays stateless. New share URLs use `?story=...` and contain only the story title, caption, selected card look, selected game names, optional per-game notes, numeric Steam AppIDs, and public Steam icon hashes when a loaded library provides them. Shelfwear does not create an account or store the story. Existing `?top=...` links remain supported and open the same editable Shelf Stories view.
 
 The builder can export a 1080×1350 PNG carrying the selected card look and authored notes. Games with an AppID use the existing same-origin Steam artwork proxy. If Steam has no portrait, Shelfwear prefers the public icon hash from GetOwnedGames and otherwise letterboxes an official wide Steam asset rather than cropping it into a blurry square. Games without an AppID intentionally use a designed text tile rather than guessed artwork.
+
+## Shelf Familiar
+
+Shelf Familiar is the companion artifact to Shelf Stories and friend comparisons. The on-page result is styled as a **library specimen/bookplate** with a classification label, numbered evidence fields, a field note, and a catalog stamp. The 1080×1350 export uses the same structure rather than a generic mascot card.
+
+The familiar remains deterministic and evidence-first: its name, glyph, description, signals, and evidence come from observable library-shape logic already shown in the interface. The card explicitly states that it is cataloged from library patterns only and is not a personality test or a claim about the person.
 
 ## Friend comparison cards
 
