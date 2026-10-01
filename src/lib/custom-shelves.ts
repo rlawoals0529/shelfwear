@@ -210,3 +210,11 @@ export function nextDuplicateShelfName(name: string, existingNames: readonly str
 
   return cleanShelfName(base.slice(0, 32) + " duplicate") || "Shelf copy";
 }
+
+
+export function customShelfShareText(shelf: CustomShelf): string {
+  const heading = shelf.name;
+  const games = shelf.games.map((game, index) => `${index + 1}. ${game.name}`);
+  const body = games.length ? games.join("\n") : "No games filed yet.";
+  return `${heading}\n\n${body}\n\nMade with Shelfwear`;
+}
