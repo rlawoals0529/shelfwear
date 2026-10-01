@@ -900,12 +900,12 @@ export default function App() {
           : key === "k" || event.key === "ArrowUp" ? -1
             : event.key === "PageDown" ? 10
               : event.key === "PageUp" ? -10
-                : event.key === "Home" ? visibleGames.length
+                : event.key === "Home" ? -visibleGames.length
                   : event.key === "End" ? visibleGames.length
                     : null;
       if (offset === null) return;
       event.preventDefault();
-      navigateLibraryIndex(event.key === "Home" ? -visibleGames.length : offset);
+      navigateLibraryIndex(offset);
     };
 
     window.addEventListener("keydown", onBrowseKeyDown);
