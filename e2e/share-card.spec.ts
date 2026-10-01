@@ -319,16 +319,28 @@ test("downloads a friend comparison card from two public Steam shelves", async (
 });
 
 
-test("downloads a standalone Shelf Familiar card with transparent evidence", async ({ page }) => {
+test("downloads a standalone Shelf Familiar specimen card with transparent evidence", async ({ page }) => {
+  await page.addInitScript(() => {
+    const seen: string[] = [];
+    (window as unknown as { __familiarFillText: string[] }).__familiarFillText = seen;
+    const original = CanvasRenderingContext2D.prototype.fillText;
+    CanvasRenderingContext2D.prototype.fillText = function (...args) {
+      seen.push(String(args[0]));
+      return original.apply(this, args as Parameters<CanvasRenderingContext2D["fillText"]>);
+    };
+  });
+
   await page.goto("/");
 
-  const familiar = page.locator(".familiar-v2");
+  const familiar = page.locator(".familiar-bookplate");
   await expect(familiar).toBeVisible();
+  await expect(familiar.locator(".familiar-catalog-meta")).toContainText("SHELFWEAR / LIBRARY SPECIMEN");
   await expect(familiar.locator(".familiar-signals > span")).toHaveCount(3);
-  await expect(familiar.getByText("Why this one:", { exact: false })).toBeVisible();
+  await expect(familiar.getByText("Field note:", { exact: false })).toBeVisible();
+  await expect(familiar.locator(".familiar-catalog-stamp")).toHaveText("CATALOGED");
 
   const downloadPromise = page.waitForEvent("download");
-  await page.getByRole("button", { name: "Download familiar card" }).click();
+  await page.getByRole("button", { name: "Download specimen card" }).click();
   const download = await downloadPromise;
 
   expect(download.suggestedFilename()).toMatch(/^shelfwear-[a-z0-9-]+-familiar\.png$/);
@@ -339,4 +351,13 @@ test("downloads a standalone Shelf Familiar card with transparent evidence", asy
   expect(bytes.subarray(0, 8)).toEqual(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
   expect(bytes.readUInt32BE(16)).toBe(1080);
   expect(bytes.readUInt32BE(20)).toBe(1350);
+
+  const drawnText = await page.evaluate(() =>
+    (window as unknown as { __familiarFillText: string[] }).__familiarFillText,
+  );
+  expect(drawnText).toContain("SHELFWEAR / LIBRARY SPECIMEN");
+  expect(drawnText).toContain("EVIDENCE FIELDS");
+  expect(drawnText).toContain("FIELD NOTE / WHY THIS ONE");
+  expect(drawnText).toContain("CATALOGED");
+  expect(drawnText).toContain("SPECIMEN CARD / 1080×1350");
 });
