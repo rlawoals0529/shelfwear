@@ -1517,7 +1517,7 @@ export default function App() {
                       <div className="history-events">
                       {shelfHistoryDelta.recordedTimeChanges.length > 0 && (
                         <div>
-                          <small>Recorded lifetime time changed</small>
+                          <small>Recorded lifetime total changed</small>
                           <p className="history-recorded-changes">
                             {shelfHistoryDelta.recordedTimeChanges.slice(0, 5).map((entry) => {
                               const deltaHours = hours(entry.deltaMinutes);
