@@ -63,6 +63,79 @@ export function removeSelectedCustomShelfGames(
   return games.filter((game) => !selected.has(game.appid));
 }
 
+export type CustomShelfTransferMode = "copy" | "move";
+
+export interface CustomShelfTransferOutcome {
+  shelves: CustomShelf[];
+  addedAppIds: string[];
+  duplicateAppIds: string[];
+  capacityBlockedAppIds: string[];
+}
+
+export function transferSelectedCustomShelfGames(
+  shelves: readonly CustomShelf[],
+  sourceShelfId: string,
+  targetShelfId: string,
+  selectedAppIds: Iterable<string>,
+  mode: CustomShelfTransferMode,
+): CustomShelfTransferOutcome {
+  const selected = new Set(selectedAppIds);
+  if (!selected.size || sourceShelfId === targetShelfId) {
+    return { shelves: [...shelves], addedAppIds: [], duplicateAppIds: [], capacityBlockedAppIds: [] };
+  }
+
+  const source = shelves.find((shelf) => shelf.id === sourceShelfId);
+  const target = shelves.find((shelf) => shelf.id === targetShelfId);
+  if (!source || !target) {
+    return { shelves: [...shelves], addedAppIds: [], duplicateAppIds: [], capacityBlockedAppIds: [] };
+  }
+
+  const targetIds = new Set(target.games.map((game) => game.appid));
+  const added: CustomShelfGame[] = [];
+  const addedAppIds: string[] = [];
+  const duplicateAppIds: string[] = [];
+  const capacityBlockedAppIds: string[] = [];
+  let room = Math.max(0, MAX_CUSTOM_SHELF_GAMES - target.games.length);
+
+  for (const game of source.games) {
+    if (!selected.has(game.appid)) continue;
+    if (targetIds.has(game.appid)) {
+      duplicateAppIds.push(game.appid);
+      continue;
+    }
+    if (room <= 0) {
+      capacityBlockedAppIds.push(game.appid);
+      continue;
+    }
+    added.push({ ...game });
+    addedAppIds.push(game.appid);
+    targetIds.add(game.appid);
+    room -= 1;
+  }
+
+  if (!added.length) {
+    return {
+      shelves: [...shelves],
+      addedAppIds,
+      duplicateAppIds,
+      capacityBlockedAppIds,
+    };
+  }
+
+  const moved = new Set(addedAppIds);
+  const nextShelves = shelves.map((shelf) => {
+    if (shelf.id === targetShelfId) {
+      return { ...shelf, games: [...shelf.games, ...added] };
+    }
+    if (mode === "move" && shelf.id === sourceShelfId) {
+      return { ...shelf, games: shelf.games.filter((game) => !moved.has(game.appid)) };
+    }
+    return shelf;
+  });
+
+  return { shelves: nextShelves, addedAppIds, duplicateAppIds, capacityBlockedAppIds };
+}
+
 export const CUSTOM_SHELF_PRESETS = [
   { id: "comfort", name: "Comfort games" },
   { id: "playing", name: "Currently playing" },
