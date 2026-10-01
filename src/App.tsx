@@ -303,6 +303,7 @@ export default function App() {
   const [comparison, setComparison] = useState<Compared | null>(null);
   const [compareCopied, setCompareCopied] = useState(false);
   const [inviteCopied, setInviteCopied] = useState(false);
+  const [inviteMessageCopied, setInviteMessageCopied] = useState(false);
   const [compareCardRendering, setCompareCardRendering] = useState(false);
   const [compareCardError, setCompareCardError] = useState<string | null>(null);
   const [view, setView] = useState<"shelf" | "analytics" | "top">(shared.top ? "top" : "shelf");
@@ -513,6 +514,14 @@ export default function App() {
     await navigator.clipboard.writeText(inviteShareUrl(window.location.href, loaded.steamid));
     setInviteCopied(true);
     window.setTimeout(() => setInviteCopied(false), 1600);
+  }, [loaded.kind, loaded.steamid]);
+
+  const copyInviteMessage = useCallback(async () => {
+    if (loaded.kind !== "steam" || !loaded.steamid) return;
+    const url = inviteShareUrl(window.location.href, loaded.steamid);
+    await navigator.clipboard.writeText(`Compare our Steam shelves on Shelfwear: ${url}`);
+    setInviteMessageCopied(true);
+    window.setTimeout(() => setInviteMessageCopied(false), 1600);
   }, [loaded.kind, loaded.steamid]);
 
   const downloadComparisonCard = useCallback(async () => {
@@ -780,26 +789,45 @@ export default function App() {
       <section className="panel compare-panel" id="compare">
         <SectionTitle icon="friends" eyebrow="For friends">Compare two shelves</SectionTitle>
         <p className="prose">
-          Put two public Steam profiles side by side. Overlap is the intersection divided by
-          the combined unique library; played-together counts only games with recorded time on both profiles.
+          See where two public Steam shelves meet, where they split, and which games both of you actually put time into.
+          The numbers stay literal: overlap means shared games divided by the combined unique library.
         </p>
         {shared.compare && <p className="share-hint">This comparison came from a stateless link. Load it to rebuild both public libraries live.</p>}
         {shared.invite && (
-          <p className="share-hint compare-invite-hint">
-            A friend invited you to compare shelves. Their public SteamID is already filled in; add your public Steam profile on the right.
-          </p>
+          <div className="invite-arrival">
+            <div className="invite-arrival-mark" aria-hidden="true">↗</div>
+            <div className="invite-arrival-copy">
+              <p className="eyebrow">Shelf invite</p>
+              <h3>Your friend left one side of the shelf open for you.</h3>
+              <p>Their public SteamID is already here. Add your public profile, then Shelfwear rebuilds both shelves live.</p>
+              <div className="invite-steps" aria-label="How the Shelfwear invite works">
+                <span><b>1</b>their shelf</span>
+                <i aria-hidden="true">···</i>
+                <span><b>2</b>add yours</span>
+                <i aria-hidden="true">···</i>
+                <span><b>3</b>compare</span>
+              </div>
+            </div>
+          </div>
         )}
         {loaded.kind === "steam" && loaded.steamid && !shared.invite && (
           <div className="compare-invite">
-            <div>
+            <div className="compare-invite-copy">
               <p className="eyebrow">Compare with me</p>
-              <b>Send your shelf to a friend</b>
-              <span>They open one stateless link, add their public Steam profile, and Shelfwear builds the comparison live.</span>
+              <b>Leave one side of the shelf open.</b>
+              <span>Send a friend your stateless invite. They add their public Steam profile and Shelfwear builds the rest live.</span>
+              <small>Only your public SteamID is in the invite URL.</small>
             </div>
-            <button type="button" onClick={() => void copyInviteLink()}>
-              <CuteIcon name="share" className="button-icon" />
-              {inviteCopied ? "Invite link copied" : "Copy invite link"}
-            </button>
+            <div className="compare-invite-actions">
+              <button type="button" onClick={() => void copyInviteMessage()}>
+                <CuteIcon name="copy" className="button-icon" />
+                {inviteMessageCopied ? "Message copied" : "Copy invite message"}
+              </button>
+              <button type="button" onClick={() => void copyInviteLink()}>
+                <CuteIcon name="share" className="button-icon" />
+                {inviteCopied ? "Link copied" : "Copy link"}
+              </button>
+            </div>
           </div>
         )}
         <div className={shared.invite ? "compare-form invited" : "compare-form"}>
@@ -826,16 +854,22 @@ export default function App() {
 
         {comparison && (
           <div className="comparison-result">
-            <div className="compare-heading">
-              <SteamPerson library={comparison.left} />
-              <span className="compare-cross">×</span>
-              <SteamPerson library={comparison.right} />
-              <div className="compare-actions">
-                <button disabled={compareCardRendering} onClick={() => void downloadComparisonCard()}>
-                  <CuteIcon name="download" className="button-icon" />
-                  {compareCardRendering ? "Making card…" : "Download comparison card"}
-                </button>
-                <button onClick={() => void copyComparisonLink()}><CuteIcon name="share" className="button-icon" />{compareCopied ? "Link copied" : "Share comparison"}</button>
+            <div className="compare-bookplate-header">
+              <div className="compare-bookplate-kicker">
+                <span aria-hidden="true">⌑</span>
+                <div><small>SHELFWEAR LIBRARY CARD</small><b>shared shelf</b></div>
+              </div>
+              <div className="compare-heading">
+                <SteamPerson library={comparison.left} />
+                <span className="compare-cross">×</span>
+                <SteamPerson library={comparison.right} />
+                <div className="compare-actions">
+                  <button disabled={compareCardRendering} onClick={() => void downloadComparisonCard()}>
+                    <CuteIcon name="download" className="button-icon" />
+                    {compareCardRendering ? "Making card…" : "Download library card"}
+                  </button>
+                  <button onClick={() => void copyComparisonLink()}><CuteIcon name="share" className="button-icon" />{compareCopied ? "Link copied" : "Share comparison"}</button>
+                </div>
               </div>
             </div>
             {compareCardError && <p className="err">{compareCardError}</p>}
@@ -851,7 +885,7 @@ export default function App() {
             {comparison.result.mutuallyPlayed[0] && (
               <div className="compare-highlight">
                 <div>
-                  <p className="eyebrow">Strongest shared play signal</p>
+                  <p className="eyebrow">Deepest shared game</p>
                   <h3>{comparison.result.mutuallyPlayed[0].name ?? `app ${comparison.result.mutuallyPlayed[0].appid}`}</h3>
                 </div>
                 <div className="compare-highlight-hours">
@@ -860,7 +894,7 @@ export default function App() {
                 </div>
               </div>
             )}
-            <div className="compare-signature familiar">
+            <div className="compare-signature familiar compare-stamp">
               <span className="familiar-mark familiar-cute" aria-hidden="true">
                 <span className="familiar-emoji">{signatureEmoji(comparison.result.signature.object)}</span>
                 <span className="familiar-kaomoji">✦</span>
@@ -897,7 +931,7 @@ export default function App() {
               <div className="compare-handoffs">
                 <div className="shared-games-heading">
                   <div>
-                    <p className="eyebrow">Easy handoffs</p>
+                    <p className="eyebrow">Pass the controller</p>
                     <h3>One of you already knows these</h3>
                     <p>Both profiles own the game, but only one has recorded playtime.</p>
                   </div>
