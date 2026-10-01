@@ -16,11 +16,15 @@ On a Cloudflare Workers deployment, paste a public Steam profile URL or 64-bit S
 
 The interface uses original inline SVG doodles, emoji/kaomoji accents, and system fonts. It does not hotlink a character pack or third-party webfont.
 
+The main Shelf view also has a sticky **Shelf map**: a compact, horizontally scrollable catalog strip for jumping to the sections that actually exist for the current data source. On phones, the four top-level views use a 2×2 switch instead of a tall four-row stack.
+
 For sharing, Shelfwear can make:
 
 - **Your nine** — the nine titles with the most recorded playtime, in a 3×3 grid.
 - **Shelf Stories** — prompt-driven, hand-picked collections such as Games that shaped me, comfort games, and multiplayer memories.
-- **My shelves** — browser-local personal collections such as comfort games, currently playing, childhood favorites, backlog, multiplayer, or a custom shelf. Games can be filed from the Shelf Index, reordered, annotated, and handed off into Shelf Stories.\n- **Pick something** — a transparent random draw from an explicit pool: never played, under 2h played, real local installs, or the currently loaded games on a custom shelf. Shelfwear shows the exact eligibility rule, supports draw-again and session-only exclusions, and never presents the result as a taste recommendation.\n- **Library export** — download the currently loaded library as CSV or JSON with explicit provenance. Public-Steam exports contain owned-game/playtime fields only; real local-file exports may additionally contain install state, known disk bytes, and local last-played timestamps. The bundled sample is labeled synthetic demo data.
+- **My shelves** — browser-local personal collections such as comfort games, currently playing, childhood favorites, backlog, multiplayer, or a custom shelf. Games can be filed from the Shelf Index, reordered, annotated, and handed off into Shelf Stories.
+- **Pick something** — a transparent random draw from an explicit pool: never played, under 2h played, real local installs, or the currently loaded games on a custom shelf. Shelfwear shows the exact eligibility rule, supports draw-again and session-only exclusions, and never presents the result as a taste recommendation.
+- **Library export** — download the currently loaded library as CSV or JSON with explicit provenance. Public-Steam exports contain owned-game/playtime fields only; real local-file exports may additionally contain install state, known disk bytes, and local last-played timestamps. The bundled sample is labeled synthetic demo data.
 - **Shelf receipt** — a downloadable 1080×1350 receipt-style artifact made from current observable values: represented games, total recorded hours, untouched titles, top recorded-hour games, and biggest known installs only when real local files provide them.
 - **Achievement Cabinet** — public-Steam-only, on-demand achievement details for one selected game, including completion, rarest unlocked achievement when Steam provides global percentages, latest recorded unlock, and a selectable 1080×1350 Trophy Cabinet card.
 - **Download card** — a 1080×1350 PNG rendered in the current Shelfwear palette. Local/sample mode is fully browser-only; Steam mode asks Shelfwear's same-origin Worker cover endpoint for public artwork and falls back to typographic tiles when artwork is unavailable.
