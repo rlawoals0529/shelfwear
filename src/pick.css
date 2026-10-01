@@ -148,7 +148,7 @@
 .pick-proof,
 .pick-empty p {
   margin: 0.35rem 0 0;
-  color: var(--dim);
+  color: var(--fg);
 }
 
 .pick-proof {
