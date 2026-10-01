@@ -77,7 +77,7 @@ test("recent activity is on-demand and keeps Steam recent data separate from loc
   const ledger = page.locator(".recent-ledger");
   await expect(ledger).toContainText("SHELFWEAR / RECENT CHECKOUTS");
   await expect(ledger).toContainText("Recent Quest");
-  await expect(ledger).toContainText("10.0h lifetime");
+  await expect(ledger).toContainText("10h lifetime");
   await expect(ledger).toContainText("1.5h in the last 2 weeks");
   await expect(ledger).toContainText("Steam did not return a two-week playtime value");
   await expect(page.locator(".recent-boundary")).toContainText("does not turn this into a local last-launch timestamp");
