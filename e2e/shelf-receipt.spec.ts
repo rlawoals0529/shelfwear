@@ -1,5 +1,10 @@
 import { expect, test } from "@playwright/test";
 import { readFile } from "node:fs/promises";
+import { fileURLToPath } from "node:url";
+import { join } from "node:path";
+
+const F = (n: string) => fileURLToPath(new URL(join("fixtures", n), import.meta.url));
+const LOCAL_FILES = ["localconfig.vdf", "appmanifest_700.acf", "appmanifest_900.acf"].map(F);
 
 test("downloads a source-labeled Shelf Receipt from the sample", async ({ page }) => {
   await page.addInitScript(() => {
@@ -72,4 +77,32 @@ test("public Shelf Receipts do not invent local install lines", async ({ page })
   expect(text).toContain("PUBLIC STEAM DATA");
   expect(text).toContain("100.0 HOURS");
   expect(text).not.toContain("BIGGEST KNOWN INSTALLS");
+});
+
+
+test("local Shelf Receipts can show biggest known installs from real files", async ({ page }) => {
+  await page.addInitScript(() => {
+    const seen: string[] = [];
+    (window as unknown as { __receiptLocalText: string[] }).__receiptLocalText = seen;
+    const original = CanvasRenderingContext2D.prototype.fillText;
+    CanvasRenderingContext2D.prototype.fillText = function (...args) {
+      seen.push(String(args[0]));
+      return original.apply(this, args as Parameters<CanvasRenderingContext2D["fillText"]>);
+    };
+  });
+
+  await page.goto("/");
+  await page.locator('input[type="file"]').setInputFiles(LOCAL_FILES);
+  await expect(page.getByText("3 files")).toBeVisible();
+
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Download shelf receipt" }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toBe("shelfwear-my-receipt.png");
+
+  const text = await page.evaluate(() => (window as unknown as { __receiptLocalText: string[] }).__receiptLocalText);
+  expect(text).toContain("LOCAL STEAM FILES · THIS PC");
+  expect(text).toContain("BIGGEST KNOWN INSTALLS");
+  expect(text).toContain("Fixture Never Launched");
+  expect(text).toContain("50.0 GB");
 });
