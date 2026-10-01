@@ -149,7 +149,17 @@ test("bulk selection is keyboard-accessible and fits on a phone", async ({ page 
   await page.setViewportSize({ width: 390, height: 844 });
   await seedBulkShelf(page);
 
+  const rankTitleOffset = (card: HTMLElement) => {
+    const rank = card.querySelector(".custom-shelf-rank")!.getBoundingClientRect();
+    const title = card.querySelector(".custom-shelf-game-copy > b")!.getBoundingClientRect();
+    return Math.abs(rank.top - title.top);
+  };
+  const firstGame = page.locator(".custom-shelf-game").first();
+  expect(await firstGame.evaluate(rankTitleOffset)).toBeLessThanOrEqual(2);
+
   await page.getByRole("button", { name: "Bulk edit" }).click();
+  expect(await firstGame.evaluate(rankTitleOffset)).toBeLessThanOrEqual(2);
+
   const checkbox = page.getByRole("checkbox", { name: "Select Game 3 for bulk editing" });
   await checkbox.focus();
   await page.keyboard.press("Space");
@@ -166,3 +176,4 @@ test("bulk selection is keyboard-accessible and fits on a phone", async ({ page 
   await expect(page.getByRole("button", { name: "Move to top" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Remove selected" })).toBeVisible();
 });
+
