@@ -20,6 +20,16 @@ import {
 } from "./lib/steam.js";
 import { SAMPLE_CONFIG, SAMPLE_MANIFESTS } from "./lib/sample.js";
 import { curatedFromSearch, curatedShareUrl, SHELF_STORY_FINISHES, SHELF_STORY_PRESETS, SHELF_STORY_STYLES, steamAppIdFromInput, type CuratedTopGames } from "./lib/top-games.js";
+import {
+  CUSTOM_SHELF_PRESETS,
+  MAX_CUSTOM_SHELVES,
+  cleanShelfName,
+  readCustomShelves,
+  shelfStoryFromCustomShelf,
+  writeCustomShelves,
+  type CustomShelf,
+  type CustomShelfGame,
+} from "./lib/custom-shelves.js";
 import { Ticker, stagger } from "./lib/motion.js";
 import { Palette } from "./lib/palette.js";
 import palettes from "./theme/palettes.json";
@@ -306,7 +316,7 @@ export default function App() {
   const [inviteMessageCopied, setInviteMessageCopied] = useState(false);
   const [compareCardRendering, setCompareCardRendering] = useState(false);
   const [compareCardError, setCompareCardError] = useState<string | null>(null);
-  const [view, setView] = useState<"shelf" | "analytics" | "top">(shared.top ? "top" : "shelf");
+  const [view, setView] = useState<"shelf" | "analytics" | "shelves" | "top">(shared.top ? "top" : "shelf");
   const [libraryQuery, setLibraryQuery] = useState("");
   const [librarySort, setLibrarySort] = useState<LibrarySort>(() =>
     readLocalPreference(LIBRARY_SORT_KEY, LIBRARY_SORT_VALUES, "most-played"),
@@ -316,6 +326,10 @@ export default function App() {
     readLocalPreference(LIBRARY_DENSITY_KEY, LIBRARY_DENSITY_VALUES, "cozy"),
   );
   const [selectedLibraryGameAppId, setSelectedLibraryGameAppId] = useState<string | null>(null);
+  const [customShelves, setCustomShelves] = useState<CustomShelf[]>(() => readCustomShelves());
+  const [activeShelfId, setActiveShelfId] = useState<string | null>(() => readCustomShelves()[0]?.id ?? null);
+  const [drawerShelfId, setDrawerShelfId] = useState<string>(() => readCustomShelves()[0]?.id ?? "");
+  const [storySeed, setStorySeed] = useState<CuratedTopGames | null>(null);
   const picker = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -325,6 +339,24 @@ export default function App() {
   useEffect(() => {
     writeLocalPreference(LIBRARY_DENSITY_KEY, libraryDensity);
   }, [libraryDensity]);
+
+  useEffect(() => {
+    writeCustomShelves(customShelves);
+  }, [customShelves]);
+
+  useEffect(() => {
+    if (!customShelves.length) {
+      setActiveShelfId(null);
+      setDrawerShelfId("");
+      return;
+    }
+    if (!activeShelfId || !customShelves.some((shelf) => shelf.id === activeShelfId)) {
+      setActiveShelfId(customShelves[0]!.id);
+    }
+    if (!drawerShelfId || !customShelves.some((shelf) => shelf.id === drawerShelfId)) {
+      setDrawerShelfId(customShelves[0]!.id);
+    }
+  }, [activeShelfId, customShelves, drawerShelfId]);
 
   const accept = useCallback(async (list: File[]) => {
     setError(null);
@@ -442,6 +474,51 @@ export default function App() {
     () => loaded.games.find((game) => game.appid === selectedLibraryGameAppId) ?? null,
     [loaded.games, selectedLibraryGameAppId],
   );
+
+  const createCustomShelf = useCallback((name: string): string | null => {
+    const cleanName = cleanShelfName(name);
+    if (!cleanName || customShelves.length >= MAX_CUSTOM_SHELVES) return null;
+    const id = typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `shelf-${Date.now()}-${customShelves.length + 1}`;
+    const now = Date.now();
+    setCustomShelves((current) => [...current, { id, name: cleanName, games: [], createdAt: now, updatedAt: now }]);
+    setActiveShelfId(id);
+    setDrawerShelfId(id);
+    return id;
+  }, [customShelves.length]);
+
+  const addGameToCustomShelf = useCallback((shelfId: string, game: Game) => {
+    setCustomShelves((current) => current.map((shelf) => {
+      if (shelf.id !== shelfId || shelf.games.some((entry) => entry.appid === game.appid)) return shelf;
+      const next: CustomShelfGame = {
+        appid: game.appid,
+        name: game.name ?? `app ${game.appid}`,
+        ...(game.iconHash ? { iconHash: game.iconHash } : {}),
+      };
+      return { ...shelf, games: [...shelf.games, next].slice(0, 50), updatedAt: Date.now() };
+    }));
+  }, []);
+
+  const updateCustomShelf = useCallback((shelfId: string, updater: (shelf: CustomShelf) => CustomShelf) => {
+    setCustomShelves((current) => current.map((shelf) =>
+      shelf.id === shelfId ? { ...updater(shelf), updatedAt: Date.now() } : shelf
+    ));
+  }, []);
+
+  const deleteCustomShelf = useCallback((shelfId: string) => {
+    setCustomShelves((current) => current.filter((shelf) => shelf.id !== shelfId));
+  }, []);
+
+  const turnShelfIntoStory = useCallback((shelf: CustomShelf) => {
+    const seed = shelfStoryFromCustomShelf(shelf);
+    setStorySeed({
+      ...seed,
+      style: "scrapbook",
+      finish: "archive",
+    });
+    setView("top");
+  }, []);
 
   /** What a shelf of untouched games is holding, said once, under the shelf itself. */
   const untouchedBytes = shelf.untouched.reduce((n, s) => n + (s.game.bytes ?? 0), 0);
@@ -591,6 +668,9 @@ export default function App() {
         </button>
         <button className={view === "analytics" ? "active" : ""} aria-pressed={view === "analytics"} onClick={() => setView("analytics")}>
           <CuteIcon name="chart" className="button-icon" /> Analytics
+        </button>
+        <button className={view === "shelves" ? "active" : ""} aria-pressed={view === "shelves"} onClick={() => setView("shelves")}>
+          <CuteIcon name="archive" className="button-icon" /> My shelves
         </button>
         <button className={view === "top" ? "active" : ""} aria-pressed={view === "top"} onClick={() => setView("top")}>
           <CuteIcon name="heart" className="button-icon" /> Shelf stories
@@ -1134,6 +1214,26 @@ export default function App() {
                 <div className="library-catalog-actions">
                   <a href={`https://store.steampowered.com/app/${selectedLibraryGame.appid}/`} target="_blank" rel="noreferrer">Open Steam store ↗</a>
                 </div>
+                <div className="library-file-to-shelf">
+                  <span className="library-control-label">File on a shelf</span>
+                  {customShelves.length ? (
+                    <div>
+                      <select value={drawerShelfId} onChange={(event) => setDrawerShelfId(event.target.value)} aria-label="Choose custom shelf for game">
+                        {customShelves.map((shelf) => <option key={shelf.id} value={shelf.id}>{shelf.name}</option>)}
+                      </select>
+                      <button
+                        type="button"
+                        disabled={!drawerShelfId || customShelves.some((shelf) => shelf.id === drawerShelfId && shelf.games.some((game) => game.appid === selectedLibraryGame.appid))}
+                        onClick={() => drawerShelfId && addGameToCustomShelf(drawerShelfId, selectedLibraryGame)}
+                      >
+                        <CuteIcon name="plus" className="button-icon" />
+                        {customShelves.some((shelf) => shelf.id === drawerShelfId && shelf.games.some((game) => game.appid === selectedLibraryGame.appid)) ? "Already filed" : "Add to shelf"}
+                      </button>
+                    </div>
+                  ) : (
+                    <button type="button" onClick={() => setView("shelves")}><CuteIcon name="plus" className="button-icon" /> Create your first shelf</button>
+                  )}
+                </div>
                 <p className="note">
                   {loaded.kind === "steam"
                     ? "This record uses the same public Steam library data already loaded above."
@@ -1181,8 +1281,19 @@ export default function App() {
         </>
       ) : view === "analytics" ? (
         <AnalyticsPage analytics={analytics} stats={stats} kind={loaded.kind} source={loaded.source} />
+      ) : view === "shelves" ? (
+        <CustomShelvesPage
+          shelves={customShelves}
+          activeShelfId={activeShelfId}
+          loadedGames={loaded.games}
+          onCreate={createCustomShelf}
+          onSelect={setActiveShelfId}
+          onUpdate={updateCustomShelf}
+          onDelete={deleteCustomShelf}
+          onStory={turnShelfIntoStory}
+        />
       ) : (
-        <TopGamesPage loadedGames={loaded.games} initial={shared.top} />
+        <TopGamesPage loadedGames={loaded.games} initial={storySeed ?? shared.top} />
       )}
       <Palette themes={palettes} storageKey="shelfwear:theme:cozy-v2" initial="cherry-blossom-dusk" />
     </div>
