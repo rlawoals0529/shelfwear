@@ -86,6 +86,24 @@ jobs:
           grep -qi '^access-control-allow-origin: https://rlawoals0529.github.io' /tmp/shelfwear-api-headers.txt
           grep -q '"error"' /tmp/shelfwear-api-body.json
 
+          achievement_status="$(
+            curl --silent --show-error --retry 4 --retry-delay 2 \
+              --header 'Origin: https://rlawoals0529.github.io' \
+              --dump-header /tmp/shelfwear-achievement-headers.txt \
+              --output /tmp/shelfwear-achievement-body.json \
+              --write-out '%{http_code}' \
+              "$DEPLOYMENT_URL/api/steam/achievements?steamid=bad&appid=10"
+          )"
+          if [ "$achievement_status" != "400" ]; then
+            echo "::error::Expected the invalid-achievement smoke check to return 400; got $achievement_status."
+            cat /tmp/shelfwear-achievement-body.json
+            exit 1
+          fi
+          grep -qi '^content-type: application/json' /tmp/shelfwear-achievement-headers.txt
+          grep -qi '^cache-control: no-store' /tmp/shelfwear-achievement-headers.txt
+          grep -qi '^access-control-allow-origin: https://rlawoals0529.github.io' /tmp/shelfwear-achievement-headers.txt
+          grep -q '"error"' /tmp/shelfwear-achievement-body.json
+
           # Blue Protocol: Star Resonance uses Steam's newer hashed artwork layout. Its public
           # GetOwnedGames icon hash gives us a reliable official-Steam fallback when a
           # portrait cannot be discovered, so keep that path in the live smoke test.
