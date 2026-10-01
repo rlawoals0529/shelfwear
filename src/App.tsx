@@ -756,7 +756,11 @@ export default function App() {
             ))}
           </div>
           <p className="note">Download card exports a 1080×1350 PNG using the current Shelfwear palette. Missing cover art falls back to a typographic tile.</p>
-          <div className="familiar familiar-v2">
+          <div className="familiar familiar-v2 familiar-bookplate">
+            <div className="familiar-catalog-meta">
+              <span>SHELFWEAR / LIBRARY SPECIMEN</span>
+              <span>OBSERVED PATTERN</span>
+            </div>
             <span className="familiar-mark familiar-cute" aria-hidden="true">
               <span className="familiar-emoji">{familiar.glyph}</span>
               <span className="familiar-kaomoji">♡</span>
@@ -764,24 +768,26 @@ export default function App() {
             <div className="familiar-copy">
               <p className="eyebrow">Shelf familiar</p>
               <h3>{familiar.name}</h3>
+              <span className="familiar-classification">library pattern · evidence cataloged below</span>
               <p>{familiar.description}</p>
               <div className="familiar-signals" aria-label="Why this Shelf familiar was chosen">
-                {familiar.signals.map((signal) => (
-                  <span key={signal.label}><small>{signal.label}</small><b>{signal.value}</b></span>
+                {familiar.signals.map((signal, index) => (
+                  <span key={signal.label}><small>{String(index + 1).padStart(2, "0")} · {signal.label}</small><b>{signal.value}</b></span>
                 ))}
               </div>
-              <p className="note familiar-evidence"><b>Why this one:</b> {familiar.evidence}</p>
+              <p className="note familiar-evidence"><b>Field note:</b> {familiar.evidence}</p>
               <div className="familiar-actions">
                 <button type="button" disabled={familiarRendering} onClick={() => void downloadFamiliarCard()}>
-                  <CuteIcon name="download" className="button-icon" />{familiarRendering ? "Making familiar card…" : "Download familiar card"}
+                  <CuteIcon name="download" className="button-icon" />{familiarRendering ? "Making specimen card…" : "Download specimen card"}
                 </button>
                 <button type="button" onClick={() => void copyFamiliar()}>
                   <CuteIcon name="copy" className="button-icon" />{familiarCopied ? "Copied" : "Copy familiar"}
                 </button>
               </div>
               {familiarError && <p className="err">{familiarError}</p>}
-              <p className="note">This is a playful description of observable library patterns, not a personality test or a claim about you.</p>
+              <p className="note familiar-disclaimer">Cataloged from observable library patterns only. Not a personality test or a claim about you.</p>
             </div>
+            <span className="familiar-catalog-stamp" aria-hidden="true">CATALOGED</span>
           </div>
         </section>
       )}
