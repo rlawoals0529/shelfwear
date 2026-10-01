@@ -21,6 +21,7 @@ For sharing, Shelfwear can make:
 - **Your nine** — the nine titles with the most recorded playtime, in a 3×3 grid.
 - **Shelf Stories** — prompt-driven, hand-picked collections such as Games that shaped me, comfort games, and multiplayer memories.
 - **My shelves** — browser-local personal collections such as comfort games, currently playing, childhood favorites, backlog, multiplayer, or a custom shelf. Games can be filed from the Shelf Index, reordered, annotated, and handed off into Shelf Stories.\n- **Pick something** — a transparent random draw from an explicit pool: never played, under 2h played, real local installs, or the currently loaded games on a custom shelf. Shelfwear shows the exact eligibility rule, supports draw-again and session-only exclusions, and never presents the result as a taste recommendation.\n- **Library export** — download the currently loaded library as CSV or JSON with explicit provenance. Public-Steam exports contain owned-game/playtime fields only; real local-file exports may additionally contain install state, known disk bytes, and local last-played timestamps. The bundled sample is labeled synthetic demo data.
+- **Shelf receipt** — a downloadable 1080×1350 receipt-style artifact made from current observable values: represented games, total recorded hours, untouched titles, top recorded-hour games, and biggest known installs only when real local files provide them.
 - **Achievement Cabinet** — public-Steam-only, on-demand achievement details for one selected game, including completion, rarest unlocked achievement when Steam provides global percentages, latest recorded unlock, and a selectable 1080×1350 Trophy Cabinet card.
 - **Download card** — a 1080×1350 PNG rendered in the current Shelfwear palette. Local/sample mode is fully browser-only; Steam mode asks Shelfwear's same-origin Worker cover endpoint for public artwork and falls back to typographic tiles when artwork is unavailable.
 - **Shelf familiar** — a deterministic mascot based only on observable library patterns, presented as a cataloged library specimen with three visible evidence fields, a field note explaining why it was chosen, and its own downloadable 1080×1350 bookplate card. It describes the library shape, not the person.
@@ -107,6 +108,14 @@ The **Everything** header includes **Export CSV** and **Export JSON** for the cu
 - bundled sample: the same demo-shaped fields, explicitly labeled `synthetic_demo`
 
 Public exports deliberately omit install, disk, and local-last-played columns instead of filling them with zeroes or inferred values. The export is generated in the browser from the data already loaded into Shelfwear.
+
+## Shelf receipt
+
+**Shelf receipt** turns the current loaded shelf into a compact 1080×1350 takeaway slip. It uses only values Shelfwear can currently observe: represented game count, total lifetime minutes, untouched count, and the top games by recorded hours.
+
+When the source is a **real local-file import**, the receipt may also show the biggest installed games whose disk sizes are actually known from appmanifest files. Public Steam receipts never show or infer local install size, install state, or local recency. The bundled sample is stamped **synthetic demo data** rather than presented as device evidence.
+
+The date printed on a receipt is the artifact generation date. It is not a play-session timestamp or a historical observation claim.
 
 ## Pick something
 

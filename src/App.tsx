@@ -6,6 +6,7 @@ import { compareLibraries, type LibraryComparison, type SharedGame } from "./lib
 import { comparePartyLibraries, type PartyComparison, type PartyGame } from "./lib/party.js";
 import { comparisonCardFilename, curatedCardFilename, downloadBlob, familiarCardFilename, historyMilestoneFilename, proxiedSteamCover, renderComparisonCard, renderCuratedCard, renderFamiliarCard, renderHistoryMilestoneCard, renderShareCard, shareCardFilename } from "./lib/share-card.js";
 import { libraryExportCsv, libraryExportFilename, libraryExportJson, type LibraryExportFormat } from "./lib/export.js";
+import { renderShelfReceipt, shelfReceiptFilename } from "./lib/receipt-card.js";
 import {
   comparisonShareUrl,
   fetchPublicSteamLibrary,
@@ -329,6 +330,8 @@ export default function App() {
   const [shareCopied, setShareCopied] = useState(false);
   const [cardRendering, setCardRendering] = useState(false);
   const [cardError, setCardError] = useState<string | null>(null);
+  const [receiptRendering, setReceiptRendering] = useState(false);
+  const [receiptError, setReceiptError] = useState<string | null>(null);
   const [familiarRendering, setFamiliarRendering] = useState(false);
   const [familiarError, setFamiliarError] = useState<string | null>(null);
   const [familiarCopied, setFamiliarCopied] = useState(false);
@@ -750,6 +753,26 @@ export default function App() {
       setCardRendering(false);
     }
   }, [familiar, loaded.kind, loaded.profile?.name, nine]);
+
+  const downloadReceipt = useCallback(async () => {
+    setReceiptError(null);
+    setReceiptRendering(true);
+    try {
+      const profileName = loaded.kind === "steam" ? loaded.profile?.name ?? null : null;
+      const blob = await renderShelfReceipt({
+        games: loaded.games,
+        source: loaded.kind,
+        sourceLabel: loaded.source,
+        profileName,
+        generatedAt: Date.now(),
+      });
+      downloadBlob(blob, shelfReceiptFilename(profileName));
+    } catch (error) {
+      setReceiptError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setReceiptRendering(false);
+    }
+  }, [loaded]);
 
   const downloadFamiliarCard = useCallback(async () => {
     setFamiliarError(null);
@@ -1192,6 +1215,22 @@ export default function App() {
             </>
           )}
         </p>
+        {loaded.games.length > 0 && (
+          <div className="receipt-callout">
+            <div className="receipt-callout-copy">
+              <p className="eyebrow">Takeaway slip</p>
+              <b>Shelf receipt</b>
+              <span>
+                Current observable totals and top recorded hours, plus biggest known installs only when real local Steam files provide them.
+              </span>
+            </div>
+            <button type="button" disabled={receiptRendering} onClick={() => void downloadReceipt()}>
+              <CuteIcon name="download" className="button-icon" />
+              {receiptRendering ? "Printing receipt…" : "Download shelf receipt"}
+            </button>
+          </div>
+        )}
+        {receiptError && <p className="err">{receiptError}</p>}
       </section>
 
       <PickSomething
