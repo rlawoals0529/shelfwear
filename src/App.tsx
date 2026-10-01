@@ -4,7 +4,7 @@ import { analyticsFor, type LibraryAnalytics } from "./lib/analytics.js";
 import { familiarFor, steamCover, steamHeader, steamIcon, topNine } from "./lib/profile.js";
 import { compareLibraries, type LibraryComparison, type SharedGame } from "./lib/compare.js";
 import { comparePartyLibraries, type PartyComparison, type PartyGame } from "./lib/party.js";
-import { comparisonCardFilename, curatedCardFilename, downloadBlob, familiarCardFilename, proxiedSteamCover, renderComparisonCard, renderCuratedCard, renderFamiliarCard, renderShareCard, shareCardFilename } from "./lib/share-card.js";
+import { comparisonCardFilename, curatedCardFilename, downloadBlob, familiarCardFilename, historyMilestoneFilename, proxiedSteamCover, renderComparisonCard, renderCuratedCard, renderFamiliarCard, renderHistoryMilestoneCard, renderShareCard, shareCardFilename } from "./lib/share-card.js";
 import {
   comparisonShareUrl,
   fetchPublicSteamLibrary,
@@ -46,6 +46,7 @@ import {
   writeShelfHistory,
   type ShelfHistoryDelta,
   type ShelfHistoryRecord,
+  type ShelfHistoryThreshold,
 } from "./lib/history.js";
 import { Ticker, stagger } from "./lib/motion.js";
 import { Palette } from "./lib/palette.js";
@@ -369,6 +370,8 @@ export default function App() {
   const [recentError, setRecentError] = useState<string | null>(null);
   const [shelfHistory, setShelfHistory] = useState<ShelfHistoryRecord | null>(null);
   const [shelfHistoryDelta, setShelfHistoryDelta] = useState<ShelfHistoryDelta | null>(null);
+  const [historyMilestoneRendering, setHistoryMilestoneRendering] = useState<string | null>(null);
+  const [historyMilestoneError, setHistoryMilestoneError] = useState<string | null>(null);
   const picker = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -420,6 +423,8 @@ export default function App() {
     setRecentError(null);
     setShelfHistory(null);
     setShelfHistoryDelta(null);
+    setHistoryMilestoneError(null);
+    setHistoryMilestoneRendering(null);
     setImporting(true);
     try {
       const data = await fetchPublicSteamLibrary(steamProfile);
@@ -469,6 +474,7 @@ export default function App() {
     writeShelfHistory(record);
     setShelfHistory(record);
     setShelfHistoryDelta(null);
+    setHistoryMilestoneError(null);
   }, [loaded.games, loaded.kind, loaded.steamid]);
 
   const clearHistory = useCallback(() => {
@@ -476,7 +482,37 @@ export default function App() {
     clearShelfHistory(loaded.steamid);
     setShelfHistory(null);
     setShelfHistoryDelta(null);
+    setHistoryMilestoneError(null);
+    setHistoryMilestoneRendering(null);
   }, [loaded.kind, loaded.steamid]);
+
+  const downloadHistoryMilestone = useCallback(async (milestone: ShelfHistoryThreshold) => {
+    if (loaded.kind !== "steam" || !shelfHistoryDelta) return;
+    const game = loaded.games.find((candidate) => candidate.appid === milestone.appid);
+    if (!game) return;
+
+    const key = milestone.appid + ":" + milestone.hours;
+    setHistoryMilestoneError(null);
+    setHistoryMilestoneRendering(key);
+    try {
+      const blob = await renderHistoryMilestoneCard({
+        gameName: game.name ?? `app ${game.appid}`,
+        appid: game.appid,
+        iconHash: game.iconHash ?? null,
+        profileName: loaded.profile?.name ?? null,
+        milestoneHours: milestone.hours,
+        fromMinutes: milestone.fromMinutes,
+        toMinutes: milestone.toMinutes,
+        fromAt: shelfHistoryDelta.fromAt,
+        toAt: shelfHistoryDelta.toAt,
+      });
+      downloadBlob(blob, historyMilestoneFilename(game.name ?? `app ${game.appid}`, milestone.hours));
+    } catch (error) {
+      setHistoryMilestoneError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setHistoryMilestoneRendering((current) => current === key ? null : current);
+    }
+  }, [loaded.games, loaded.kind, loaded.profile?.name, shelfHistoryDelta]);
 
   const runComparison = useCallback(async () => {
     setCompareError(null);
@@ -997,7 +1033,8 @@ export default function App() {
                   </div>
 
                   {shelfHistoryDelta.changed ? (
-                    <div className="history-events">
+                    <>
+                      <div className="history-events">
                       {shelfHistoryDelta.newlyOwned.length > 0 && (
                         <div>
                           <small>New to the saved shelf</small>
@@ -1011,12 +1048,34 @@ export default function App() {
                         </div>
                       )}
                       {shelfHistoryDelta.thresholds.length > 0 && (
-                        <div>
+                        <div className="history-milestone-block">
                           <small>Hour milestones crossed between saved states</small>
-                          <p>{shelfHistoryDelta.thresholds.slice(0, 6).map((entry) => `${historyNameByAppId.get(entry.appid) ?? `app ${entry.appid}`} · ${entry.hours}h`).join(" · ")}</p>
+                          <div className="history-milestones">
+                            {shelfHistoryDelta.thresholds.slice(0, 6).map((entry) => {
+                              const key = entry.appid + ":" + entry.hours;
+                              return (
+                                <div className="history-milestone-row" key={key}>
+                                  <span>
+                                    <b>{historyNameByAppId.get(entry.appid) ?? `app ${entry.appid}`}</b>
+                                    <small>{hours(entry.fromMinutes)}h → {hours(entry.toMinutes)}h · crossed {entry.hours}h</small>
+                                  </span>
+                                  <button
+                                    type="button"
+                                    disabled={historyMilestoneRendering !== null}
+                                    onClick={() => void downloadHistoryMilestone(entry)}
+                                  >
+                                    <CuteIcon name="download" className="button-icon" />
+                                    {historyMilestoneRendering === key ? "Making slip…" : `Download ${entry.hours}h slip`}
+                                  </button>
+                                </div>
+                              );
+                            })}
+                          </div>
                         </div>
                       )}
-                    </div>
+                      </div>
+                      {historyMilestoneError && <p className="err">{historyMilestoneError}</p>}
+                    </>
                   ) : (
                     <p className="note history-no-change">No recorded library or lifetime-playtime changes since the last saved state.</p>
                   )}

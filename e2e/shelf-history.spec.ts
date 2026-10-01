@@ -1,10 +1,21 @@
 import { expect, test } from "@playwright/test";
+import { readFile } from "node:fs/promises";
 
 const STEAMID = "76561198000000000";
 const HISTORY_KEY = `shelfwear:shelf-history:v1:${STEAMID}`;
 
 test("Shelf History starts from an opt-in baseline and records only later observable changes", async ({ page }) => {
   let phase = 1;
+
+  await page.addInitScript(() => {
+    const seen: string[] = [];
+    (window as unknown as { __milestoneFillText: string[] }).__milestoneFillText = seen;
+    const original = CanvasRenderingContext2D.prototype.fillText;
+    CanvasRenderingContext2D.prototype.fillText = function (...args) {
+      seen.push(String(args[0]));
+      return original.apply(this, args as Parameters<CanvasRenderingContext2D["fillText"]>);
+    };
+  });
 
   await page.route("**/api/steam/library?*", async (route) => {
     const games = phase === 1
@@ -68,8 +79,34 @@ test("Shelf History starts from an opt-in baseline and records only later observ
   await expect(history.locator(".history-delta-metrics")).toContainText("2");
   await expect(history.locator(".history-events")).toContainText("New Arrival");
   await expect(history.locator(".history-events")).toContainText("New Start");
-  await expect(history.locator(".history-events")).toContainText("Deep Game · 10h");
+  await expect(history.locator(".history-events")).toContainText("Deep Game");
   await expect(history.locator(".history-snapshot")).toHaveCount(2);
+  await expect(history.locator(".history-milestone-row")).toContainText("9.8h → 10.2h · crossed 10h");
+
+  const milestoneDownload = page.waitForEvent("download");
+  await history.getByRole("button", { name: "Download 10h slip" }).click();
+  const milestone = await milestoneDownload;
+  expect(milestone.suggestedFilename()).toBe("shelfwear-deep-game-10h-milestone.png");
+
+  const milestonePath = await milestone.path();
+  expect(milestonePath).not.toBeNull();
+  const milestoneBytes = await readFile(milestonePath!);
+  expect(milestoneBytes.subarray(0, 8)).toEqual(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
+  expect(milestoneBytes.readUInt32BE(16)).toBe(1080);
+  expect(milestoneBytes.readUInt32BE(20)).toBe(1350);
+
+  const drawn = await page.evaluate(() =>
+    (window as unknown as { __milestoneFillText: string[] }).__milestoneFillText,
+  );
+  expect(drawn).toContain("SHELFWEAR / MILESTONE SLIP");
+  expect(drawn).toContain("Deep Game");
+  expect(drawn).toContain("10H");
+  expect(drawn).toContain("PREVIOUS SAVED TOTAL");
+  expect(drawn).toContain("9.8h");
+  expect(drawn).toContain("CURRENT SAVED TOTAL");
+  expect(drawn).toContain("10.2h");
+  expect(drawn).toContain("MILESTONE OBSERVED");
+  expect(drawn).toContain("Not a Steam event timestamp.");
 
   await page.reload();
   await page.getByLabel("Steam username, profile URL, or SteamID").fill("historyplayer");
