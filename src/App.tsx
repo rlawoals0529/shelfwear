@@ -315,6 +315,7 @@ export default function App() {
   const [libraryDensity, setLibraryDensity] = useState<LibraryDensity>(() =>
     readLocalPreference(LIBRARY_DENSITY_KEY, LIBRARY_DENSITY_VALUES, "cozy"),
   );
+  const [selectedLibraryGameAppId, setSelectedLibraryGameAppId] = useState<string | null>(null);
   const picker = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -434,6 +435,11 @@ export default function App() {
       }
     });
   }, [effectiveLibraryFilter, effectiveLibrarySort, libraryQuery, loaded.games]);
+
+  const selectedLibraryGame = useMemo(
+    () => loaded.games.find((game) => game.appid === selectedLibraryGameAppId) ?? null,
+    [loaded.games, selectedLibraryGameAppId],
+  );
 
   /** What a shelf of untouched games is holding, said once, under the shelf itself. */
   const untouchedBytes = shelf.untouched.reduce((n, s) => n + (s.game.bytes ?? 0), 0);
@@ -1088,10 +1094,58 @@ export default function App() {
               : "Public Steam profiles show owned games and playtime. Shelfwear cannot see what is installed on another PC."}
         </p>
 
+        {selectedLibraryGame && (
+          <aside className="library-catalog-drawer" aria-label={`Details for ${selectedLibraryGame.name ?? `app ${selectedLibraryGame.appid}`}`}>
+            <div className="library-catalog-meta">
+              <span>SHELF INDEX / APP {selectedLibraryGame.appid}</span>
+              <button type="button" onClick={() => setSelectedLibraryGameAppId(null)} aria-label="Close game details"><CuteIcon name="close" /></button>
+            </div>
+            <div className="library-catalog-body">
+              <div className="library-catalog-art" aria-hidden="true">
+                <span>{(selectedLibraryGame.name ?? `app ${selectedLibraryGame.appid}`).trim().charAt(0).toUpperCase()}</span>
+                {loaded.kind === "steam" && (
+                  <img
+                    src={proxiedSteamCover(selectedLibraryGame.appid, selectedLibraryGame.iconHash)}
+                    alt=""
+                    loading="lazy"
+                    decoding="async"
+                    onError={(event) => { event.currentTarget.hidden = true; }}
+                  />
+                )}
+              </div>
+              <div className="library-catalog-copy">
+                <p className="eyebrow">Catalog record</p>
+                <h3>{selectedLibraryGame.name ?? `app ${selectedLibraryGame.appid}`}</h3>
+                <div className="library-catalog-facts">
+                  <span><small>Recorded playtime</small><b>{hours(selectedLibraryGame.minutes)}h</b></span>
+                  <span><small>Library state</small><b>{selectedLibraryGame.minutes > 0 ? "Played" : "Never played"}</b></span>
+                  {loaded.kind === "local" && (
+                    <>
+                      <span><small>Installed on this PC</small><b>{selectedLibraryGame.installed ? "Yes" : "No"}</b></span>
+                      <span><small>Known size</small><b>{selectedLibraryGame.bytes === null ? "Unknown" : `${gb(selectedLibraryGame.bytes)} GB`}</b></span>
+                      <span><small>Last recorded launch</small><b>{selectedLibraryGame.lastPlayed ? ago(selectedLibraryGame.lastPlayed) : "No recorded launch"}</b></span>
+                    </>
+                  )}
+                </div>
+                <div className="library-catalog-actions">
+                  <a href={`https://store.steampowered.com/app/${selectedLibraryGame.appid}/`} target="_blank" rel="noreferrer">Open Steam store ↗</a>
+                </div>
+                <p className="note">
+                  {loaded.kind === "steam"
+                    ? "This record uses the same public Steam library data already loaded above."
+                    : loaded.kind === "local"
+                      ? "No artwork is fetched automatically in local-file mode; the files stay the source of truth."
+                      : "This is synthetic demo data, so the record is only showing how the catalog drawer behaves."}
+                </p>
+              </div>
+            </div>
+          </aside>
+        )}
+
         {visibleGames.length > 0 ? (
           <div className={`rows library-rows ${libraryDensity}`}>
             {visibleGames.map((g) => (
-              <div className={g.minutes === 0 ? "row cold" : "row"} key={g.appid}>
+              <div className={g.minutes === 0 ? "row cold library-row" : "row library-row"} key={g.appid}>
                 <span className="hrs">{hours(g.minutes)}h</span>
                 <span className="name">{g.name ?? <em>app {g.appid}</em>}</span>
                 <span className="sz">
@@ -1100,6 +1154,15 @@ export default function App() {
                     : `${gb(g.bytes)} GB`}
                   {loaded.kind !== "steam" ? ` · ${ago(g.lastPlayed)}` : ""}
                 </span>
+                <button
+                  type="button"
+                  className="library-row-details"
+                  aria-label={`Open details for ${g.name ?? `app ${g.appid}`}`}
+                  aria-pressed={selectedLibraryGameAppId === g.appid}
+                  onClick={() => setSelectedLibraryGameAppId((current) => current === g.appid ? null : g.appid)}
+                >
+                  index card
+                </button>
               </div>
             ))}
           </div>
