@@ -2191,7 +2191,7 @@ export default function App() {
         </div>
 
         {libraryViewSummary.length > 0 && (
-          <div className="library-view-summary" role="status">
+          <div className="library-view-summary">
             <span>
               <b>Current view:</b> {libraryViewSummary.join(" · ")}
             </span>
