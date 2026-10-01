@@ -34,6 +34,9 @@ import {
   CUSTOM_SHELF_PRESETS,
   MAX_CUSTOM_SHELVES,
   cleanShelfName,
+  customShelvesBackupFilename,
+  customShelvesBackupText,
+  parseCustomShelvesBackup,
   readCustomShelves,
   shelfStoryFromCustomShelf,
   writeCustomShelves,
@@ -801,6 +804,12 @@ export default function App() {
 
   const deleteCustomShelf = useCallback((shelfId: string) => {
     setCustomShelves((current) => current.filter((shelf) => shelf.id !== shelfId));
+  }, []);
+
+  const restoreCustomShelves = useCallback((next: CustomShelf[]) => {
+    setCustomShelves(next);
+    setActiveShelfId(next[0]?.id ?? null);
+    setDrawerShelfId(next[0]?.id ?? "");
   }, []);
 
   const turnShelfIntoStory = useCallback((shelf: CustomShelf) => {
@@ -2069,6 +2078,7 @@ export default function App() {
           onSelect={setActiveShelfId}
           onUpdate={updateCustomShelf}
           onDelete={deleteCustomShelf}
+          onRestore={restoreCustomShelves}
           onStory={turnShelfIntoStory}
         />
       ) : (
@@ -2090,6 +2100,7 @@ function CustomShelvesPage({
   onSelect,
   onUpdate,
   onDelete,
+  onRestore,
   onStory,
 }: {
   shelves: CustomShelf[];
@@ -2099,12 +2110,16 @@ function CustomShelvesPage({
   onSelect: (id: string) => void;
   onUpdate: (id: string, updater: (shelf: CustomShelf) => CustomShelf) => void;
   onDelete: (id: string) => void;
+  onRestore: (shelves: CustomShelf[]) => void;
   onStory: (shelf: CustomShelf) => void;
 }) {
   const active = shelves.find((shelf) => shelf.id === activeShelfId) ?? shelves[0] ?? null;
   const [draftName, setDraftName] = useState("");
   const [renameDraft, setRenameDraft] = useState(active?.name ?? "");
   const [gameQuery, setGameQuery] = useState("");
+  const [backupMessage, setBackupMessage] = useState<string | null>(null);
+  const [backupError, setBackupError] = useState<string | null>(null);
+  const backupPicker = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setRenameDraft(active?.name ?? "");
@@ -2187,6 +2202,42 @@ function CustomShelvesPage({
     }));
   };
 
+  const downloadBackup = () => {
+    setBackupError(null);
+    const text = customShelvesBackupText(shelves);
+    downloadBlob(
+      new Blob([text], { type: "application/json;charset=utf-8" }),
+      customShelvesBackupFilename(),
+    );
+    setBackupMessage(`Downloaded ${shelves.length} ${shelves.length === 1 ? "shelf" : "shelves"}.`);
+  };
+
+  const restoreBackup = async (file: File) => {
+    setBackupError(null);
+    setBackupMessage(null);
+    try {
+      const backup = parseCustomShelvesBackup(await file.text());
+      const count = backup.shelves.length;
+      const replacing = shelves.length > 0;
+      if (replacing) {
+        const confirmed = window.confirm(
+          `Restore ${count} ${count === 1 ? "shelf" : "shelves"} from this backup? This replaces the ${shelves.length} currently stored ${shelves.length === 1 ? "shelf" : "shelves"} in this browser.`,
+        );
+        if (!confirmed) return;
+      }
+      onRestore(backup.shelves);
+      setBackupMessage(
+        count
+          ? `Restored ${count} ${count === 1 ? "shelf" : "shelves"} from the backup.`
+          : "Restored an empty backup. My Shelves is now empty.",
+      );
+    } catch (error) {
+      setBackupError(error instanceof Error ? error.message : String(error));
+    } finally {
+      if (backupPicker.current) backupPicker.current.value = "";
+    }
+  };
+
   return (
     <main className="custom-shelves-page">
       <section className="panel custom-shelves-intro">
@@ -2239,6 +2290,35 @@ function CustomShelvesPage({
           </button>
         </form>
         <p className="note">{shelves.length}/{MAX_CUSTOM_SHELVES} shelves · stored only in this browser's localStorage</p>
+
+        <div className="custom-shelf-backup" aria-label="Back up or restore My Shelves">
+          <div>
+            <span className="library-control-label">Browser-local backup</span>
+            <b>Take your curated shelves with you</b>
+            <p>Downloads shelf names, order, selected AppIDs/names, public icon hashes, timestamps, and your private shelf notes. It does not include playtime, install state, disk data, or the imported Steam library.</p>
+          </div>
+          <div className="custom-shelf-backup-actions">
+            <button type="button" disabled={!shelves.length} onClick={downloadBackup}>
+              <CuteIcon name="download" className="button-icon" /> Download backup
+            </button>
+            <button type="button" onClick={() => backupPicker.current?.click()}>
+              <CuteIcon name="folder" className="button-icon" /> Restore backup
+            </button>
+            <input
+              ref={backupPicker}
+              type="file"
+              accept="application/json,.json"
+              hidden
+              aria-label="Choose a My Shelves backup"
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (file) void restoreBackup(file);
+              }}
+            />
+          </div>
+        </div>
+        {backupMessage && <p className="custom-shelf-backup-status" role="status">{backupMessage}</p>}
+        {backupError && <p className="err custom-shelf-backup-status" role="alert">{backupError}</p>}
       </section>
 
       {shelves.length === 0 ? (
