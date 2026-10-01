@@ -464,6 +464,11 @@
 }
 
 @media (min-width: 901px) {
+  .custom-shelves-workspace,
+  .custom-shelf-sheet {
+    overflow: clip;
+  }
+
   .custom-shelf-bulk-docket {
     position: sticky;
     top: 8px;
