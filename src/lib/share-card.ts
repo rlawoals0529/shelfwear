@@ -1,7 +1,7 @@
 import { hours, type Game } from "./library.js";
 import type { LibraryComparison } from "./compare.js";
 import type { Familiar } from "./profile.js";
-import { steamApiUrl } from "./steam.js";
+import { steamApiUrl, type SteamAchievement } from "./steam.js";
 import type { CuratedTopGames } from "./top-games.js";
 
 export interface ShareCardTheme {
@@ -33,6 +33,16 @@ export interface ComparisonCardInput {
   leftName: string;
   rightName: string;
   comparison: LibraryComparison;
+  theme?: Partial<ShareCardTheme>;
+}
+
+export interface AchievementCabinetCardInput {
+  gameName: string;
+  profileName?: string | null;
+  unlocked: number;
+  total: number;
+  completionPercent: number;
+  achievements: SteamAchievement[];
   theme?: Partial<ShareCardTheme>;
 }
 
@@ -859,6 +869,218 @@ export async function renderFamiliarCard(input: FamiliarCardInput): Promise<Blob
   ctx.font = "900 16px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
   ctx.textAlign = "right";
   ctx.fillText("shelfwear ♡", WIDTH - PAD - 8, 1250);
+  ctx.textAlign = "left";
+
+  return canvasBlob(canvas);
+}
+
+
+
+export function achievementCabinetFilename(gameName: string): string {
+  const stem = gameName
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 44) || "game";
+  return "shelfwear-" + stem + "-trophy-cabinet.png";
+}
+
+const achievementUnlockDate = (unix: number | null): string =>
+  unix ? new Date(unix * 1000).toISOString().slice(0, 10) : "date unavailable";
+
+export async function renderAchievementCabinetCard(input: AchievementCabinetCardInput): Promise<Blob> {
+  if (typeof document === "undefined") throw new Error("Share cards require a browser.");
+  const theme = { ...DEFAULT_THEME, ...currentShareCardTheme(), ...input.theme };
+  const canvas = document.createElement("canvas");
+  canvas.width = WIDTH;
+  canvas.height = HEIGHT;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas is not available in this browser.");
+
+  ctx.fillStyle = theme.bg;
+  ctx.fillRect(0, 0, WIDTH, HEIGHT);
+
+  const sheetX = 32;
+  const sheetY = 28;
+  const sheetW = WIDTH - 64;
+  const sheetH = HEIGHT - 56;
+  roundedRect(ctx, sheetX, sheetY, sheetW, sheetH, 28);
+  ctx.fillStyle = theme.panel;
+  ctx.fill();
+  ctx.strokeStyle = theme.edge;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  ctx.save();
+  roundedRect(ctx, sheetX, sheetY, sheetW, sheetH, 28);
+  ctx.clip();
+  ctx.strokeStyle = theme.edge;
+  ctx.globalAlpha = .15;
+  for (let y = 82; y < HEIGHT - 48; y += 34) {
+    ctx.beginPath();
+    ctx.moveTo(sheetX + 20, y);
+    ctx.lineTo(sheetX + sheetW - 20, y);
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+  const spine = ctx.createLinearGradient(sheetX, sheetY, sheetX, sheetY + sheetH);
+  spine.addColorStop(0, theme.accent);
+  spine.addColorStop(1, theme.accent2);
+  ctx.fillStyle = spine;
+  ctx.fillRect(sheetX, sheetY + 32, 9, sheetH - 64);
+  ctx.restore();
+
+  ctx.fillStyle = theme.accent;
+  ctx.font = "900 17px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.fillText("SHELFWEAR / TROPHY CABINET", PAD + 8, 64);
+
+  ctx.fillStyle = theme.dim;
+  ctx.font = "800 10px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.textAlign = "right";
+  ctx.fillText("STEAM ACHIEVEMENTS · FETCHED ON DEMAND", WIDTH - PAD - 8, 64);
+  ctx.textAlign = "left";
+
+  if (input.profileName) {
+    ctx.fillStyle = theme.dim;
+    ctx.font = "600 14px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+    ctx.fillText("SHELF: " + (wrapByMeasure(ctx, input.profileName, 420, 1)[0] ?? input.profileName), PAD + 8, 93);
+  }
+
+  ctx.fillStyle = theme.fg;
+  ctx.font = "850 47px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  const gameLines = wrapByMeasure(ctx, input.gameName, WIDTH - PAD * 2 - 16, 2);
+  gameLines.forEach((line, index) => ctx.fillText(line, PAD + 8, 145 + index * 53));
+
+  const summaryY = gameLines.length > 1 ? 250 : 210;
+  const summaryW = (WIDTH - (PAD + 8) * 2 - 24) / 3;
+  const summaries = [
+    ["UNLOCKED", input.unlocked + " / " + input.total],
+    ["COMPLETION", Math.round(input.completionPercent) + "%"],
+    ["PINNED TROPHIES", String(Math.min(6, input.achievements.length))],
+  ];
+
+  summaries.forEach(([label, value], index) => {
+    const x = PAD + 8 + index * (summaryW + 12);
+    roundedRect(ctx, x, summaryY, summaryW, 92, 10);
+    ctx.fillStyle = theme.raised;
+    ctx.fill();
+    ctx.strokeStyle = theme.edge;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.fillStyle = index === 1 ? theme.accent2 : theme.accent;
+    ctx.font = "900 10px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+    ctx.fillText(label!, x + 14, summaryY + 28);
+    ctx.fillStyle = theme.fg;
+    ctx.font = "850 26px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+    ctx.fillText(value!, x + 14, summaryY + 64);
+  });
+
+  const cabinetTop = summaryY + 126;
+  ctx.fillStyle = theme.fg;
+  ctx.font = "850 23px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.fillText("Pinned achievement slips", PAD + 8, cabinetTop);
+  ctx.fillStyle = theme.dim;
+  ctx.font = "500 13px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.fillText("selected unlocked achievements · rarity shown only when Steam provides it", PAD + 8, cabinetTop + 26);
+
+  const items = input.achievements.slice(0, 6);
+  const gap = 12;
+  const itemW = (WIDTH - (PAD + 8) * 2 - gap) / 2;
+  const itemH = 204;
+  const itemsTop = cabinetTop + 52;
+
+  for (let index = 0; index < 6; index++) {
+    const row = Math.floor(index / 2);
+    const col = index % 2;
+    const x = PAD + 8 + col * (itemW + gap);
+    const y = itemsTop + row * (itemH + 12);
+    const achievement = items[index];
+
+    roundedRect(ctx, x, y, itemW, itemH, 11);
+    ctx.fillStyle = index % 2 ? theme.panel : theme.raised;
+    ctx.fill();
+    ctx.strokeStyle = theme.edge;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    if (!achievement) {
+      ctx.strokeStyle = theme.edge;
+      ctx.setLineDash([7, 7]);
+      roundedRect(ctx, x + 12, y + 12, itemW - 24, itemH - 24, 8);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = theme.dim;
+      ctx.font = "600 14px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+      ctx.textAlign = "center";
+      ctx.fillText("empty trophy hook", x + itemW / 2, y + itemH / 2);
+      ctx.textAlign = "left";
+      continue;
+    }
+
+    ctx.fillStyle = col ? theme.accent2 : theme.accent;
+    roundedRect(ctx, x + 13, y + 12, 46, 27, 6);
+    ctx.fill();
+    ctx.fillStyle = theme.bg;
+    ctx.font = "900 10px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+    ctx.fillText(String(index + 1).padStart(2, "0"), x + 26, y + 30);
+
+    ctx.fillStyle = theme.fg;
+    ctx.font = "850 20px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+    const title = wrapByMeasure(ctx, achievement.name, itemW - 30, 2);
+    title.forEach((line, lineIndex) => ctx.fillText(line, x + 15, y + 69 + lineIndex * 25));
+
+    ctx.fillStyle = theme.dim;
+    ctx.font = "500 13px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+    const description = achievement.description
+      ? wrapByMeasure(ctx, achievement.description, itemW - 30, 2)
+      : ["Steam provided no public description."];
+    description.forEach((line, lineIndex) => ctx.fillText(line, x + 15, y + 125 + lineIndex * 19));
+
+    ctx.strokeStyle = theme.edge;
+    ctx.globalAlpha = .55;
+    ctx.beginPath();
+    ctx.moveTo(x + 15, y + 166);
+    ctx.lineTo(x + itemW - 15, y + 166);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+
+    ctx.fillStyle = theme.dim;
+    ctx.font = "700 10px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+    const rarity = achievement.globalPercent === null ? "rarity unavailable" : achievement.globalPercent.toFixed(2) + "% global";
+    ctx.fillText(rarity, x + 15, y + 190);
+    ctx.textAlign = "right";
+    ctx.fillText(achievementUnlockDate(achievement.unlockTime), x + itemW - 15, y + 190);
+    ctx.textAlign = "left";
+  }
+
+  const stampY = 1195;
+  ctx.save();
+  ctx.translate(WIDTH - PAD - 110, stampY);
+  ctx.rotate(-.035);
+  ctx.strokeStyle = theme.accent;
+  ctx.lineWidth = 3;
+  ctx.setLineDash([7, 5]);
+  roundedRect(ctx, -94, -30, 188, 60, 7);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = theme.accent;
+  ctx.font = "900 12px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("CABINET COPY", 0, 5);
+  ctx.restore();
+
+  ctx.fillStyle = theme.dim;
+  ctx.font = "500 13px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.fillText("Steam achievement data is requested for this game only and is not stored by Shelfwear.", PAD + 8, 1194);
+  ctx.fillStyle = theme.dim;
+  ctx.font = "700 10px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.fillText("TROPHY CABINET / 1080×1350", PAD + 8, 1252);
+  ctx.fillStyle = theme.accent;
+  ctx.font = "900 16px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.textAlign = "right";
+  ctx.fillText("shelfwear ♡", WIDTH - PAD - 8, 1252);
   ctx.textAlign = "left";
 
   return canvasBlob(canvas);
