@@ -6,6 +6,7 @@ import { compareLibraries, type LibraryComparison, type SharedGame } from "./lib
 import { comparePartyLibraries, type PartyComparison, type PartyGame } from "./lib/party.js";
 import { comparisonCardFilename, curatedCardFilename, downloadBlob, familiarCardFilename, historyMilestoneFilename, proxiedSteamCover, renderComparisonCard, renderCuratedCard, renderFamiliarCard, renderHistoryMilestoneCard, renderShareCard, shareCardFilename } from "./lib/share-card.js";
 import { libraryExportCsv, libraryExportFilename, libraryExportJson, type LibraryExportFormat } from "./lib/export.js";
+import { fillResolvedProfileSlot, findResolvedProfileSlot } from "./lib/profile-slots.js";
 import { renderShelfReceipt, shelfReceiptFilename } from "./lib/receipt-card.js";
 import {
   comparisonShareUrl,
@@ -94,6 +95,8 @@ interface Loaded {
   kind: SourceKind;
   steamid?: string;
   profile?: SteamProfileSummary;
+  /** The profile text used for this successful public import, only for matching friend-form aliases. */
+  profileInput?: string;
 }
 
 interface Compared {
@@ -442,6 +445,7 @@ export default function App() {
         kind: "steam",
         steamid: data.steamid,
         profile: data.profile,
+        profileInput: steamProfile,
         games: data.games,
       });
 
@@ -453,15 +457,32 @@ export default function App() {
         setShelfHistoryDelta(visit.delta);
       }
 
-      if (shared.invite && !hasSteamProfileInput(compareRight)) {
-        setCompareRight(data.steamid);
+      const equivalentInputs = [steamProfile, data.profile.profileUrl ?? ""];
+      if (shared.invite) {
+        if (!hasSteamProfileInput(compareRight)) setCompareRight(data.steamid);
+      } else if (!shared.compare) {
+        const filled = fillResolvedProfileSlot(
+          [compareLeft, compareRight],
+          data.steamid,
+          equivalentInputs,
+        );
+        if (filled.changed) {
+          setCompareLeft(filled.values[0] ?? STEAM_PROFILE_PREFIX);
+          setCompareRight(filled.values[1] ?? STEAM_PROFILE_PREFIX);
+        }
+      }
+
+      if (!shared.party) {
+        setPartyProfiles((current) =>
+          fillResolvedProfileSlot(current, data.steamid, equivalentInputs).values
+        );
       }
     } catch (e) {
       setSteamError(e instanceof Error ? e.message : String(e));
     } finally {
       setImporting(false);
     }
-  }, [compareRight, shared.invite, steamProfile]);
+  }, [compareLeft, compareRight, shared.compare, shared.invite, shared.party, steamProfile]);
 
   const loadRecentActivity = useCallback(async () => {
     if (loaded.kind !== "steam" || !loaded.steamid) return;
@@ -625,6 +646,36 @@ export default function App() {
   // visitor explicitly loads files from this PC. The sample contains synthetic
   // local-shaped data, so it must not unlock real-device controls.
   const hasRealLocalData = loaded.kind === "local";
+  const loadedProfileAliases = loaded.kind === "steam"
+    ? [loaded.profileInput ?? "", loaded.profile?.profileUrl ?? ""]
+    : [];
+  const compareLoadedSlot = loaded.kind === "steam" && loaded.steamid
+    ? findResolvedProfileSlot([compareLeft, compareRight], loaded.steamid, loadedProfileAliases)
+    : null;
+  const partyLoadedSlot = loaded.kind === "steam" && loaded.steamid
+    ? findResolvedProfileSlot(partyProfiles, loaded.steamid, loadedProfileAliases)
+    : null;
+  const compareHasOpenSlot = [compareLeft, compareRight].some((profile) => !hasSteamProfileInput(profile));
+  const partyHasOpenSlot = partyProfiles.some((profile) => !hasSteamProfileInput(profile));
+
+  const useLoadedShelfInComparison = () => {
+    if (loaded.kind !== "steam" || !loaded.steamid) return;
+    const filled = fillResolvedProfileSlot(
+      [compareLeft, compareRight],
+      loaded.steamid,
+      loadedProfileAliases,
+    );
+    if (!filled.changed) return;
+    setCompareLeft(filled.values[0] ?? STEAM_PROFILE_PREFIX);
+    setCompareRight(filled.values[1] ?? STEAM_PROFILE_PREFIX);
+  };
+
+  const useLoadedShelfInParty = () => {
+    if (loaded.kind !== "steam" || !loaded.steamid) return;
+    setPartyProfiles((current) =>
+      fillResolvedProfileSlot(current, loaded.steamid!, loadedProfileAliases).values
+    );
+  };
   const shelfMapEntries = useMemo(() => {
     const entries = [{ id: "steam", label: "Load" }];
     if (loaded.kind === "steam" && loaded.steamid) {
@@ -1453,6 +1504,23 @@ export default function App() {
             </div>
           </div>
         )}
+        {loaded.kind === "steam" && loaded.steamid && !shared.compare && !shared.invite && (
+          <div className="friend-shelf-shortcut" aria-label="Loaded shelf shortcut for comparison">
+            <span className="friend-shelf-shortcut-mark" aria-hidden="true"><CuteIcon name="shelf" /></span>
+            <span className="friend-shelf-shortcut-copy">
+              <small>Loaded public shelf</small>
+              <b>{loaded.profile?.name ?? `Steam ${loaded.steamid.slice(-6)}`}</b>
+            </span>
+            {compareLoadedSlot !== null ? (
+              <span className="friend-shelf-shortcut-status">already in slot {compareLoadedSlot + 1}</span>
+            ) : compareHasOpenSlot ? (
+              <button type="button" onClick={useLoadedShelfInComparison}>Use loaded shelf</button>
+            ) : (
+              <span className="friend-shelf-shortcut-status">both slots already filled</span>
+            )}
+          </div>
+        )}
+
         <div className={shared.invite ? "compare-form invited" : "compare-form"}>
           <input
             value={compareLeft}
@@ -1589,6 +1657,23 @@ export default function App() {
           then draws tonight&apos;s game only from titles everyone owns.
         </p>
         {shared.party && <p className="share-hint">This Party Shelf came from a stateless link. Load it to rebuild all public libraries live.</p>}
+
+        {loaded.kind === "steam" && loaded.steamid && !shared.party && (
+          <div className="friend-shelf-shortcut" aria-label="Loaded shelf shortcut for Party Shelf">
+            <span className="friend-shelf-shortcut-mark" aria-hidden="true"><CuteIcon name="shelf" /></span>
+            <span className="friend-shelf-shortcut-copy">
+              <small>Loaded public shelf</small>
+              <b>{loaded.profile?.name ?? `Steam ${loaded.steamid.slice(-6)}`}</b>
+            </span>
+            {partyLoadedSlot !== null ? (
+              <span className="friend-shelf-shortcut-status">already in party slot {partyLoadedSlot + 1}</span>
+            ) : partyHasOpenSlot ? (
+              <button type="button" onClick={useLoadedShelfInParty}>Add loaded shelf</button>
+            ) : (
+              <span className="friend-shelf-shortcut-status">all party slots filled</span>
+            )}
+          </div>
+        )}
 
         <div className="party-form">
           {partyProfiles.map((profile, index) => (
