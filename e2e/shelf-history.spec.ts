@@ -74,12 +74,19 @@ test("Shelf History starts from an opt-in baseline and records only later observ
 
   const history = page.locator(".history-ledger");
   await expect(history).toContainText("2 SAVED STATES");
-  await expect(history.locator(".history-delta-metrics")).toContainText("+2.3h");
+  const latestDelta = history.locator(".history-delta");
+  await expect(latestDelta.locator(".history-delta-heading")).toContainText("Since previous saved state");
+  await expect(latestDelta.locator(".history-delta-heading")).toContainText("Observed by Shelfwear");
+  await expect(latestDelta.locator(".history-delta-metrics")).toContainText("+2.3h");
   await expect(history.locator(".history-delta-metrics")).toContainText("+1");
   await expect(history.locator(".history-delta-metrics")).toContainText("2");
   await expect(history.locator(".history-events")).toContainText("New Arrival");
   await expect(history.locator(".history-events")).toContainText("New Start");
   await expect(history.locator(".history-events")).toContainText("Deep Game");
+  await expect(history.locator(".history-recorded-changes")).toContainText("New Start +0.5h");
+  await expect(history.locator(".history-recorded-changes")).toContainText("Deep Game +0.3h");
+  await expect(history.locator(".history-recorded-changes")).not.toContainText("New Arrival");
+  await expect(history.locator(".history-event-boundary")).toContainText("Compared only between these two saved Shelfwear states.");
   await expect(history.locator(".history-snapshot")).toHaveCount(2);
   const overview = history.locator(".history-observation-overview");
   await expect(overview).toContainText("Since history began");

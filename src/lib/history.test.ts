@@ -65,6 +65,14 @@ describe("Shelf History", () => {
       newlyPlayed: ["20", "60"],
       changed: true,
     });
+    expect(delta.recordedTimeChanges).toEqual([
+      { appid: "20", fromMinutes: 0, toMinutes: 30, deltaMinutes: 30 },
+      { appid: "30", fromMinutes: 590, toMinutes: 610, deltaMinutes: 20 },
+      { appid: "40", fromMinutes: 2990, toMinutes: 3010, deltaMinutes: 20 },
+      { appid: "50", fromMinutes: 5990, toMinutes: 6010, deltaMinutes: 20 },
+      { appid: "10", fromMinutes: 110, toMinutes: 125, deltaMinutes: 15 },
+    ]);
+    expect(delta.recordedTimeChanges.some((entry) => entry.appid === "60")).toBe(false);
     expect(delta.thresholds).toEqual([
       { appid: "10", hours: 2, fromMinutes: 110, toMinutes: 125 },
       { appid: "30", hours: 10, fromMinutes: 590, toMinutes: 610 },

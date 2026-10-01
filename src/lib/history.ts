@@ -23,6 +23,13 @@ export interface ShelfHistoryThreshold {
   toMinutes: number;
 }
 
+export interface ShelfHistoryRecordedTimeChange {
+  appid: string;
+  fromMinutes: number;
+  toMinutes: number;
+  deltaMinutes: number;
+}
+
 export interface ShelfHistoryDelta {
   fromAt: number;
   toAt: number;
@@ -30,6 +37,7 @@ export interface ShelfHistoryDelta {
   gamesDelta: number;
   newlyOwned: string[];
   newlyPlayed: string[];
+  recordedTimeChanges: ShelfHistoryRecordedTimeChange[];
   thresholds: ShelfHistoryThreshold[];
   changed: boolean;
 }
@@ -87,6 +95,7 @@ export function diffShelfHistory(
   const after = snapshotMap(current);
   const newlyOwned: string[] = [];
   const newlyPlayed: string[] = [];
+  const recordedTimeChanges: ShelfHistoryRecordedTimeChange[] = [];
   const thresholds: ShelfHistoryThreshold[] = [];
 
   for (const [appid, minutes] of after) {
@@ -97,6 +106,14 @@ export function diffShelfHistory(
       continue;
     }
 
+    if (prior !== minutes) {
+      recordedTimeChanges.push({
+        appid,
+        fromMinutes: prior,
+        toMinutes: minutes,
+        deltaMinutes: minutes - prior,
+      });
+    }
     if (prior === 0 && minutes > 0) newlyPlayed.push(appid);
     for (const [hours, thresholdMinutes] of THRESHOLDS) {
       if (prior < thresholdMinutes && minutes >= thresholdMinutes) {
@@ -105,6 +122,11 @@ export function diffShelfHistory(
     }
   }
 
+  recordedTimeChanges.sort((left, right) =>
+    Math.abs(right.deltaMinutes) - Math.abs(left.deltaMinutes)
+    || left.appid.localeCompare(right.appid)
+  );
+
   return {
     fromAt: previous.at,
     toAt: current.at,
@@ -112,6 +134,7 @@ export function diffShelfHistory(
     gamesDelta: current.gameCount - previous.gameCount,
     newlyOwned,
     newlyPlayed,
+    recordedTimeChanges,
     thresholds,
     changed: !snapshotsEqual(previous, current),
   };
