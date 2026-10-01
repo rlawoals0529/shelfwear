@@ -84,7 +84,7 @@ test("Shelf History starts from an opt-in baseline and records only later observ
 
   await page.getByRole("button", { name: "Clear local history" }).click();
   await expect(page.getByRole("button", { name: "Start history on this browser" })).toBeVisible();
-  expect(await page.evaluate((key) => localStorage.getItem(key), HISTORY_KEY).toBeNull();
+  expect(await page.evaluate((key) => localStorage.getItem(key), HISTORY_KEY)).toBeNull();
 });
 
 test("Shelf History is not offered for local-file mode", async ({ page }) => {
