@@ -33,9 +33,10 @@ test("Share shelf uses the browser share sheet when available", async ({ page })
   await page.getByLabel("Steam username, profile URL, or SteamID").fill("cozyplayer");
   await page.getByRole("button", { name: "Read public profile" }).click();
 
-  const share = page.getByRole("button", { name: "Share shelf" });
+  const actions = page.locator(".social-panel .social-actions");
+  const share = actions.getByRole("button", { name: "Share shelf" });
   await share.click();
-  await expect(page.getByRole("button", { name: "Shared" })).toBeVisible();
+  await expect(actions.getByRole("button", { name: "Shared", exact: true })).toBeVisible();
 
   const payloads = await page.evaluate(() =>
     (window as unknown as { __shelfwearNativeShares: ShareData[] }).__shelfwearNativeShares,
@@ -79,8 +80,9 @@ test("cancelling the native share sheet keeps Share shelf idle", async ({ page }
   await page.getByLabel("Steam username, profile URL, or SteamID").fill("cozyplayer");
   await page.getByRole("button", { name: "Read public profile" }).click();
 
-  await page.getByRole("button", { name: "Share shelf" }).click();
-  await expect(page.getByRole("button", { name: "Share shelf" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Shared" })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Link copied" })).toHaveCount(0);
+  const actions = page.locator(".social-panel .social-actions");
+  await actions.getByRole("button", { name: "Share shelf" }).click();
+  await expect(actions.getByRole("button", { name: "Share shelf" })).toBeVisible();
+  await expect(actions.getByRole("button", { name: "Shared", exact: true })).toHaveCount(0);
+  await expect(actions.getByRole("button", { name: "Link copied", exact: true })).toHaveCount(0);
 });
