@@ -110,6 +110,30 @@ jobs:
           grep -qi '^access-control-allow-origin: https://rlawoals0529.github.io' /tmp/shelfwear-achievement-headers.txt
           grep -q '"error"' /tmp/shelfwear-achievement-body.json
 
+          recent_status=""
+          for attempt in 1 2 3 4 5 6; do
+            recent_status="$(
+              curl --silent --show-error \
+                --header 'Origin: https://rlawoals0529.github.io' \
+                --dump-header /tmp/shelfwear-recent-headers.txt \
+                --output /tmp/shelfwear-recent-body.json \
+                --write-out '%{http_code}' \
+                "$DEPLOYMENT_URL/api/steam/recent?steamid=bad"
+            )"
+            [ "$recent_status" = "400" ] && break
+            echo "Recent activity route returned $recent_status on propagation check $attempt/6; retrying..."
+            sleep 2
+          done
+          if [ "$recent_status" != "400" ]; then
+            echo "::error::Expected the deployed recent route to settle on 400; got $recent_status."
+            cat /tmp/shelfwear-recent-body.json
+            exit 1
+          fi
+          grep -qi '^content-type: application/json' /tmp/shelfwear-recent-headers.txt
+          grep -qi '^cache-control: no-store' /tmp/shelfwear-recent-headers.txt
+          grep -qi '^access-control-allow-origin: https://rlawoals0529.github.io' /tmp/shelfwear-recent-headers.txt
+          grep -q '"error"' /tmp/shelfwear-recent-body.json
+
           # Blue Protocol: Star Resonance uses Steam's newer hashed artwork layout. Its public
           # GetOwnedGames icon hash gives us a reliable official-Steam fallback when a
           # portrait cannot be discovered, so keep that path in the live smoke test.
