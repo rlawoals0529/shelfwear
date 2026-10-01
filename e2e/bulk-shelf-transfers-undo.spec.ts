@@ -110,17 +110,17 @@ test("one-step undo restores bulk reorder and removal", async ({ page }) => {
   await page.getByRole("checkbox", { name: "Select Game 3 for bulk editing" }).check();
   await page.getByRole("button", { name: "Move to top" }).click();
 
-  await expect(page.locator(".custom-shelf-game-copy > b").allTextContents()).resolves.toEqual(["Game 2", "Game 3", "Game 1"]);
+  expect(await page.locator(".custom-shelf-game-copy > b").allTextContents()).toEqual(["Game 2", "Game 3", "Game 1"]);
   await page.getByRole("button", { name: "Undo" }).click();
-  await expect(page.locator(".custom-shelf-game-copy > b").allTextContents()).resolves.toEqual(["Game 1", "Game 2", "Game 3"]);
+  expect(await page.locator(".custom-shelf-game-copy > b").allTextContents()).toEqual(["Game 1", "Game 2", "Game 3"]);
 
   page.once("dialog", async (dialog) => {
     await dialog.accept();
   });
   await page.getByRole("button", { name: "Remove selected" }).click();
-  await expect(page.locator(".custom-shelf-game-copy > b").allTextContents()).resolves.toEqual(["Game 1"]);
+  expect(await page.locator(".custom-shelf-game-copy > b").allTextContents()).toEqual(["Game 1"]);
   await page.getByRole("button", { name: "Undo" }).click();
-  await expect(page.locator(".custom-shelf-game-copy > b").allTextContents()).resolves.toEqual(["Game 1", "Game 2", "Game 3"]);
+  expect(await page.locator(".custom-shelf-game-copy > b").allTextContents()).toEqual(["Game 1", "Game 2", "Game 3"]);
   await expect(page.getByLabel("Note for Game 2 on Source Shelf")).toHaveValue("source two");
 });
 
