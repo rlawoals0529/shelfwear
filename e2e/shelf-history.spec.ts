@@ -84,7 +84,7 @@ test("Shelf History starts from an opt-in baseline and records only later observ
   const overview = history.locator(".history-observation-overview");
   await expect(overview).toContainText("Since history began");
   await expect(overview).toContainText("+2.3h");
-  await expect(overview).toContainText("+1 games");
+  await expect(overview).toContainText("+1 game");
   await expect(overview).toContainText("+2 played");
   await expect(overview.locator(".history-observation-dot")).toHaveCount(2);
   await expect(overview).toContainText("Lines only connect observations");
