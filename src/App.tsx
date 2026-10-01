@@ -37,7 +37,8 @@ import {
   type CustomShelf,
   type CustomShelfGame,
 } from "./lib/custom-shelves.js";
-import AchievementCabinet from "./AchievementCabinet.js";\nimport PickSomething from "./PickSomething.js";
+import AchievementCabinet from "./AchievementCabinet.js";
+import PickSomething from "./PickSomething.js";
 import {
   clearShelfHistory,
   readShelfHistory,
