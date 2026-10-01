@@ -2897,6 +2897,13 @@ function CustomShelvesPage({
     }
   };
 
+  const bulkStatus = (bulkMessage || bulkUndo) ? (
+    <div className="custom-shelf-bulk-status" role="status">
+      <span>{bulkMessage ?? "The last bulk action can be undone."}</span>
+      {bulkUndo && <button type="button" onClick={undoBulkAction}>Undo</button>}
+    </div>
+  ) : null;
+
   return (
     <main className="custom-shelves-page">
       <section className="panel custom-shelves-intro">
@@ -3111,7 +3118,7 @@ function CustomShelvesPage({
               </div>
 
               {bulkEditing && active.games.length > 0 && (
-                <>
+                <div className="custom-shelf-bulk-docket">
                   <div className="custom-shelf-bulk-toolbar" aria-label="Bulk edit shelf games">
                     <div className="custom-shelf-bulk-count">
                       <b>{selectedGameCount}</b> of {active.games.length} selected
@@ -3185,14 +3192,10 @@ function CustomShelvesPage({
                       </div>
                     </div>
                   )}
-                </>
-              )}
-              {(bulkMessage || bulkUndo) && (
-                <div className="custom-shelf-bulk-status" role="status">
-                  <span>{bulkMessage ?? "The last bulk action can be undone."}</span>
-                  {bulkUndo && <button type="button" onClick={undoBulkAction}>Undo</button>}
+                  {bulkStatus}
                 </div>
               )}
+              {(!bulkEditing || active.games.length === 0) && bulkStatus}
 
               {active.games.length === 0 ? (
                 <div className="custom-shelf-empty-state">
