@@ -7,6 +7,7 @@ import { comparisonCardFilename, curatedCardFilename, downloadBlob, familiarCard
 import {
   comparisonShareUrl,
   fetchPublicSteamLibrary,
+  fetchSteamAchievements,
   inviteShareUrl,
   hasSteamProfileInput,
   normaliseSteamProfileInput,
@@ -16,6 +17,7 @@ import {
   sharedSteamFromSearch,
   steamShareUrl,
   type PublicSteamLibrary,
+  type SteamAchievementCabinet,
   type SteamProfileSummary,
 } from "./lib/steam.js";
 import { SAMPLE_CONFIG, SAMPLE_MANIFESTS } from "./lib/sample.js";
@@ -30,6 +32,7 @@ import {
   type CustomShelf,
   type CustomShelfGame,
 } from "./lib/custom-shelves.js";
+import AchievementCabinet from "./AchievementCabinet.js";
 import { Ticker, stagger } from "./lib/motion.js";
 import { Palette } from "./lib/palette.js";
 import palettes from "./theme/palettes.json";
@@ -330,6 +333,9 @@ export default function App() {
   const [activeShelfId, setActiveShelfId] = useState<string | null>(() => readCustomShelves()[0]?.id ?? null);
   const [drawerShelfId, setDrawerShelfId] = useState<string>(() => readCustomShelves()[0]?.id ?? "");
   const [storySeed, setStorySeed] = useState<CuratedTopGames | null>(null);
+  const [achievementCache, setAchievementCache] = useState<Record<string, SteamAchievementCabinet>>({});
+  const [achievementLoadingKey, setAchievementLoadingKey] = useState<string | null>(null);
+  const [achievementError, setAchievementError] = useState<{ key: string; message: string } | null>(null);
   const picker = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -474,6 +480,30 @@ export default function App() {
     () => loaded.games.find((game) => game.appid === selectedLibraryGameAppId) ?? null,
     [loaded.games, selectedLibraryGameAppId],
   );
+
+  const selectedAchievementKey = loaded.kind === "steam" && loaded.steamid && selectedLibraryGame
+    ? loaded.steamid + ":" + selectedLibraryGame.appid
+    : null;
+  const selectedAchievementCabinet = selectedAchievementKey ? achievementCache[selectedAchievementKey] ?? null : null;
+
+  const loadAchievementCabinet = useCallback(async (game: Game) => {
+    if (loaded.kind !== "steam" || !loaded.steamid) return;
+    const key = loaded.steamid + ":" + game.appid;
+    if (achievementCache[key]) {
+      setAchievementError(null);
+      return;
+    }
+    setAchievementError(null);
+    setAchievementLoadingKey(key);
+    try {
+      const cabinet = await fetchSteamAchievements(loaded.steamid, game.appid);
+      setAchievementCache((current) => ({ ...current, [key]: cabinet }));
+    } catch (error) {
+      setAchievementError({ key, message: error instanceof Error ? error.message : String(error) });
+    } finally {
+      setAchievementLoadingKey((current) => current === key ? null : current);
+    }
+  }, [achievementCache, loaded.kind, loaded.steamid]);
 
   const createCustomShelf = useCallback((name: string): string | null => {
     const cleanName = cleanShelfName(name);
@@ -1234,6 +1264,34 @@ export default function App() {
                     <button type="button" onClick={() => setView("shelves")}><CuteIcon name="plus" className="button-icon" /> Create your first shelf</button>
                   )}
                 </div>
+                {loaded.kind === "steam" && loaded.steamid && selectedAchievementKey && (
+                  <div className="achievement-cabinet-entry">
+                    <div className="achievement-cabinet-entry-head">
+                      <div>
+                        <span className="library-control-label">Achievement Cabinet</span>
+                        <b>Open this game's trophy drawer</b>
+                      </div>
+                      {!selectedAchievementCabinet && (
+                        <button
+                          type="button"
+                          disabled={achievementLoadingKey === selectedAchievementKey}
+                          onClick={() => void loadAchievementCabinet(selectedLibraryGame)}
+                        >
+                          <CuteIcon name="archive" className="button-icon" />
+                          {achievementLoadingKey === selectedAchievementKey ? "Reading achievements…" : "Load achievements"}
+                        </button>
+                      )}
+                    </div>
+                    {achievementError?.key === selectedAchievementKey && <p className="err">{achievementError.message}</p>}
+                    {selectedAchievementCabinet && (
+                      <AchievementCabinet
+                        cabinet={selectedAchievementCabinet}
+                        profileName={loaded.profile?.name ?? null}
+                      />
+                    )}
+                    <p className="note">Fetched only when you ask for this public Steam game. Shelfwear does not save achievement data.</p>
+                  </div>
+                )}
                 <p className="note">
                   {loaded.kind === "steam"
                     ? "This record uses the same public Steam library data already loaded above."
