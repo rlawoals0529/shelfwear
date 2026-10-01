@@ -527,9 +527,9 @@ test("Party Shelf compares 3–5 public libraries and draws only from games ever
   await expect(party).toContainText("Handoff Game");
   await expect(party).toContainText("Two of Three");
   await expect(party).toContainText("2 of 3 own");
-  await expect(party.locator(".party-corners")).toContainText("Alpha Only");
-  await expect(party.locator(".party-corners")).toContainText("Beta Only");
-  await expect(party.locator(".party-corners")).toContainText("Gamma Only");
+  await expect(party.locator(".party-corners")).toContainText("Only on Alpha’s shelf");
+  await expect(party.locator(".party-corners")).toContainText("Only on Beta’s shelf");
+  await expect(party.locator(".party-corners")).toContainText("Only on Gamma’s shelf");
 
   await page.getByRole("button", { name: "Share party" }).click();
   const copied = await page.evaluate(() => navigator.clipboard.readText());
