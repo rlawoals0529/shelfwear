@@ -3,6 +3,7 @@ import {
   MAX_CUSTOM_SHELF_GAMES,
   MAX_CUSTOM_SHELVES,
   cleanShelfName,
+  customShelfGamesFromLibrary,
   customShelvesBackupFilename,
   customShelvesBackupObject,
   customShelvesBackupText,
@@ -15,6 +16,26 @@ import {
 } from "./custom-shelves.js";
 
 describe("custom shelves", () => {
+  it("turns library results into compact shelf entries without source metrics", () => {
+    const games = Array.from({ length: MAX_CUSTOM_SHELF_GAMES + 3 }, (_, index) => ({
+      appid: String(index + 1),
+      name: index === 0 ? "Hades" : `Game ${index + 1}`,
+      minutes: 600 + index,
+      lastPlayed: 1700000000 + index,
+      bytes: 1234 + index,
+      installed: true,
+      iconHash: index === 0 ? "a".repeat(40) : null,
+    }));
+
+    const compact = customShelfGamesFromLibrary(games);
+    expect(compact).toHaveLength(MAX_CUSTOM_SHELF_GAMES);
+    expect(compact[0]).toEqual({ appid: "1", name: "Hades", iconHash: "a".repeat(40) });
+    expect(compact[0]).not.toHaveProperty("minutes");
+    expect(compact[0]).not.toHaveProperty("lastPlayed");
+    expect(compact[0]).not.toHaveProperty("bytes");
+    expect(compact[0]).not.toHaveProperty("installed");
+  });
+
   it("normalises names, deduplicates games, and drops malformed records", () => {
     const shelves = normaliseCustomShelves([
       {
