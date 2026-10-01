@@ -77,7 +77,7 @@ Friend invites are stateless too. An invite uses `?invite=<SteamID>#compare` and
 
 ## Analytics
 
-Shelfwear has a second, page-like Analytics view derived only from the currently loaded library. It reports observable measures such as library utilization, untouched share, playtime-depth buckets, top-game concentration, and the games carrying the largest share of recorded hours. Local-file mode can additionally show known disk-space and last-played buckets when those fields exist. Public Steam imports do not invent disk or recency data that Steam does not return.
+Shelfwear has a second, page-like Analytics view derived only from the currently loaded library. Its presentation now uses the same physical artifact system as the social surfaces: a **Reading Room** ledger with ruled sheets, catalog codes, numbered slips, shelf-depth bars, and a simple hour ledger instead of generic dashboard cards. It still reports only observable measures such as library utilization, untouched share, playtime-depth buckets, top-game concentration, and the games carrying the largest share of recorded hours. Local-file mode can additionally show known disk-space and last-played buckets when those fields exist. Public Steam imports do not invent disk or recency data that Steam does not return.
 
 The GitHub Pages build sends public-Steam API and cover requests to the production Worker at `https://shelfwear.rlawoals0529.workers.dev`. The Worker allows that specific Pages origin with CORS; local-file parsing still stays entirely in-browser. Merges to `main` automatically deploy the current build to Cloudflare so the Worker and frontend do not drift.
 
