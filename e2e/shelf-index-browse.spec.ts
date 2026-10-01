@@ -73,6 +73,28 @@ test("changing the current view closes a card that no longer belongs to the resu
   await expect(page.locator(".library-row.selected")).toHaveCount(0);
 });
 
+test("closing a catalog record returns focus and scroll position to its source row", async ({ page }) => {
+  await page.getByRole("button", { name: "Open details for app 800" }).click();
+
+  const drawer = page.getByRole("complementary", { name: "Details for app 800" });
+  await expect(drawer).toBeFocused();
+  await drawer.getByRole("button", { name: "Close game details" }).click();
+
+  const sourceButton = page.getByRole("button", { name: "Open details for app 800" });
+  await expect(sourceButton).toBeFocused();
+  const position = await sourceButton.evaluate((button) => {
+    const rect = button.getBoundingClientRect();
+    return { top: rect.top, bottom: rect.bottom, height: window.innerHeight };
+  });
+  expect(position.bottom).toBeGreaterThan(0);
+  expect(position.top).toBeLessThan(position.height);
+
+  await sourceButton.click();
+  await expect(page.getByRole("complementary", { name: "Details for app 800" })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(sourceButton).toBeFocused();
+});
+
 test("Shelf Index browse controls fit cleanly on a phone", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await page.getByRole("button", { name: "Open details for Fixture Alpha" }).click();
