@@ -71,12 +71,12 @@
   white-space: nowrap;
 }
 
-/* The three primary views should read as one control, not three independently floating
-   pills. Equal tracks keep their baselines, icons, and outer edges aligned. */
+/* The primary views should read as one control, not independently floating pills.
+   Equal tracks keep their baselines, icons, and outer edges aligned as views are added. */
 .view-tabs {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  width: min(100%, 468px);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  width: min(100%, 620px);
   gap: 5px;
 }
 
