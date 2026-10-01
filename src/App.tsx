@@ -3,17 +3,20 @@ import { readLocalConfig, readManifest, buildLibrary, summarise, shelve, hours, 
 import { analyticsFor, type LibraryAnalytics } from "./lib/analytics.js";
 import { familiarFor, steamCover, steamHeader, steamIcon, topNine } from "./lib/profile.js";
 import { compareLibraries, type LibraryComparison, type SharedGame } from "./lib/compare.js";
+import { comparePartyLibraries, type PartyComparison, type PartyGame } from "./lib/party.js";
 import { comparisonCardFilename, curatedCardFilename, downloadBlob, familiarCardFilename, proxiedSteamCover, renderComparisonCard, renderCuratedCard, renderFamiliarCard, renderShareCard, shareCardFilename } from "./lib/share-card.js";
 import {
   comparisonShareUrl,
   fetchPublicSteamLibrary,
   fetchSteamAchievements,
   inviteShareUrl,
+  partyShareUrl,
   hasSteamProfileInput,
   normaliseSteamProfileInput,
   STEAM_PROFILE_PREFIX,
   sharedComparisonFromSearch,
   sharedInviteFromSearch,
+  sharedPartyFromSearch,
   sharedSteamFromSearch,
   steamShareUrl,
   type PublicSteamLibrary,
@@ -79,6 +82,11 @@ interface Compared {
   left: PublicSteamLibrary;
   right: PublicSteamLibrary;
   result: LibraryComparison;
+}
+
+interface Partied {
+  libraries: PublicSteamLibrary[];
+  result: PartyComparison;
 }
 
 function load(files: { name: string; text: string }[]): Loaded {
@@ -293,6 +301,7 @@ export default function App() {
     steam: sharedSteamFromSearch(window.location.search),
     compare: sharedComparisonFromSearch(window.location.search),
     invite: sharedInviteFromSearch(window.location.search),
+    party: sharedPartyFromSearch(window.location.search),
     top: curatedFromSearch(window.location.search),
   }), []);
 
@@ -319,6 +328,14 @@ export default function App() {
   const [inviteMessageCopied, setInviteMessageCopied] = useState(false);
   const [compareCardRendering, setCompareCardRendering] = useState(false);
   const [compareCardError, setCompareCardError] = useState<string | null>(null);
+  const [partyProfiles, setPartyProfiles] = useState<string[]>(() =>
+    shared.party ? [...shared.party] : [STEAM_PROFILE_PREFIX, STEAM_PROFILE_PREFIX, STEAM_PROFILE_PREFIX]
+  );
+  const [partying, setPartying] = useState(false);
+  const [partyError, setPartyError] = useState<string | null>(null);
+  const [partyResult, setPartyResult] = useState<Partied | null>(null);
+  const [partyShareCopied, setPartyShareCopied] = useState(false);
+  const [partyDrawIndex, setPartyDrawIndex] = useState(0);
   const [view, setView] = useState<"shelf" | "analytics" | "shelves" | "top">(shared.top ? "top" : "shelf");
   const [libraryQuery, setLibraryQuery] = useState("");
   const [librarySort, setLibrarySort] = useState<LibrarySort>(() =>
@@ -426,6 +443,55 @@ export default function App() {
       setComparing(false);
     }
   }, [compareLeft, compareRight]);
+
+  const runPartyShelf = useCallback(async () => {
+    setPartyError(null);
+    setPartyResult(null);
+    setPartyDrawIndex(0);
+
+    const normalized = partyProfiles.map(normaliseSteamProfileInput);
+    if (normalized.length < 3 || normalized.length > 5 || normalized.some((profile) => !profile)) {
+      setPartyError("Party Shelf needs 3–5 public Steam profiles.");
+      return;
+    }
+    if (new Set(normalized).size !== normalized.length) {
+      setPartyError("Use a different Steam profile in each Party Shelf slot.");
+      return;
+    }
+
+    setPartying(true);
+    try {
+      const libraries = await Promise.all(partyProfiles.map(fetchPublicSteamLibrary));
+      const steamids = libraries.map((library) => library.steamid);
+      if (new Set(steamids).size !== libraries.length) {
+        throw new Error("Two Party Shelf inputs resolve to the same Steam profile.");
+      }
+      setPartyResult({ libraries, result: comparePartyLibraries(libraries) });
+    } catch (error) {
+      setPartyError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setPartying(false);
+    }
+  }, [partyProfiles]);
+
+  const updatePartyProfile = useCallback((index: number, value: string) => {
+    setPartyProfiles((current) => current.map((profile, i) => i === index ? value : profile));
+  }, []);
+
+  const addPartyProfile = useCallback(() => {
+    setPartyProfiles((current) => current.length >= 5 ? current : [...current, STEAM_PROFILE_PREFIX]);
+  }, []);
+
+  const removePartyProfile = useCallback((index: number) => {
+    setPartyProfiles((current) => current.length <= 3 ? current : current.filter((_, i) => i !== index));
+  }, []);
+
+  const copyPartyLink = useCallback(async () => {
+    if (!partyResult) return;
+    await navigator.clipboard.writeText(partyShareUrl(window.location.href, partyResult.libraries.map((library) => library.steamid)));
+    setPartyShareCopied(true);
+    window.setTimeout(() => setPartyShareCopied(false), 1600);
+  }, [partyResult]);
 
   const stats = useMemo(() => summarise(loaded.games), [loaded]);
   const shelf = useMemo(() => shelve(loaded.games), [loaded]);
