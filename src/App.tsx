@@ -421,6 +421,7 @@ export default function App() {
   const [historyMilestoneError, setHistoryMilestoneError] = useState<string | null>(null);
   const picker = useRef<HTMLInputElement>(null);
   const librarySearchRef = useRef<HTMLInputElement>(null);
+  const libraryCatalogRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     writeLocalPreference(LIBRARY_SORT_KEY, librarySort);
@@ -821,9 +822,70 @@ export default function App() {
     });
   }, [effectiveLibraryFilter, effectiveLibrarySort, libraryQuery, loaded.games]);
 
+  const selectedLibraryResultIndex = selectedLibraryGameAppId
+    ? visibleGames.findIndex((game) => game.appid === selectedLibraryGameAppId)
+    : -1;
+  const selectedLibraryResultPosition = selectedLibraryResultIndex >= 0
+    ? selectedLibraryResultIndex + 1
+    : null;
+
+  const navigateLibraryIndex = useCallback((direction: -1 | 1) => {
+    if (!visibleGames.length) return;
+    const currentIndex = selectedLibraryGameAppId
+      ? visibleGames.findIndex((game) => game.appid === selectedLibraryGameAppId)
+      : -1;
+    const targetIndex = currentIndex < 0
+      ? (direction > 0 ? 0 : visibleGames.length - 1)
+      : Math.min(visibleGames.length - 1, Math.max(0, currentIndex + direction));
+    const target = visibleGames[targetIndex];
+    if (!target || targetIndex === currentIndex) return;
+    setLibraryRandomMessage(null);
+    setSelectedLibraryGameAppId(target.appid);
+    setLibraryVisibleLimit((current) => Math.max(current, targetIndex + 1));
+  }, [selectedLibraryGameAppId, visibleGames]);
+
   useEffect(() => {
     setLibraryVisibleLimit(LIBRARY_RENDER_BATCH);
   }, [effectiveLibraryFilter, effectiveLibrarySort, libraryQuery, loaded.games]);
+
+  useEffect(() => {
+    if (!selectedLibraryGameAppId) return;
+    if (selectedLibraryResultIndex < 0) {
+      setSelectedLibraryGameAppId(null);
+      setLibraryRandomMessage(null);
+      return;
+    }
+    setLibraryVisibleLimit((current) => Math.max(current, selectedLibraryResultIndex + 1));
+  }, [selectedLibraryGameAppId, selectedLibraryResultIndex]);
+
+  useEffect(() => {
+    if (!selectedLibraryGameAppId || selectedLibraryResultIndex < 0) return;
+    libraryCatalogRef.current?.focus({ preventScroll: true });
+    libraryCatalogRef.current?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+  }, [selectedLibraryGameAppId, selectedLibraryResultIndex]);
+
+  useEffect(() => {
+    const onBrowseKeyDown = (event: KeyboardEvent) => {
+      if (view !== "shelf" || !selectedLibraryGameAppId || event.defaultPrevented) return;
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
+
+      const target = event.target as HTMLElement | null;
+      const editing =
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLSelectElement ||
+        Boolean(target?.isContentEditable);
+      if (editing) return;
+
+      const key = event.key.toLowerCase();
+      if (key !== "j" && key !== "k") return;
+      event.preventDefault();
+      navigateLibraryIndex(key === "j" ? 1 : -1);
+    };
+
+    window.addEventListener("keydown", onBrowseKeyDown);
+    return () => window.removeEventListener("keydown", onBrowseKeyDown);
+  }, [navigateLibraryIndex, selectedLibraryGameAppId, view]);
 
   const renderedLibraryGames = useMemo(
     () => visibleGames.slice(0, libraryVisibleLimit),
@@ -2230,10 +2292,39 @@ export default function App() {
         )}
 
         {selectedLibraryGame && (
-          <aside className="library-catalog-drawer" aria-label={`Details for ${selectedLibraryGame.name ?? `app ${selectedLibraryGame.appid}`}`}>
+          <aside
+            ref={libraryCatalogRef}
+            tabIndex={-1}
+            className="library-catalog-drawer"
+            aria-label={`Details for ${selectedLibraryGame.name ?? `app ${selectedLibraryGame.appid}`}`}
+          >
             <div className="library-catalog-meta">
-              <span>SHELF INDEX / APP {selectedLibraryGame.appid}</span>
-              <button type="button" onClick={() => { setSelectedLibraryGameAppId(null); setLibraryRandomMessage(null); }} aria-label="Close game details"><CuteIcon name="close" /></button>
+              <span>
+                SHELF INDEX / APP {selectedLibraryGame.appid}
+                {selectedLibraryResultPosition && (
+                  <small>{selectedLibraryResultPosition} of {visibleGames.length} in current view</small>
+                )}
+              </span>
+              <div className="library-catalog-nav">
+                <span className="library-catalog-shortcut" aria-hidden="true"><kbd>K</kbd>/<kbd>J</kbd> browse</span>
+                <button
+                  type="button"
+                  disabled={selectedLibraryResultIndex <= 0}
+                  onClick={() => navigateLibraryIndex(-1)}
+                  aria-label="Previous game in current Shelf Index results"
+                >
+                  <CuteIcon name="up" />
+                </button>
+                <button
+                  type="button"
+                  disabled={selectedLibraryResultIndex < 0 || selectedLibraryResultIndex >= visibleGames.length - 1}
+                  onClick={() => navigateLibraryIndex(1)}
+                  aria-label="Next game in current Shelf Index results"
+                >
+                  <CuteIcon name="down" />
+                </button>
+                <button type="button" onClick={() => { setSelectedLibraryGameAppId(null); setLibraryRandomMessage(null); }} aria-label="Close game details"><CuteIcon name="close" /></button>
+              </div>
             </div>
             <div className="library-catalog-body">
               <div className="library-catalog-art" aria-hidden="true">
@@ -2328,7 +2419,16 @@ export default function App() {
         {visibleGames.length > 0 ? (
           <div className={`rows library-rows ${libraryDensity}`}>
             {renderedLibraryGames.map((g) => (
-              <div className={g.minutes === 0 ? "row cold library-row" : "row library-row"} key={g.appid}>
+              <div
+                className={[
+                  "row",
+                  "library-row",
+                  g.minutes === 0 ? "cold" : "",
+                  selectedLibraryGameAppId === g.appid ? "selected" : "",
+                ].filter(Boolean).join(" ")}
+                key={g.appid}
+                data-appid={g.appid}
+              >
                 <span className="hrs">{hours(g.minutes)}h</span>
                 <span className="name">{g.name ?? <em>app {g.appid}</em>}</span>
                 <span className="sz">
