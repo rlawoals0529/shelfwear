@@ -1434,9 +1434,11 @@ function TopGamesPage({ loadedGames, initial }: { loadedGames: Game[]; initial: 
                 <span>{String(list.games.length).padStart(2, "0")} PICKS</span>
               </div>
               <div className="curated-preview-heading">
-                <span className="curated-sticker">hand-picked ♡</span>
-                <span className="curated-doodle curated-doodle-star" aria-hidden="true"><CuteIcon name="sparkles" /></span>
-                <span className="curated-doodle curated-doodle-heart" aria-hidden="true"><CuteIcon name="heart" /></span>
+                <span className="curated-sticker">
+                  {(list.finish ?? "archive") === "archive" ? "hand-picked ♡" : (list.finish ?? "archive") === "doodles" ? "little story ✦" : "shelf story"}
+                </span>
+                {(list.finish ?? "archive") !== "clean" && <span className="curated-doodle curated-doodle-star" aria-hidden="true"><CuteIcon name="sparkles" /></span>}
+                {(list.finish ?? "archive") === "doodles" && <span className="curated-doodle curated-doodle-heart" aria-hidden="true"><CuteIcon name="heart" /></span>}
                 <h3>{list.title}</h3>
                 {list.caption && <p>{list.caption}</p>}
               </div>
@@ -1491,7 +1493,9 @@ function TopGamesPage({ loadedGames, initial }: { loadedGames: Game[]; initial: 
               </div>
               <div className="curated-preview-footer">
                 <span>picked for this story, not decided by playtime</span>
-                <span className="curated-story-stamp">ARCHIVE COPY</span>
+                <span className="curated-story-stamp">
+                  {(list.finish ?? "archive") === "archive" ? "ARCHIVE COPY" : (list.finish ?? "archive") === "doodles" ? "♡  ✦  ♡" : "SHELFWEAR"}
+                </span>
               </div>
             </div>
           </div>
