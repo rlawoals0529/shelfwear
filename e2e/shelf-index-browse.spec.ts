@@ -47,8 +47,36 @@ test("J and K browse an open Shelf Index card but never steal typing", async ({ 
   await steamInput.fill("");
   await steamInput.focus();
   await page.keyboard.type("jk");
+  await page.keyboard.press("ArrowDown");
   await expect(steamInput).toHaveValue("jk");
   await expect(page.getByRole("complementary", { name: "Details for Fixture Alpha" })).toBeVisible();
+});
+
+test("arrow, page, and edge keys make long Shelf Index result sets faster to traverse", async ({ page }) => {
+  await page.getByRole("button", { name: "Open details for Fixture Alpha" }).click();
+
+  let drawer = page.getByRole("complementary", { name: "Details for Fixture Alpha" });
+  await expect(drawer).toHaveAttribute(
+    "aria-keyshortcuts",
+    "ArrowUp ArrowDown K J PageUp PageDown Home End",
+  );
+
+  await page.keyboard.press("ArrowDown");
+  await expect(page.getByRole("complementary", { name: "Details for app 800" })).toBeVisible();
+
+  await page.keyboard.press("PageDown");
+  await expect(page.getByRole("complementary", { name: "Details for Fixture Never Launched" })).toBeVisible();
+
+  await page.keyboard.press("Home");
+  await expect(page.getByRole("complementary", { name: "Details for Fixture Alpha" })).toBeVisible();
+
+  await page.keyboard.press("End");
+  await expect(page.getByRole("complementary", { name: "Details for Fixture Never Launched" })).toBeVisible();
+
+  await page.keyboard.press("PageUp");
+  drawer = page.getByRole("complementary", { name: "Details for Fixture Alpha" });
+  await expect(drawer).toBeVisible();
+  await expect(drawer.locator(".library-catalog-meta")).toContainText("1 of 3 in current view");
 });
 
 test("browse position follows the active factual filter rather than the full library", async ({ page }) => {
