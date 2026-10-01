@@ -1,6 +1,6 @@
 interface Env { STEAM_WEB_API_KEY?: string }
 
-type SteamGame = { appid: number; name?: string; playtime_forever?: number; img_icon_url?: string };
+type SteamGame = { appid: number; name?: string; playtime_forever?: number; playtime_2weeks?: number; img_icon_url?: string };
 type SteamPlayer = {
   steamid?: string;
   personaname?: string;
@@ -117,6 +117,46 @@ async function library(profile: string, key: string, request: Request): Promise<
       appid: String(game.appid),
       name: game.name ?? null,
       minutes: game.playtime_forever ?? 0,
+      iconHash: game.img_icon_url && /^[a-f0-9]{40}$/i.test(game.img_icon_url) ? game.img_icon_url : null,
+    })),
+  });
+}
+
+async function recentlyPlayed(steamid: string, key: string, request: Request): Promise<Response> {
+  if (!/^\d{17}$/.test(steamid)) {
+    return json(request, { error: "Add a valid 17-digit public SteamID." }, 400);
+  }
+
+  const recentUrl = new URL("https://api.steampowered.com/IPlayerService/GetRecentlyPlayedGames/v1/");
+  recentUrl.searchParams.set("key", key);
+  recentUrl.searchParams.set("steamid", steamid);
+  recentUrl.searchParams.set("count", "12");
+
+  const response = await fetch(recentUrl);
+  if (!response.ok) {
+    return json(request, { error: "Steam did not return recent activity for this public profile." }, 502);
+  }
+
+  const payload = await response.json() as {
+    response?: { total_count?: number; games?: SteamGame[] };
+  };
+  const totalCount = payload.response?.total_count ?? 0;
+  const games = payload.response?.games ?? (totalCount === 0 ? [] : undefined);
+
+  if (!games) {
+    return json(request, {
+      error: "Recent activity is private or unavailable for this public profile.",
+    }, 404);
+  }
+
+  return json(request, {
+    steamid,
+    totalCount,
+    games: games.map((game) => ({
+      appid: String(game.appid),
+      name: game.name ?? null,
+      totalMinutes: game.playtime_forever ?? 0,
+      twoWeekMinutes: typeof game.playtime_2weeks === "number" ? game.playtime_2weeks : null,
       iconHash: game.img_icon_url && /^[a-f0-9]{40}$/i.test(game.img_icon_url) ? game.img_icon_url : null,
     })),
   });
@@ -431,6 +471,15 @@ export default {
         const profile = url.searchParams.get("profile") ?? "";
         if (!profile || profile.length > 240) return json(request, { error: "Add a Steam profile URL or SteamID." }, 400);
         return library(profile, env.STEAM_WEB_API_KEY, request);
+      }
+
+      if (url.pathname === "/api/steam/recent") {
+        if (!env.STEAM_WEB_API_KEY) return json(request, { error: "Steam recent activity is not configured on this deployment." }, 503);
+        return recentlyPlayed(
+          url.searchParams.get("steamid") ?? "",
+          env.STEAM_WEB_API_KEY,
+          request,
+        );
       }
 
       if (url.pathname === "/api/steam/achievements") {

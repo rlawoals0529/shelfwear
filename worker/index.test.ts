@@ -117,3 +117,96 @@ describe("Achievement Cabinet Worker route", () => {
     expect(fetchMock).toHaveBeenCalledTimes(3);
   });
 });
+
+
+describe("Recently Played Worker route", () => {
+  it("rejects malformed SteamIDs before contacting Steam", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await worker.fetch(
+      new Request("https://example.com/api/steam/recent?steamid=bad", {
+        headers: { Origin: "https://rlawoals0529.github.io" },
+      }),
+      { STEAM_WEB_API_KEY: "test-key" },
+    );
+
+    expect(response.status).toBe(400);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(response.headers.get("access-control-allow-origin")).toBe("https://rlawoals0529.github.io");
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("maps Steam recent activity without inventing timestamps", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = new URL(String(input));
+      expect(url.pathname).toContain("GetRecentlyPlayedGames");
+      expect(url.searchParams.get("steamid")).toBe("76561198000000000");
+      expect(url.searchParams.get("count")).toBe("12");
+
+      return new Response(JSON.stringify({
+        response: {
+          total_count: 2,
+          games: [
+            {
+              appid: 10,
+              name: "Recent Quest",
+              playtime_forever: 600,
+              playtime_2weeks: 90,
+              img_icon_url: "0123456789abcdef0123456789abcdef01234567",
+            },
+            {
+              appid: 20,
+              name: "Another Game",
+              playtime_forever: 120,
+            },
+          ],
+        },
+      }), { status: 200 });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const response = await worker.fetch(
+      new Request("https://example.com/api/steam/recent?steamid=76561198000000000", {
+        headers: { Origin: "https://rlawoals0529.github.io" },
+      }),
+      { STEAM_WEB_API_KEY: "test-key" },
+    );
+    const body = await response.json() as {
+      steamid: string;
+      totalCount: number;
+      games: Array<Record<string, unknown>>;
+    };
+
+    expect(response.status).toBe(200);
+    expect(response.headers.get("cache-control")).toBe("no-store");
+    expect(body).toMatchObject({ steamid: "76561198000000000", totalCount: 2 });
+    expect(body.games[0]).toMatchObject({
+      appid: "10",
+      name: "Recent Quest",
+      totalMinutes: 600,
+      twoWeekMinutes: 90,
+      iconHash: "0123456789abcdef0123456789abcdef01234567",
+    });
+    expect(body.games[1]).toMatchObject({
+      appid: "20",
+      totalMinutes: 120,
+      twoWeekMinutes: null,
+    });
+    expect(body.games[0]).not.toHaveProperty("lastPlayed");
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("allows an empty recent list", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () =>
+      new Response(JSON.stringify({ response: { total_count: 0 } }), { status: 200 })
+    ));
+
+    const response = await worker.fetch(
+      new Request("https://example.com/api/steam/recent?steamid=76561198000000000"),
+      { STEAM_WEB_API_KEY: "test-key" },
+    );
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({ totalCount: 0, games: [] });
+  });
+});

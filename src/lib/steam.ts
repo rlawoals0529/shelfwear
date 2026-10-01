@@ -35,6 +35,20 @@ export interface SteamAchievementCabinet {
   achievements: SteamAchievement[];
 }
 
+export interface SteamRecentGame {
+  appid: string;
+  name: string | null;
+  totalMinutes: number;
+  twoWeekMinutes: number | null;
+  iconHash?: string | null;
+}
+
+export interface SteamRecentActivity {
+  steamid: string;
+  totalCount: number;
+  games: SteamRecentGame[];
+}
+
 export const STEAM_PROFILE_PREFIX = "https://steamcommunity.com/id/";
 export const SHELFWEAR_WORKER_ORIGIN = "https://shelfwear.rlawoals0529.workers.dev";
 
@@ -93,6 +107,35 @@ export async function fetchPublicSteamLibrary(profile: string): Promise<PublicSt
       bytes: null,
       installed: false,
     })),
+  };
+}
+
+interface ApiRecentActivity extends Partial<SteamRecentActivity> {
+  error?: string;
+}
+
+export async function fetchSteamRecentActivity(steamid: string): Promise<SteamRecentActivity> {
+  if (!/^\d{17}$/.test(steamid)) throw new Error("Recent activity needs a resolved public SteamID.");
+
+  const query = new URLSearchParams({ steamid });
+  const response = await fetch(steamApiUrl(`/api/steam/recent?${query.toString()}`));
+  const data = await response.json().catch(() => null) as ApiRecentActivity | null;
+
+  if (!data) throw new Error("Steam recent activity is unavailable on this deployment.");
+  if (!response.ok || !Array.isArray(data.games)) {
+    throw new Error(data.error ?? "Steam recent activity is unavailable for this profile.");
+  }
+
+  return {
+    steamid,
+    totalCount: typeof data.totalCount === "number" ? data.totalCount : data.games.length,
+    games: data.games.map((game) => ({
+      appid: String(game.appid ?? ""),
+      name: typeof game.name === "string" ? game.name : null,
+      totalMinutes: typeof game.totalMinutes === "number" ? game.totalMinutes : 0,
+      twoWeekMinutes: typeof game.twoWeekMinutes === "number" ? game.twoWeekMinutes : null,
+      iconHash: typeof game.iconHash === "string" ? game.iconHash : null,
+    })).filter((game) => /^\d{1,10}$/.test(game.appid)),
   };
 }
 

@@ -9,6 +9,7 @@ import {
   comparisonShareUrl,
   fetchPublicSteamLibrary,
   fetchSteamAchievements,
+  fetchSteamRecentActivity,
   inviteShareUrl,
   partyShareUrl,
   hasSteamProfileInput,
@@ -21,6 +22,7 @@ import {
   steamShareUrl,
   type PublicSteamLibrary,
   type SteamAchievementCabinet,
+  type SteamRecentActivity,
   type SteamProfileSummary,
 } from "./lib/steam.js";
 import { SAMPLE_CONFIG, SAMPLE_MANIFESTS } from "./lib/sample.js";
@@ -353,6 +355,9 @@ export default function App() {
   const [achievementCache, setAchievementCache] = useState<Record<string, SteamAchievementCabinet>>({});
   const [achievementLoadingKey, setAchievementLoadingKey] = useState<string | null>(null);
   const [achievementError, setAchievementError] = useState<{ key: string; message: string } | null>(null);
+  const [recentActivity, setRecentActivity] = useState<SteamRecentActivity | null>(null);
+  const [recentLoading, setRecentLoading] = useState(false);
+  const [recentError, setRecentError] = useState<string | null>(null);
   const picker = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -400,6 +405,8 @@ export default function App() {
 
   const importSteam = useCallback(async () => {
     setSteamError(null);
+    setRecentActivity(null);
+    setRecentError(null);
     setImporting(true);
     try {
       const data = await fetchPublicSteamLibrary(steamProfile);
@@ -420,6 +427,19 @@ export default function App() {
       setImporting(false);
     }
   }, [compareRight, shared.invite, steamProfile]);
+
+  const loadRecentActivity = useCallback(async () => {
+    if (loaded.kind !== "steam" || !loaded.steamid) return;
+    setRecentError(null);
+    setRecentLoading(true);
+    try {
+      setRecentActivity(await fetchSteamRecentActivity(loaded.steamid));
+    } catch (error) {
+      setRecentError(error instanceof Error ? error.message : String(error));
+    } finally {
+      setRecentLoading(false);
+    }
+  }, [loaded.kind, loaded.steamid]);
 
   const runComparison = useCallback(async () => {
     setCompareError(null);
@@ -822,6 +842,66 @@ export default function App() {
           </div>
         </div>
       </section>
+
+      {loaded.kind === "steam" && loaded.steamid && (
+        <section className="panel recent-panel">
+          <div className="recent-heading">
+            <SectionTitle
+              icon="clock"
+              eyebrow="Off the shelf lately"
+              note="Loaded separately from Steam's recent-games endpoint."
+            >
+              Recently played
+            </SectionTitle>
+            <button type="button" disabled={recentLoading} onClick={() => void loadRecentActivity()}>
+              <CuteIcon name="sparkles" className="button-icon" />
+              {recentLoading ? "Checking recent activity…" : recentActivity ? "Refresh recent activity" : "Load recent activity"}
+            </button>
+          </div>
+          <p className="note prose recent-boundary">
+            This is Steam&apos;s recent-games list. Shelfwear shows the lifetime playtime and, when Steam returns it,
+            playtime from the last two weeks. It does not turn this into a local last-launch timestamp.
+          </p>
+          {recentError && <p className="err">{recentError}</p>}
+          {recentActivity && (
+            recentActivity.games.length > 0 ? (
+              <div className="recent-ledger" aria-label="Recently played games from Steam">
+                <div className="recent-ledger-meta">
+                  <span>SHELFWEAR / RECENT CHECKOUTS</span>
+                  <span>{recentActivity.totalCount} RECENT {recentActivity.totalCount === 1 ? "GAME" : "GAMES"}</span>
+                </div>
+                <div className="recent-game-grid">
+                  {recentActivity.games.map((game) => (
+                    <article className="recent-game-slip" key={game.appid}>
+                      <span className="recent-game-art" aria-hidden="true">
+                        <span>{(game.name ?? `app ${game.appid}`).trim().charAt(0).toUpperCase() || "♡"}</span>
+                        <img
+                          src={proxiedSteamCover(game.appid, game.iconHash)}
+                          alt=""
+                          loading="lazy"
+                          decoding="async"
+                          onError={(event) => { event.currentTarget.hidden = true; }}
+                        />
+                      </span>
+                      <div className="recent-game-copy">
+                        <b>{game.name ?? `app ${game.appid}`}</b>
+                        <span>{hours(game.totalMinutes)}h lifetime</span>
+                        <small>
+                          {game.twoWeekMinutes === null
+                            ? "Steam did not return a two-week playtime value"
+                            : `${hours(game.twoWeekMinutes)}h in the last 2 weeks`}
+                        </small>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <p className="note">Steam returned no recently played games for this public profile.</p>
+            )
+          )}
+        </section>
+      )}
 
       {(shelf.untouched.length > 0 || shelf.played.length > 0) && (
         <section className="panel figure shelf-panel">

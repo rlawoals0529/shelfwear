@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { SHELFWEAR_WORKER_ORIGIN, STEAM_PROFILE_PREFIX, comparisonShareUrl, fetchSteamAchievements, hasSteamProfileInput, inviteShareUrl, normaliseSteamProfileInput, partyShareUrl, sharedComparisonFromSearch, sharedInviteFromSearch, sharedPartyFromSearch, sharedSteamFromSearch, steamApiUrl, steamShareUrl } from "./steam.js";
+import { SHELFWEAR_WORKER_ORIGIN, STEAM_PROFILE_PREFIX, comparisonShareUrl, fetchSteamAchievements, fetchSteamRecentActivity, hasSteamProfileInput, inviteShareUrl, normaliseSteamProfileInput, partyShareUrl, sharedComparisonFromSearch, sharedInviteFromSearch, sharedPartyFromSearch, sharedSteamFromSearch, steamApiUrl, steamShareUrl } from "./steam.js";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -131,6 +131,48 @@ describe("Steam achievements", () => {
     vi.stubGlobal("fetch", fetchMock);
     await expect(fetchSteamAchievements("bad", "10")).rejects.toThrow(/resolved public SteamID/);
     await expect(fetchSteamAchievements("76561198000000000", "bad")).rejects.toThrow(/numeric Steam AppID/);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+});
+
+
+describe("Steam recent activity", () => {
+  it("fetches the recent list only for a resolved public SteamID", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      expect(String(input)).toContain("/api/steam/recent?steamid=76561198000000000");
+      return new Response(JSON.stringify({
+        steamid: "76561198000000000",
+        totalCount: 1,
+        games: [{
+          appid: "10",
+          name: "Recent Quest",
+          totalMinutes: 600,
+          twoWeekMinutes: 90,
+          iconHash: "0123456789abcdef0123456789abcdef01234567",
+        }],
+      }), { status: 200, headers: { "content-type": "application/json" } });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const recent = await fetchSteamRecentActivity("76561198000000000");
+    expect(recent).toEqual({
+      steamid: "76561198000000000",
+      totalCount: 1,
+      games: [{
+        appid: "10",
+        name: "Recent Quest",
+        totalMinutes: 600,
+        twoWeekMinutes: 90,
+        iconHash: "0123456789abcdef0123456789abcdef01234567",
+      }],
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects invalid SteamIDs before requesting recent activity", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(fetchSteamRecentActivity("bad")).rejects.toThrow(/resolved public SteamID/);
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });
