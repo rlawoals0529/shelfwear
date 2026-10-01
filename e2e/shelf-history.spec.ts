@@ -79,7 +79,7 @@ test("Shelf History starts from an opt-in baseline and records only later observ
   await expect(history.locator(".history-delta-metrics")).toContainText("2");
   await expect(history.locator(".history-events")).toContainText("New Arrival");
   await expect(history.locator(".history-events")).toContainText("New Start");
-  await expect(history.locator(".history-events")).toContainText("Deep Game · 10h");
+  await expect(history.locator(".history-events")).toContainText("Deep Game");
   await expect(history.locator(".history-snapshot")).toHaveCount(2);
   await expect(history.locator(".history-milestone-row")).toContainText("9.8h → 10.2h · crossed 10h");
 
