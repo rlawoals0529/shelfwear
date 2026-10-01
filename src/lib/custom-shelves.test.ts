@@ -6,6 +6,7 @@ import {
   customShelvesBackupFilename,
   customShelvesBackupObject,
   customShelvesBackupText,
+  customShelfShareText,
   normaliseCustomShelves,
   nextDuplicateShelfName,
   parseCustomShelvesBackup,
@@ -155,5 +156,30 @@ describe("duplicate shelf naming", () => {
     const name = nextDuplicateShelfName("x".repeat(60), ["x".repeat(40)]);
     expect(name.length).toBeLessThanOrEqual(40);
     expect(name).toMatch(/copy/);
+  });
+});
+
+
+describe("custom shelf sharing", () => {
+  it("shares the ordered game list but never private notes", () => {
+    const shelf: CustomShelf = {
+      id: "comfort",
+      name: "Comfort games",
+      createdAt: 1,
+      updatedAt: 2,
+      games: [
+        { appid: "1", name: "Hades", note: "private rainy-day note" },
+        { appid: "2", name: "Stardew Valley", note: "do not share this" },
+      ],
+    };
+
+    const text = customShelfShareText(shelf);
+    expect(text).toContain("Comfort games");
+    expect(text).toContain("1. Hades");
+    expect(text).toContain("2. Stardew Valley");
+    expect(text).toContain("Made with Shelfwear");
+    expect(text).not.toContain("private rainy-day note");
+    expect(text).not.toContain("do not share this");
+    expect(text).not.toContain("appid");
   });
 });
