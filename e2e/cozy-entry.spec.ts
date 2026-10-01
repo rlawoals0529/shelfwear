@@ -370,7 +370,7 @@ test("copies a stateless invite from a loaded public shelf", async ({ page, cont
   await page.getByLabel("Steam username, profile URL, or SteamID").fill("inviteplayer");
   await page.getByRole("button", { name: "Read public profile" }).click();
 
-  const invite = page.getByRole("button", { name: "Copy invite link" });
+  const invite = page.getByRole("button", { name: "Copy link" });
   await expect(invite).toBeVisible();
   await invite.click();
 
@@ -379,6 +379,10 @@ test("copies a stateless invite from a loaded public shelf", async ({ page, cont
   expect(copied).toContain("#compare");
   expect(copied).not.toContain("compare=");
   expect(copied).not.toContain("Shared%20Quest");
+
+  await page.getByRole("button", { name: "Copy invite message" }).click();
+  const message = await page.evaluate(() => navigator.clipboard.readText());
+  expect(message).toBe(`Compare our Steam shelves on Shelfwear: ${copied}`);
 });
 
 
@@ -410,7 +414,10 @@ test("an invite fills the friend side and only asks the recipient for their prof
 
   await page.goto("/?invite=76561198000000000#compare");
 
-  await expect(page.getByText(/A friend invited you to compare shelves/)).toBeVisible();
+  await expect(page.getByRole("heading", { name: /left one side of the shelf open/i })).toBeVisible();
+  await expect(page.locator(".invite-steps")).toContainText("their shelf");
+  await expect(page.locator(".invite-steps")).toContainText("add yours");
+  await expect(page.locator(".invite-steps")).toContainText("compare");
 
   const inviter = page.getByLabel("Inviter Steam profile");
   await expect(inviter).toHaveValue("76561198000000000");
@@ -427,6 +434,11 @@ test("an invite fills the friend side and only asks the recipient for their prof
   await expect(result).toContainText("Invite Player");
   await expect(result).toContainText("Friend Player");
   await expect(result).toContainText("Shared Quest");
+  await expect(result.locator(".compare-bookplate-kicker")).toContainText("SHELFWEAR LIBRARY CARD");
   expect(requested).toContain("76561198000000000");
   expect(requested).toContain("https://steamcommunity.com/id/friendplayer");
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(overflow).toBeLessThanOrEqual(1);
 });
