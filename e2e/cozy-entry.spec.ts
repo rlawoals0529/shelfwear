@@ -446,3 +446,118 @@ test("an invite fills the friend side and only asks the recipient for their prof
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   expect(overflow).toBeLessThanOrEqual(1);
 });
+
+
+test("Party Shelf compares 3–5 public libraries and draws only from games everyone owns", async ({ page, context }) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  const requested: string[] = [];
+
+  await page.route("**/api/steam/library?*", async (route) => {
+    const profile = new URL(route.request().url()).searchParams.get("profile") ?? "";
+    requested.push(profile);
+    const key = profile.includes("alpha") ? "alpha" : profile.includes("beta") ? "beta" : "gamma";
+    const data = key === "alpha"
+      ? {
+          steamid: "76561198000000001",
+          name: "Alpha",
+          games: [
+            { appid: "10", name: "Everyone Game", minutes: 600 },
+            { appid: "11", name: "Handoff Game", minutes: 300 },
+            { appid: "12", name: "Two of Three", minutes: 80 },
+            { appid: "20", name: "Alpha Only", minutes: 40 },
+          ],
+        }
+      : key === "beta"
+        ? {
+            steamid: "76561198000000002",
+            name: "Beta",
+            games: [
+              { appid: "10", name: "Everyone Game", minutes: 500 },
+              { appid: "11", name: "Handoff Game", minutes: 0 },
+              { appid: "12", name: "Two of Three", minutes: 60 },
+              { appid: "30", name: "Beta Only", minutes: 40 },
+            ],
+          }
+        : {
+            steamid: "76561198000000003",
+            name: "Gamma",
+            games: [
+              { appid: "10", name: "Everyone Game", minutes: 400 },
+              { appid: "11", name: "Handoff Game", minutes: 180 },
+              { appid: "40", name: "Gamma Only", minutes: 40 },
+            ],
+          };
+
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        steamid: data.steamid,
+        gameCount: data.games.length,
+        profile: { steamid: data.steamid, name: data.name, avatar: null, profileUrl: null },
+        games: data.games,
+      }),
+    });
+  });
+
+  await page.route("**/api/steam/cover/*", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "image/png",
+      body: Buffer.from(
+        "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
+        "base64",
+      ),
+    });
+  });
+
+  await page.goto("/");
+  await page.getByLabel("Party Steam profile 1").fill("alpha");
+  await page.getByLabel("Party Steam profile 2").fill("beta");
+  await page.getByLabel("Party Steam profile 3").fill("gamma");
+  await page.getByRole("button", { name: "Build Party Shelf" }).click();
+
+  const party = page.locator(".party-result");
+  await expect(party).toBeVisible();
+  await expect(party).toContainText("Alpha");
+  await expect(party).toContainText("Beta");
+  await expect(party).toContainText("Gamma");
+  await expect(party.locator(".party-metrics")).toContainText("2");
+  await expect(party.locator(".party-tonight")).toContainText("Everyone Game");
+  await expect(party).toContainText("Handoff Game");
+  await expect(party).toContainText("Two of Three");
+  await expect(party).toContainText("2 of 3 own");
+  await expect(party.locator(".party-corners")).toContainText("Only on Alpha's shelf");
+  await expect(party.locator(".party-corners")).toContainText("Only on Beta's shelf");
+  await expect(party.locator(".party-corners")).toContainText("Only on Gamma's shelf");
+
+  await page.getByRole("button", { name: "Share party" }).click();
+  const copied = await page.evaluate(() => navigator.clipboard.readText());
+  expect(copied).toContain("?party=");
+  expect(copied).toContain("76561198000000001");
+  expect(copied).toContain("76561198000000002");
+  expect(copied).toContain("76561198000000003");
+  expect(copied).toContain("#party");
+  expect(copied).not.toContain("Everyone%20Game");
+
+  expect(requested).toEqual(expect.arrayContaining([
+    "https://steamcommunity.com/id/alpha",
+    "https://steamcommunity.com/id/beta",
+    "https://steamcommunity.com/id/gamma",
+  ]));
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(overflow).toBeLessThanOrEqual(1);
+});
+
+
+test("Party Shelf stateless links prefill resolved public SteamIDs", async ({ page }) => {
+  await page.goto("/?party=76561198000000001,76561198000000002,76561198000000003#party");
+
+  await expect(page.getByText(/This Party Shelf came from a stateless link/)).toBeVisible();
+  await expect(page.getByLabel("Party Steam profile 1")).toHaveValue("76561198000000001");
+  await expect(page.getByLabel("Party Steam profile 2")).toHaveValue("76561198000000002");
+  await expect(page.getByLabel("Party Steam profile 3")).toHaveValue("76561198000000003");
+  await expect(page.getByRole("button", { name: "Load Party Shelf" })).toBeEnabled();
+});

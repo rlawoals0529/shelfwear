@@ -163,6 +163,17 @@ export function inviteShareUrl(current: string, inviterSteamId: string): string 
   return url.toString();
 }
 
+export function partyShareUrl(current: string, steamids: string[]): string {
+  const unique = [...new Set(steamids)];
+  if (unique.length < 3 || unique.length > 5 || unique.some((steamid) => !/^\d{17}$/.test(steamid))) {
+    throw new Error("Party Shelf share links need 3–5 unique public SteamIDs.");
+  }
+  const url = cleanBase(current);
+  url.searchParams.set("party", unique.join(","));
+  url.hash = "party";
+  return url.toString();
+}
+
 export function sharedSteamFromSearch(search: string): string | null {
   const value = new URLSearchParams(search).get("steam");
   return value && /^\d{17}$/.test(value) ? value : null;
@@ -179,4 +190,13 @@ export function sharedComparisonFromSearch(search: string): [string, string] | n
 export function sharedInviteFromSearch(search: string): string | null {
   const value = new URLSearchParams(search).get("invite");
   return value && /^\d{17}$/.test(value) ? value : null;
+}
+
+export function sharedPartyFromSearch(search: string): string[] | null {
+  const value = new URLSearchParams(search).get("party");
+  if (!value) return null;
+  const steamids = value.split(",");
+  const unique = [...new Set(steamids)];
+  if (steamids.length < 3 || steamids.length > 5 || unique.length !== steamids.length) return null;
+  return steamids.every((steamid) => /^\d{17}$/.test(steamid)) ? steamids : null;
 }

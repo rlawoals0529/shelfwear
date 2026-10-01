@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { SHELFWEAR_WORKER_ORIGIN, STEAM_PROFILE_PREFIX, comparisonShareUrl, fetchSteamAchievements, hasSteamProfileInput, inviteShareUrl, normaliseSteamProfileInput, sharedComparisonFromSearch, sharedInviteFromSearch, sharedSteamFromSearch, steamApiUrl, steamShareUrl } from "./steam.js";
+import { SHELFWEAR_WORKER_ORIGIN, STEAM_PROFILE_PREFIX, comparisonShareUrl, fetchSteamAchievements, hasSteamProfileInput, inviteShareUrl, normaliseSteamProfileInput, partyShareUrl, sharedComparisonFromSearch, sharedInviteFromSearch, sharedPartyFromSearch, sharedSteamFromSearch, steamApiUrl, steamShareUrl } from "./steam.js";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -24,10 +24,23 @@ describe("Steam share URLs", () => {
     expect(url).not.toContain("compare=");
   });
 
+  it("creates and parses a stateless 3–5 person Party Shelf link", () => {
+    const steamids = ["76561198000000000", "76561198000000001", "76561198000000002"];
+    const url = partyShareUrl("https://example.com/shelfwear/?old=1#x", steamids);
+    expect(url).toBe("https://example.com/shelfwear/?party=76561198000000000%2C76561198000000001%2C76561198000000002#party");
+    expect(sharedPartyFromSearch(new URL(url).search)).toEqual(steamids);
+  });
+
+  it("rejects duplicate or out-of-range Party Shelf identifiers", () => {
+    expect(() => partyShareUrl("https://example.com/", ["76561198000000000", "76561198000000001"])).toThrow(/3–5/);
+    expect(sharedPartyFromSearch("?party=76561198000000000,76561198000000000,76561198000000002")).toBeNull();
+  });
+
   it("rejects malformed shared identifiers", () => {
     expect(sharedSteamFromSearch("?steam=not-an-id")).toBeNull();
     expect(sharedComparisonFromSearch("?compare=76561198000000000,wat" )).toBeNull();
     expect(sharedInviteFromSearch("?invite=not-an-id")).toBeNull();
+    expect(sharedPartyFromSearch("?party=bad,76561198000000001,76561198000000002")).toBeNull();
   });
 });
 

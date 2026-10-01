@@ -59,6 +59,14 @@ The **Everything** section is interactive rather than a fixed dump of games. Vis
 
 Custom shelves live under `shelfwear:custom-shelves:v1` in that browser's `localStorage`. Shelfwear stores only the custom shelf IDs/names, selected game AppIDs/names, optional public icon hashes, order, timestamps, and notes. It does **not** persist the imported library's playtime, disk-size, install, or recency dataset with the shelf. A shelf can stay local or send its first nine games, in order, into Shelf Stories; those shelf notes become editable Story notes.
 
+## Party Shelf
+
+**Party Shelf** compares **3–5 public Steam profiles** at once using the same live public-library import already used by two-person comparisons. It reports the combined unique library, games owned by everyone, games with recorded playtime on every profile, each shelf's unique-game count, games owned by a majority of the group, and factual handoffs where everyone owns a game but only some profiles have recorded playtime.
+
+The **Tonight's draw** is intentionally transparent: its pool is only the games owned by every profile in the Party Shelf. Drawing again just cycles through that visible eligible pool; it is not a recommendation score and it does not infer taste or compatibility.
+
+Party links are stateless. A `?party=...` URL contains only **3–5 unique resolved public SteamIDs** and rebuilds every public library live when opened. No group library snapshot, playtime payload, draw result, or person-level inference is stored in the URL.
+
 ## Achievement Cabinet
 
 For a loaded **public Steam profile**, opening a game's Shelf Index exposes an optional **Achievement Cabinet**. Nothing is fetched until the visitor presses **Load achievements** for that game. The cabinet shows the literal unlocked/total count and completion percentage returned from the combined Steam responses, the rarest unlocked achievement only when a global percentage is available, and the latest recorded unlock only when Steam provides a non-zero unlock timestamp.
