@@ -239,6 +239,15 @@ test("the whole shelf can be searched, filtered, sorted, and made compact", asyn
   const compactHeight = (await rows.first().boundingBox())!.height;
   expect(compactHeight).toBeLessThan(cozyHeight);
 
+  await page.getByRole("button", { name: "100h+" }).click();
+  await expect(rows).toHaveCount(1);
+  await expect(rows.first()).toContainText("Fixture Alpha");
+
+  await page.getByRole("button", { name: "Under 2h played" }).click();
+  await expect(rows).toHaveCount(1);
+  await expect(rows.first()).toContainText("app 800");
+  await expect(row(page, "Fixture Never Launched")).toBeHidden();
+
   await page.getByRole("button", { name: "Installed on this PC", exact: true }).click();
   await expect(rows).toHaveCount(2);
   await expect(page.locator(".library-result-count")).toContainText("showing 2 of 3");

@@ -27,7 +27,7 @@ import palettes from "./theme/palettes.json";
 type Manifest = NonNullable<ReturnType<typeof readManifest>>;
 type SourceKind = "sample" | "local" | "steam";
 type LibrarySort = "most-played" | "least-played" | "name-az" | "name-za" | "recent" | "largest";
-type LibraryFilter = "all" | "played" | "unplayed" | "installed";
+type LibraryFilter = "all" | "played" | "unplayed" | "hundred-plus" | "under-two" | "installed";
 type LibraryDensity = "cozy" | "compact";
 
 const LIBRARY_SORT_KEY = "shelfwear:library-sort";
@@ -412,6 +412,8 @@ export default function App() {
       if (query && !(game.name ?? `app ${game.appid}`).toLocaleLowerCase().includes(query)) return false;
       if (effectiveLibraryFilter === "played" && game.minutes <= 0) return false;
       if (effectiveLibraryFilter === "unplayed" && game.minutes !== 0) return false;
+      if (effectiveLibraryFilter === "hundred-plus" && game.minutes < 6000) return false;
+      if (effectiveLibraryFilter === "under-two" && !(game.minutes > 0 && game.minutes < 120)) return false;
       if (effectiveLibraryFilter === "installed" && !game.installed) return false;
       return true;
     });
@@ -1060,6 +1062,8 @@ export default function App() {
                 ["all", "All"],
                 ["played", "Played"],
                 ["unplayed", "Never played"],
+                ["hundred-plus", "100h+"],
+                ["under-two", "Under 2h played"],
               ] as const).map(([value, label]) => (
                 <button
                   type="button"
