@@ -2417,11 +2417,16 @@ function CustomShelvesPage({
   const [managementMessage, setManagementMessage] = useState<string | null>(null);
   const [shareMessage, setShareMessage] = useState<string | null>(null);
   const backupPicker = useRef<HTMLInputElement>(null);
+  const activeShelfTab = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     setRenameDraft(active?.name ?? "");
     setGameQuery("");
   }, [active?.id, active?.name]);
+
+  useEffect(() => {
+    activeShelfTab.current?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }, [active?.id]);
 
   const suggestions = useMemo(() => {
     if (!active) return [];
@@ -2661,11 +2666,31 @@ function CustomShelvesPage({
         </section>
       ) : (
         <section className="panel custom-shelves-workspace">
+          {shelves.length >= 4 && active && (
+            <div className="custom-shelf-switcher">
+              <label>
+                <span>Jump to shelf</span>
+                <select
+                  value={active.id}
+                  onChange={(event) => onSelect(event.target.value)}
+                  aria-label="Jump to a custom shelf"
+                >
+                  {shelves.map((shelf) => (
+                    <option key={shelf.id} value={shelf.id}>
+                      {shelf.name} · {shelf.games.length} {shelf.games.length === 1 ? "game" : "games"}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <span>{shelves.length} personal shelves · active tab stays in view</span>
+            </div>
+          )}
           <div className="custom-shelf-tabs" aria-label="Custom shelves">
             {shelves.map((shelf) => (
               <button
                 type="button"
                 key={shelf.id}
+                ref={active?.id === shelf.id ? activeShelfTab : undefined}
                 className={active?.id === shelf.id ? "active" : ""}
                 aria-pressed={active?.id === shelf.id}
                 onClick={() => onSelect(shelf.id)}
