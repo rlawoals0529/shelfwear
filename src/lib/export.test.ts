@@ -82,6 +82,6 @@ describe("library export", () => {
     expect(libraryExportFilename("csv", { kind: "steam", profileName: "Cozy Player!" }))
       .toBe("shelfwear-cozy-player-library.csv");
     expect(libraryExportFilename("json", { kind: "local" }))
-      .toBe("shelfwear-local-library-library.json");
+      .toBe("shelfwear-local-library.json");
   });
 });
