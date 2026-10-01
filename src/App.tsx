@@ -19,7 +19,7 @@ import {
   type SteamProfileSummary,
 } from "./lib/steam.js";
 import { SAMPLE_CONFIG, SAMPLE_MANIFESTS } from "./lib/sample.js";
-import { curatedFromSearch, curatedShareUrl, SHELF_STORY_PRESETS, SHELF_STORY_STYLES, steamAppIdFromInput, type CuratedTopGames } from "./lib/top-games.js";
+import { curatedFromSearch, curatedShareUrl, SHELF_STORY_FINISHES, SHELF_STORY_PRESETS, SHELF_STORY_STYLES, steamAppIdFromInput, type CuratedTopGames } from "./lib/top-games.js";
 import { Ticker, stagger } from "./lib/motion.js";
 import { Palette } from "./lib/palette.js";
 import palettes from "./theme/palettes.json";
@@ -1130,6 +1130,7 @@ function TopGamesPage({ loadedGames, initial }: { loadedGames: Game[]; initial: 
     caption: "the games that became part of my gaming history",
     games: [],
     style: "scrapbook",
+    finish: "archive",
   });
   const [activePreset, setActivePreset] = useState<string | null>(() => initial ? null : "shaped-me");
   const [draftName, setDraftName] = useState("");
@@ -1219,6 +1220,10 @@ function TopGamesPage({ loadedGames, initial }: { loadedGames: Game[]; initial: 
 
   const setStoryStyle = (style: NonNullable<CuratedTopGames["style"]>) => {
     setList((current) => ({ ...current, style }));
+  };
+
+  const setStoryFinish = (finish: NonNullable<CuratedTopGames["finish"]>) => {
+    setList((current) => ({ ...current, finish }));
   };
 
   const remove = (index: number) => {
@@ -1353,7 +1358,24 @@ function TopGamesPage({ loadedGames, initial }: { loadedGames: Game[]; initial: 
             ))}
           </div>
         </div>
-        <p className="note curated-privacy">Story links are stateless: the title, caption, card look, selected game names, optional notes, Steam AppIDs, and public Steam artwork references live in the URL. Shelfwear does not store the list. Old <code>?top=</code> links still open normally.</p>
+        <div className="story-finish-picker">
+          <span className="library-control-label">Finishing touch</span>
+          <div className="story-finish-options" aria-label="Shelf story finishing touch">
+            {SHELF_STORY_FINISHES.map((finish) => (
+              <button
+                type="button"
+                key={finish.id}
+                className={(list.finish ?? "archive") === finish.id ? "active" : ""}
+                aria-pressed={(list.finish ?? "archive") === finish.id}
+                onClick={() => setStoryFinish(finish.id)}
+              >
+                <b>{finish.label}</b>
+                <span>{finish.description}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+        <p className="note curated-privacy">Story links are stateless: the title, caption, card look, finishing touch, selected game names, optional notes, Steam AppIDs, and public Steam artwork references live in the URL. Shelfwear does not store the list. Old <code>?top=</code> links still open normally.</p>
       </section>
 
       <section className="panel curated-builder">
@@ -1406,7 +1428,7 @@ function TopGamesPage({ loadedGames, initial }: { loadedGames: Game[]; initial: 
 
         <div className="curated-layout">
           <div className="curated-preview-wrap">
-            <div className={`curated-card-preview story-style-${list.style ?? "scrapbook"}`}>
+            <div className={`curated-card-preview story-style-${list.style ?? "scrapbook"} story-finish-${list.finish ?? "archive"}`}>
               <div className="curated-artifact-meta">
                 <span>SHELFWEAR / SHELF STORY</span>
                 <span>{String(list.games.length).padStart(2, "0")} PICKS</span>
