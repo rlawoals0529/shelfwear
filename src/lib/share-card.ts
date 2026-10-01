@@ -370,55 +370,105 @@ export async function renderCuratedCard(input: CuratedTopGames): Promise<Blob> {
   ctx.fillStyle = theme.bg;
   ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
-  const paper = ctx.createLinearGradient(0, 0, WIDTH, HEIGHT);
-  if (style === "poster") {
-    paper.addColorStop(0, theme.bg);
-    paper.addColorStop(.45, theme.panel);
-    paper.addColorStop(1, theme.raised);
-  } else if (style === "polaroid") {
-    paper.addColorStop(0, theme.panel);
-    paper.addColorStop(.7, theme.panel);
-    paper.addColorStop(1, theme.bg);
-  } else {
-    paper.addColorStop(0, theme.panel);
-    paper.addColorStop(.55, theme.bg);
-    paper.addColorStop(1, theme.raised);
-  }
-  ctx.globalAlpha = style === "poster" ? .95 : .8;
-  ctx.fillStyle = paper;
-  ctx.fillRect(0, 0, WIDTH, HEIGHT);
-  ctx.globalAlpha = 1;
-
   if (style === "scrapbook") {
-    // A few tiny scrapbook marks, kept away from the game art.
-    drawSparkle(ctx, WIDTH - 94, 74, 18, theme.accent);
-    drawSparkle(ctx, WIDTH - 133, 104, 8, theme.accent2);
+    const sheetX = 30;
+    const sheetY = 28;
+    const sheetW = WIDTH - 60;
+    const sheetH = HEIGHT - 56;
+    roundedRect(ctx, sheetX, sheetY, sheetW, sheetH, 28);
+    ctx.fillStyle = theme.panel;
+    ctx.fill();
+    ctx.strokeStyle = theme.edge;
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    ctx.save();
+    roundedRect(ctx, sheetX, sheetY, sheetW, sheetH, 28);
+    ctx.clip();
+    ctx.strokeStyle = theme.edge;
+    ctx.globalAlpha = .16;
+    ctx.lineWidth = 1;
+    for (let y = 78; y < HEIGHT - 40; y += 36) {
+      ctx.beginPath();
+      ctx.moveTo(sheetX + 18, y);
+      ctx.lineTo(sheetX + sheetW - 18, y);
+      ctx.stroke();
+    }
+    ctx.globalAlpha = 1;
+
+    const spine = ctx.createLinearGradient(sheetX, sheetY, sheetX, sheetY + sheetH);
+    spine.addColorStop(0, theme.accent);
+    spine.addColorStop(1, theme.accent2);
+    ctx.fillStyle = spine;
+    ctx.fillRect(sheetX, sheetY + 30, 8, sheetH - 60);
+    ctx.restore();
+
+    drawSparkle(ctx, WIDTH - 93, 86, 15, theme.accent);
+    drawSparkle(ctx, WIDTH - 128, 112, 7, theme.accent2);
+  } else {
+    const paper = ctx.createLinearGradient(0, 0, WIDTH, HEIGHT);
+    if (style === "poster") {
+      paper.addColorStop(0, theme.bg);
+      paper.addColorStop(.45, theme.panel);
+      paper.addColorStop(1, theme.raised);
+    } else {
+      paper.addColorStop(0, theme.panel);
+      paper.addColorStop(.7, theme.panel);
+      paper.addColorStop(1, theme.bg);
+    }
+    ctx.globalAlpha = style === "poster" ? .95 : .82;
+    ctx.fillStyle = paper;
+    ctx.fillRect(0, 0, WIDTH, HEIGHT);
+    ctx.globalAlpha = 1;
   }
 
   ctx.fillStyle = theme.accent;
-  ctx.font = "700 22px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  ctx.fillText("SHELFWEAR  ♡", PAD, 54);
-
-  ctx.fillStyle = theme.fg;
-  ctx.font = "700 52px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  const heading = wrapByMeasure(ctx, input.title || "shelf story", WIDTH - PAD * 2 - 100, 1)[0] ?? "shelf story";
-  ctx.fillText(heading, PAD, 116);
+  ctx.font = "900 16px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.fillText("SHELFWEAR / SHELF STORY", PAD, 58);
 
   ctx.fillStyle = theme.dim;
-  ctx.font = "400 20px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.font = "800 10px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.textAlign = "right";
+  ctx.fillText(String(input.games.length).padStart(2, "0") + " PICKS · HAND-PICKED", WIDTH - PAD, 58);
+  ctx.textAlign = "left";
+
+  if (style === "scrapbook") {
+    ctx.save();
+    ctx.translate(PAD + 115, 85);
+    ctx.rotate(-.045);
+    ctx.fillStyle = theme.raised;
+    ctx.strokeStyle = theme.edge;
+    ctx.lineWidth = 1.5;
+    roundedRect(ctx, 0, 0, 136, 30, 5);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = theme.accent;
+    ctx.font = "900 10px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+    ctx.fillText("HAND-PICKED ♡", 15, 20);
+    ctx.restore();
+  }
+
+  ctx.fillStyle = theme.fg;
+  ctx.font = "800 50px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  const heading = wrapByMeasure(ctx, input.title || "shelf story", WIDTH - PAD * 2 - 100, 1)[0] ?? "shelf story";
+  ctx.fillText(heading, PAD, 134);
+
+  ctx.fillStyle = theme.dim;
+  ctx.font = "500 19px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
   const caption = input.caption || "a little collection from my shelf";
   const captionLines = wrapByMeasure(ctx, caption, WIDTH - PAD * 2, 2);
-  captionLines.forEach((line, index) => ctx.fillText(line, PAD, 154 + index * 25));
+  captionLines.forEach((line, index) => ctx.fillText(line, PAD, 168 + index * 24));
 
-  const gridTop = captionLines.length > 1 ? 208 : 190;
+  const gridTop = captionLines.length > 1 ? 218 : 200;
   const gridSize = WIDTH - PAD * 2;
   const tile = (gridSize - GRID_GAP * 2) / 3;
-  const tileRadius = style === "poster" ? 6 : style === "polaroid" ? 10 : 20;
+  const tileRadius = style === "poster" ? 6 : style === "polaroid" ? 10 : 8;
   const images = await Promise.all(
     input.games.slice(0, 9).map((game) =>
       game.appid ? loadImage(proxiedSteamCover(game.appid, game.iconHash)) : Promise.resolve(null)
     ),
   );
+  const scrapbookAngles = [-.012, .006, -.004, .008, -.006, .011, -.008, .004, -.003];
 
   for (let index = 0; index < 9; index++) {
     const row = Math.floor(index / 3);
@@ -427,6 +477,23 @@ export async function renderCuratedCard(input: CuratedTopGames): Promise<Blob> {
     const y = gridTop + row * (tile + GRID_GAP);
     const game = input.games[index];
     const cover = images[index] ?? null;
+
+    ctx.save();
+    if (style === "scrapbook") {
+      const cx = x + tile / 2;
+      const cy = y + tile / 2;
+      ctx.translate(cx, cy);
+      ctx.rotate(scrapbookAngles[index] ?? 0);
+      ctx.translate(-cx, -cy);
+      ctx.shadowColor = "rgba(0,0,0,.20)";
+      ctx.shadowBlur = 18;
+      ctx.shadowOffsetY = 7;
+    }
+
+    roundedRect(ctx, x, y, tile, tile, tileRadius);
+    ctx.fillStyle = style === "scrapbook" ? theme.raised : theme.panel;
+    ctx.fill();
+    ctx.shadowColor = "transparent";
 
     ctx.save();
     roundedRect(ctx, x, y, tile, tile, tileRadius);
@@ -487,7 +554,7 @@ export async function renderCuratedCard(input: CuratedTopGames): Promise<Blob> {
       ctx.strokeStyle = theme.edge;
       ctx.lineWidth = 2;
       ctx.setLineDash([8, 9]);
-      roundedRect(ctx, x + 8, y + 8, tile - 16, tile - 16, 16);
+      roundedRect(ctx, x + 8, y + 8, tile - 16, tile - 16, 12);
       ctx.stroke();
       ctx.setLineDash([]);
       ctx.globalAlpha = 1;
@@ -497,7 +564,19 @@ export async function renderCuratedCard(input: CuratedTopGames): Promise<Blob> {
       ctx.fillText("little empty spot", x + tile / 2, y + tile / 2);
       ctx.textAlign = "left";
     }
-    if (style === "polaroid" && game) {
+    ctx.restore();
+
+    if (style === "scrapbook" && game) {
+      ctx.save();
+      ctx.translate(x + tile / 2, y + 7);
+      ctx.rotate(index % 2 ? .035 : -.035);
+      ctx.fillStyle = "rgba(239,226,214,.78)";
+      ctx.strokeStyle = "rgba(255,255,255,.12)";
+      ctx.lineWidth = 1;
+      ctx.fillRect(-25, -5, 50, 14);
+      ctx.strokeRect(-25, -5, 50, 14);
+      ctx.restore();
+    } else if (style === "polaroid" && game) {
       ctx.strokeStyle = "rgba(255,255,255,.34)";
       ctx.lineWidth = 8;
       roundedRect(ctx, x + 4, y + 4, tile - 8, tile - 8, Math.max(4, tileRadius - 3));
@@ -511,28 +590,37 @@ export async function renderCuratedCard(input: CuratedTopGames): Promise<Blob> {
     ctx.restore();
   }
 
-  const footerY = gridTop + gridSize + 32;
+  const footerY = gridTop + gridSize + 28;
   ctx.strokeStyle = theme.edge;
-  ctx.lineWidth = 2;
+  ctx.lineWidth = style === "scrapbook" ? 1.5 : 2;
+  if (style === "scrapbook") ctx.setLineDash([8, 7]);
   ctx.beginPath();
   ctx.moveTo(PAD, footerY);
   ctx.lineTo(WIDTH - PAD, footerY);
   ctx.stroke();
+  ctx.setLineDash([]);
 
   ctx.fillStyle = theme.fg;
-  ctx.font = "700 24px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  ctx.fillText("made with shelfwear", PAD, footerY + 45);
+  ctx.font = "800 22px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.fillText("made with shelfwear", PAD, footerY + 42);
   ctx.fillStyle = theme.dim;
-  ctx.font = "400 16px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  ctx.fillText(`a hand-picked story · ${style} card · not ranked by playtime`, PAD, footerY + 75);
+  ctx.font = "500 15px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.fillText("a hand-picked story · " + style + " card · not ranked by playtime", PAD, footerY + 70);
 
+  ctx.save();
+  ctx.translate(WIDTH - PAD - 66, footerY + 51);
+  ctx.rotate(-.025);
+  ctx.strokeStyle = theme.accent;
+  ctx.lineWidth = 2;
+  ctx.setLineDash([5, 4]);
+  roundedRect(ctx, -64, -20, 128, 40, 5);
+  ctx.stroke();
+  ctx.setLineDash([]);
   ctx.fillStyle = theme.accent;
-  ctx.font = "700 16px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  ctx.textAlign = "right";
-  ctx.fillText("shelfwear ♡", WIDTH - PAD, footerY + 48);
-  ctx.fillStyle = theme.dim;
-  ctx.font = "500 14px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  ctx.fillText("hand-picked by you", WIDTH - PAD, footerY + 74);
+  ctx.font = "900 9px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("ARCHIVE COPY", 0, 4);
+  ctx.restore();
   ctx.textAlign = "left";
 
   return canvasBlob(canvas);
