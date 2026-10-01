@@ -37,6 +37,8 @@ import {
   MAX_CUSTOM_SHELVES,
   cleanShelfName,
   customShelfGamesFromLibrary,
+  moveSelectedCustomShelfGames,
+  removeSelectedCustomShelfGames,
   customShelvesBackupFilename,
   customShelvesBackupText,
   customShelfShareText,
@@ -2416,6 +2418,9 @@ function CustomShelvesPage({
   const [backupError, setBackupError] = useState<string | null>(null);
   const [managementMessage, setManagementMessage] = useState<string | null>(null);
   const [shareMessage, setShareMessage] = useState<string | null>(null);
+  const [bulkEditing, setBulkEditing] = useState(false);
+  const [selectedAppIds, setSelectedAppIds] = useState<string[]>([]);
+  const [bulkMessage, setBulkMessage] = useState<string | null>(null);
   const backupPicker = useRef<HTMLInputElement>(null);
   const activeShelfTab = useRef<HTMLButtonElement>(null);
 
@@ -2425,8 +2430,19 @@ function CustomShelvesPage({
   }, [active?.id, active?.name]);
 
   useEffect(() => {
+    setBulkEditing(false);
+    setSelectedAppIds([]);
+    setBulkMessage(null);
+  }, [active?.id]);
+
+  useEffect(() => {
     activeShelfTab.current?.scrollIntoView({ block: "nearest", inline: "nearest" });
   }, [active?.id]);
+
+  const selectedAppIdSet = useMemo(() => new Set(selectedAppIds), [selectedAppIds]);
+  const selectedGameCount = active
+    ? active.games.reduce((count, game) => count + (selectedAppIdSet.has(game.appid) ? 1 : 0), 0)
+    : 0;
 
   const suggestions = useMemo(() => {
     if (!active) return [];
@@ -2502,6 +2518,65 @@ function CustomShelvesPage({
       ...shelf,
       games: shelf.games.filter((_, gameIndex) => gameIndex !== index),
     }));
+  };
+
+  const toggleBulkEditing = () => {
+    if (bulkEditing) {
+      setBulkEditing(false);
+      setSelectedAppIds([]);
+      setBulkMessage(null);
+      return;
+    }
+    setBulkEditing(true);
+    setBulkMessage(null);
+  };
+
+  const toggleBulkGame = (appid: string) => {
+    setSelectedAppIds((current) =>
+      current.includes(appid)
+        ? current.filter((value) => value !== appid)
+        : [...current, appid]
+    );
+    setBulkMessage(null);
+  };
+
+  const selectAllShelfGames = () => {
+    if (!active) return;
+    setSelectedAppIds(active.games.map((game) => game.appid));
+    setBulkMessage(null);
+  };
+
+  const clearBulkSelection = () => {
+    setSelectedAppIds([]);
+    setBulkMessage(null);
+  };
+
+  const moveBulkSelection = (placement: "top" | "bottom") => {
+    if (!active || selectedGameCount === 0) return;
+    const count = selectedGameCount;
+    onUpdate(active.id, (shelf) => ({
+      ...shelf,
+      games: moveSelectedCustomShelfGames(shelf.games, selectedAppIds, placement),
+    }));
+    setBulkMessage(
+      `Moved ${count} selected ${count === 1 ? "game" : "games"} to the ${placement}, preserving their relative order.`,
+    );
+  };
+
+  const removeBulkSelection = () => {
+    if (!active || selectedGameCount === 0) return;
+    const count = selectedGameCount;
+    const confirmed = window.confirm(
+      `Remove ${count} selected ${count === 1 ? "game" : "games"} from “${active.name}”? Private notes on those shelf entries will also be removed. Your Steam library is not affected.`,
+    );
+    if (!confirmed) return;
+    onUpdate(active.id, (shelf) => ({
+      ...shelf,
+      games: removeSelectedCustomShelfGames(shelf.games, selectedAppIds),
+    }));
+    setSelectedAppIds([]);
+    if (count === active.games.length) setBulkEditing(false);
+    setBulkMessage(`Removed ${count} selected ${count === 1 ? "game" : "games"} from “${active.name}”.`);
   };
 
   const duplicateActiveShelf = () => {
@@ -2752,6 +2827,15 @@ function CustomShelvesPage({
                   <button type="button" disabled={!active.games.length} onClick={() => onStory(active)}>
                     <CuteIcon name="heart" className="button-icon" /> Turn into Shelf Story
                   </button>
+                  <button
+                    type="button"
+                    className={bulkEditing ? "active" : ""}
+                    disabled={active.games.length < 2}
+                    aria-pressed={bulkEditing}
+                    onClick={toggleBulkEditing}
+                  >
+                    {bulkEditing ? "Done selecting" : "Bulk edit"}
+                  </button>
                 </div>
               </div>
               {shareMessage && <p className="custom-shelf-share-status" role="status">{shareMessage}</p>}
@@ -2779,6 +2863,39 @@ function CustomShelvesPage({
                 )}
               </div>
 
+              {bulkEditing && active.games.length > 0 && (
+                <div className="custom-shelf-bulk-toolbar" aria-label="Bulk edit shelf games">
+                  <div className="custom-shelf-bulk-count">
+                    <b>{selectedGameCount}</b> selected
+                    <span>Select games below, then move them as a stable block or remove them from this browser-local shelf.</span>
+                  </div>
+                  <div className="custom-shelf-bulk-select-actions">
+                    <button
+                      type="button"
+                      onClick={selectAllShelfGames}
+                      disabled={selectedGameCount === active.games.length}
+                    >
+                      Select all
+                    </button>
+                    <button type="button" onClick={clearBulkSelection} disabled={selectedGameCount === 0}>
+                      Clear
+                    </button>
+                  </div>
+                  <div className="custom-shelf-bulk-actions">
+                    <button type="button" onClick={() => moveBulkSelection("top")} disabled={selectedGameCount === 0}>
+                      Move to top
+                    </button>
+                    <button type="button" onClick={() => moveBulkSelection("bottom")} disabled={selectedGameCount === 0}>
+                      Move to bottom
+                    </button>
+                    <button type="button" className="danger-subtle" onClick={removeBulkSelection} disabled={selectedGameCount === 0}>
+                      Remove selected
+                    </button>
+                  </div>
+                </div>
+              )}
+              {bulkMessage && <p className="custom-shelf-bulk-status" role="status">{bulkMessage}</p>}
+
               {active.games.length === 0 ? (
                 <div className="custom-shelf-empty-state">
                   <span aria-hidden="true">♡</span>
@@ -2788,7 +2905,23 @@ function CustomShelvesPage({
               ) : (
                 <div className="custom-shelf-games">
                   {active.games.map((game, index) => (
-                    <article className="custom-shelf-game" key={game.appid}>
+                    <article
+                      className={[
+                        "custom-shelf-game",
+                        bulkEditing ? "bulk-editing" : "",
+                        selectedAppIdSet.has(game.appid) ? "selected" : "",
+                      ].filter(Boolean).join(" ")}
+                      key={game.appid}
+                    >
+                      {bulkEditing && (
+                        <input
+                          type="checkbox"
+                          className="custom-shelf-game-select"
+                          checked={selectedAppIdSet.has(game.appid)}
+                          onChange={() => toggleBulkGame(game.appid)}
+                          aria-label={"Select " + game.name + " for bulk editing"}
+                        />
+                      )}
                       <span className="custom-shelf-rank">{String(index + 1).padStart(2, "0")}</span>
                       <div className="custom-shelf-game-copy">
                         <b>{game.name}</b>
@@ -2801,11 +2934,13 @@ function CustomShelvesPage({
                           aria-label={"Note for " + game.name + " on " + active.name}
                         />
                       </div>
-                      <div className="custom-shelf-game-actions">
-                        <button type="button" disabled={index === 0} onClick={() => move(index, -1)} aria-label={"Move " + game.name + " up"}><CuteIcon name="up" /></button>
-                        <button type="button" disabled={index === active.games.length - 1} onClick={() => move(index, 1)} aria-label={"Move " + game.name + " down"}><CuteIcon name="down" /></button>
-                        <button type="button" onClick={() => remove(index)} aria-label={"Remove " + game.name + " from " + active.name}><CuteIcon name="close" /></button>
-                      </div>
+                      {!bulkEditing && (
+                        <div className="custom-shelf-game-actions">
+                          <button type="button" disabled={index === 0} onClick={() => move(index, -1)} aria-label={"Move " + game.name + " up"}><CuteIcon name="up" /></button>
+                          <button type="button" disabled={index === active.games.length - 1} onClick={() => move(index, 1)} aria-label={"Move " + game.name + " down"}><CuteIcon name="down" /></button>
+                          <button type="button" onClick={() => remove(index)} aria-label={"Remove " + game.name + " from " + active.name}><CuteIcon name="close" /></button>
+                        </div>
+                      )}
                     </article>
                   ))}
                 </div>
