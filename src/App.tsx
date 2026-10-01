@@ -1302,6 +1302,293 @@ export default function App() {
 
 
 
+
+function CustomShelvesPage({
+  shelves,
+  activeShelfId,
+  loadedGames,
+  onCreate,
+  onSelect,
+  onUpdate,
+  onDelete,
+  onStory,
+}: {
+  shelves: CustomShelf[];
+  activeShelfId: string | null;
+  loadedGames: Game[];
+  onCreate: (name: string) => string | null;
+  onSelect: (id: string) => void;
+  onUpdate: (id: string, updater: (shelf: CustomShelf) => CustomShelf) => void;
+  onDelete: (id: string) => void;
+  onStory: (shelf: CustomShelf) => void;
+}) {
+  const active = shelves.find((shelf) => shelf.id === activeShelfId) ?? shelves[0] ?? null;
+  const [draftName, setDraftName] = useState("");
+  const [renameDraft, setRenameDraft] = useState(active?.name ?? "");
+  const [gameQuery, setGameQuery] = useState("");
+
+  useEffect(() => {
+    setRenameDraft(active?.name ?? "");
+    setGameQuery("");
+  }, [active?.id, active?.name]);
+
+  const suggestions = useMemo(() => {
+    if (!active) return [];
+    const q = gameQuery.trim().toLowerCase();
+    if (!q) return [];
+    const chosen = new Set(active.games.map((game) => game.appid));
+    return loadedGames
+      .filter((game) => !chosen.has(game.appid) && (game.name ?? ("app " + game.appid)).toLowerCase().includes(q))
+      .sort((a, b) => b.minutes - a.minutes || (a.name ?? "").localeCompare(b.name ?? ""))
+      .slice(0, 8);
+  }, [active, gameQuery, loadedGames]);
+
+  const create = (name: string) => {
+    const id = onCreate(name);
+    if (id) {
+      onSelect(id);
+      setDraftName("");
+    }
+  };
+
+  const addLoadedGame = (game: Game) => {
+    if (!active) return;
+    onUpdate(active.id, (shelf) => {
+      if (shelf.games.some((entry) => entry.appid === game.appid) || shelf.games.length >= 50) return shelf;
+      return {
+        ...shelf,
+        games: [...shelf.games, {
+          appid: game.appid,
+          name: game.name ?? ("app " + game.appid),
+          ...(game.iconHash ? { iconHash: game.iconHash } : {}),
+        }],
+      };
+    });
+    setGameQuery("");
+  };
+
+  const rename = () => {
+    if (!active) return;
+    const clean = cleanShelfName(renameDraft);
+    if (!clean) {
+      setRenameDraft(active.name);
+      return;
+    }
+    onUpdate(active.id, (shelf) => ({ ...shelf, name: clean }));
+  };
+
+  const updateNote = (index: number, value: string) => {
+    if (!active) return;
+    onUpdate(active.id, (shelf) => ({
+      ...shelf,
+      games: shelf.games.map((game, gameIndex) =>
+        gameIndex === index
+          ? { ...game, note: value.replace(/\s+/g, " ").slice(0, 80) || undefined }
+          : game
+      ),
+    }));
+  };
+
+  const move = (index: number, delta: -1 | 1) => {
+    if (!active) return;
+    onUpdate(active.id, (shelf) => {
+      const target = index + delta;
+      if (target < 0 || target >= shelf.games.length) return shelf;
+      const games = [...shelf.games];
+      [games[index], games[target]] = [games[target]!, games[index]!];
+      return { ...shelf, games };
+    });
+  };
+
+  const remove = (index: number) => {
+    if (!active) return;
+    onUpdate(active.id, (shelf) => ({
+      ...shelf,
+      games: shelf.games.filter((_, gameIndex) => gameIndex !== index),
+    }));
+  };
+
+  return (
+    <main className="custom-shelves-page">
+      <section className="panel custom-shelves-intro">
+        <div className="custom-shelves-catalog-meta">
+          <span>SHELFWEAR / PERSONAL STACKS</span>
+          <span>BROWSER-LOCAL</span>
+        </div>
+        <SectionTitle
+          icon="archive"
+          eyebrow="Curate between visits"
+          note="Shelf names, order, notes, and selected games stay in this browser. The imported Steam library itself is not saved."
+        >
+          My shelves
+        </SectionTitle>
+        <p className="prose">
+          Make little collections that mean something to you, then use the Shelf Index to file games into them.
+          A shelf can stay private here or become a Shelf Story when you want to share it.
+        </p>
+
+        <div className="custom-shelf-presets" aria-label="Quick shelf starters">
+          {CUSTOM_SHELF_PRESETS.map((preset) => {
+            const exists = shelves.some((shelf) => shelf.name.toLowerCase() === preset.name.toLowerCase());
+            return (
+              <button
+                type="button"
+                key={preset.id}
+                disabled={exists || shelves.length >= MAX_CUSTOM_SHELVES}
+                onClick={() => create(preset.name)}
+              >
+                <CuteIcon name="plus" className="button-icon" />
+                {exists ? preset.name + " · made" : preset.name}
+              </button>
+            );
+          })}
+        </div>
+
+        <form className="custom-shelf-create" onSubmit={(event) => { event.preventDefault(); create(draftName); }}>
+          <label>
+            <span>Custom shelf name</span>
+            <input
+              value={draftName}
+              onChange={(event) => setDraftName(event.target.value)}
+              maxLength={40}
+              placeholder="rainy-day games, couch co-op, someday…"
+              aria-label="Custom shelf name"
+            />
+          </label>
+          <button type="submit" disabled={!cleanShelfName(draftName) || shelves.length >= MAX_CUSTOM_SHELVES}>
+            <CuteIcon name="plus" className="button-icon" /> Create shelf
+          </button>
+        </form>
+        <p className="note">{shelves.length}/{MAX_CUSTOM_SHELVES} shelves · stored only in this browser's localStorage</p>
+      </section>
+
+      {shelves.length === 0 ? (
+        <section className="panel custom-shelves-empty">
+          <span aria-hidden="true">▤</span>
+          <h3>Your personal stacks are empty.</h3>
+          <p>Start with one of the shelf starters above, then file games from the Shelf Index or search your loaded library here.</p>
+        </section>
+      ) : (
+        <section className="panel custom-shelves-workspace">
+          <div className="custom-shelf-tabs" aria-label="Custom shelves">
+            {shelves.map((shelf) => (
+              <button
+                type="button"
+                key={shelf.id}
+                className={active?.id === shelf.id ? "active" : ""}
+                aria-pressed={active?.id === shelf.id}
+                onClick={() => onSelect(shelf.id)}
+              >
+                <b>{shelf.name}</b>
+                <span>{shelf.games.length} {shelf.games.length === 1 ? "game" : "games"}</span>
+              </button>
+            ))}
+          </div>
+
+          {active && (
+            <div className="custom-shelf-sheet">
+              <div className="custom-shelf-sheet-meta">
+                <span>SHELF FILE / {active.games.length.toString().padStart(2, "0")} ENTRIES</span>
+                <button
+                  type="button"
+                  className="danger-subtle"
+                  onClick={() => onDelete(active.id)}
+                  aria-label={"Delete " + active.name}
+                >
+                  delete shelf
+                </button>
+              </div>
+
+              <div className="custom-shelf-head">
+                <label>
+                  <span>Shelf name</span>
+                  <input
+                    value={renameDraft}
+                    maxLength={40}
+                    onChange={(event) => setRenameDraft(event.target.value)}
+                    onBlur={rename}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        event.preventDefault();
+                        rename();
+                        event.currentTarget.blur();
+                      }
+                    }}
+                    aria-label="Rename active shelf"
+                  />
+                </label>
+                <button type="button" disabled={!active.games.length} onClick={() => onStory(active)}>
+                  <CuteIcon name="heart" className="button-icon" /> Turn into Shelf Story
+                </button>
+              </div>
+
+              <div className="custom-shelf-add">
+                <label>
+                  <span>Add from the loaded library</span>
+                  <input
+                    value={gameQuery}
+                    onChange={(event) => setGameQuery(event.target.value)}
+                    placeholder="Search this library…"
+                    aria-label="Search games to add to active shelf"
+                  />
+                </label>
+                {suggestions.length > 0 && (
+                  <div className="custom-shelf-suggestions">
+                    {suggestions.map((game) => (
+                      <button type="button" key={game.appid} onClick={() => addLoadedGame(game)}>
+                        <CuteIcon name="plus" className="button-icon" />
+                        <span>{game.name ?? ("app " + game.appid)}</span>
+                        <small>{hours(game.minutes)}h</small>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {active.games.length === 0 ? (
+                <div className="custom-shelf-empty-state">
+                  <span aria-hidden="true">♡</span>
+                  <b>Nothing filed here yet.</b>
+                  <p>Search the current library above, or open a game's Shelf Index and file it directly.</p>
+                </div>
+              ) : (
+                <div className="custom-shelf-games">
+                  {active.games.map((game, index) => (
+                    <article className="custom-shelf-game" key={game.appid}>
+                      <span className="custom-shelf-rank">{String(index + 1).padStart(2, "0")}</span>
+                      <div className="custom-shelf-game-copy">
+                        <b>{game.name}</b>
+                        <span>Steam app {game.appid}{index < 9 ? " · Story-ready" : ""}</span>
+                        <input
+                          value={game.note ?? ""}
+                          maxLength={80}
+                          onChange={(event) => updateNote(index, event.target.value)}
+                          placeholder="private note, optional"
+                          aria-label={"Note for " + game.name + " on " + active.name}
+                        />
+                      </div>
+                      <div className="custom-shelf-game-actions">
+                        <button type="button" disabled={index === 0} onClick={() => move(index, -1)} aria-label={"Move " + game.name + " up"}><CuteIcon name="up" /></button>
+                        <button type="button" disabled={index === active.games.length - 1} onClick={() => move(index, 1)} aria-label={"Move " + game.name + " down"}><CuteIcon name="down" /></button>
+                        <button type="button" onClick={() => remove(index)} aria-label={"Remove " + game.name + " from " + active.name}><CuteIcon name="close" /></button>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              )}
+
+              <p className="note custom-shelf-story-note">
+                Shelf Stories use the first nine games in this order. Notes are carried into the Story and remain editable there.
+              </p>
+            </div>
+          )}
+        </section>
+      )}
+    </main>
+  );
+}
+
+
 function TopGamesPage({ loadedGames, initial }: { loadedGames: Game[]; initial: CuratedTopGames | null }) {
   const [list, setList] = useState<CuratedTopGames>(() => initial ?? {
     title: "games that shaped me",
