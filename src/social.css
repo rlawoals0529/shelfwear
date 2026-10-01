@@ -31,6 +31,105 @@
   font-size: 13px;
 }
 
+.invite-arrival {
+  position: relative;
+  max-width: 920px;
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr);
+  gap: 14px;
+  margin-top: 18px;
+  padding: 18px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--accent-2) 34%, var(--edge));
+  border-radius: 21px 18px 23px 19px;
+  background:
+    repeating-linear-gradient(0deg, transparent 0 29px, color-mix(in srgb, var(--edge) 24%, transparent) 29px 30px),
+    color-mix(in srgb, var(--panel) 95%, var(--accent-2));
+}
+
+.invite-arrival::after {
+  content: "OPEN SHELF";
+  position: absolute;
+  right: 18px;
+  top: 15px;
+  padding: 4px 7px;
+  border: 1px dashed color-mix(in srgb, var(--accent-2) 56%, var(--edge));
+  border-radius: 5px;
+  color: color-mix(in srgb, var(--accent-2) 76%, var(--fg));
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: .12em;
+  transform: rotate(2deg);
+}
+
+.invite-arrival-mark {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--accent-2) 46%, var(--edge));
+  border-radius: 13px;
+  color: var(--accent-2);
+  background: color-mix(in srgb, var(--accent-2) 8%, var(--raised));
+  font-family: var(--font-round);
+  font-size: 23px;
+  font-weight: 900;
+}
+
+.invite-arrival-copy {
+  min-width: 0;
+  padding-right: 92px;
+}
+
+.invite-arrival-copy .eyebrow { margin: 0 0 4px; }
+.invite-arrival-copy h3 {
+  margin: 0;
+  font-family: var(--font-round);
+  font-size: 17px;
+}
+.invite-arrival-copy > p:not(.eyebrow) {
+  max-width: 66ch;
+  margin: 5px 0 0;
+  color: var(--dim);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+.invite-steps {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  color: var(--dim);
+  font-size: 9px;
+  font-weight: 750;
+}
+
+.invite-steps span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.invite-steps b {
+  width: 19px;
+  height: 19px;
+  display: grid;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--edge) 75%, transparent);
+  border-radius: 50%;
+  color: var(--fg);
+  background: var(--raised);
+  font-size: 8px;
+}
+
+.invite-steps i {
+  color: color-mix(in srgb, var(--accent-2) 52%, var(--dim));
+  font-style: normal;
+  letter-spacing: .13em;
+}
+
 .compare-invite {
   max-width: 920px;
   display: flex;
@@ -38,46 +137,56 @@
   justify-content: space-between;
   gap: 18px;
   margin-top: 16px;
-  padding: 13px 14px;
-  border: 1px solid color-mix(in srgb, var(--accent) 28%, var(--edge));
-  border-radius: 16px;
-  background: linear-gradient(135deg, color-mix(in srgb, var(--accent) 7%, var(--panel)), color-mix(in srgb, var(--accent-2) 5%, var(--panel)));
+  padding: 15px 16px 15px 18px;
+  border: 1px dashed color-mix(in srgb, var(--accent) 42%, var(--edge));
+  border-radius: 8px 18px 18px 8px;
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--accent) 10%, var(--panel)) 0 5px, transparent 5px),
+    repeating-linear-gradient(0deg, transparent 0 27px, color-mix(in srgb, var(--edge) 18%, transparent) 27px 28px),
+    var(--panel);
 }
 
-.compare-invite > div {
+.compare-invite-copy {
   min-width: 0;
   display: grid;
   gap: 3px;
 }
 
-.compare-invite .eyebrow {
-  margin: 0;
-}
+.compare-invite .eyebrow { margin: 0; }
 
-.compare-invite b {
+.compare-invite-copy > b {
   font-family: var(--font-round);
   font-size: 14px;
 }
 
-.compare-invite span {
+.compare-invite-copy > span {
   max-width: 66ch;
   color: var(--dim);
   font-size: 10px;
   line-height: 1.45;
 }
 
-.compare-invite button {
+.compare-invite-copy > small {
+  margin-top: 2px;
+  color: color-mix(in srgb, var(--accent) 58%, var(--dim));
+  font-size: 8px;
+  font-weight: 750;
+  letter-spacing: .03em;
+}
+
+.compare-invite-actions {
   flex: none;
+  display: flex;
+  gap: 7px;
+}
+
+.compare-invite button {
   min-height: 40px;
   padding: 8px 11px;
-  border-radius: 12px;
+  border-radius: 10px;
   box-shadow: none;
   font-size: 10px;
   white-space: nowrap;
-}
-
-.compare-invite-hint {
-  border-left-color: color-mix(in srgb, var(--accent-2) 72%, var(--edge));
 }
 
 .compare-form {
@@ -115,10 +224,66 @@
 .compare-form button { white-space: nowrap; }
 
 .comparison-result {
+  position: relative;
   max-width: 920px;
   margin-top: 32px;
-  padding-top: 24px;
-  border-top: 1px solid var(--edge);
+  padding: 24px 24px 26px 31px;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--edge) 84%, transparent);
+  border-radius: 24px 19px 26px 20px;
+  background:
+    repeating-linear-gradient(0deg, transparent 0 34px, color-mix(in srgb, var(--edge) 14%, transparent) 34px 35px),
+    color-mix(in srgb, var(--panel) 97%, var(--raised));
+  box-shadow: 0 18px 44px color-mix(in srgb, var(--bg) 28%, transparent);
+}
+
+.comparison-result::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 7px;
+  background: linear-gradient(180deg, var(--accent), color-mix(in srgb, var(--accent-2) 80%, var(--accent)));
+}
+
+.compare-bookplate-header {
+  padding-bottom: 18px;
+  border-bottom: 1px dashed color-mix(in srgb, var(--edge) 76%, transparent);
+}
+
+.compare-bookplate-kicker {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.compare-bookplate-kicker > span {
+  width: 27px;
+  height: 27px;
+  display: grid;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--edge));
+  border-radius: 7px;
+  color: var(--accent);
+  font-size: 15px;
+}
+
+.compare-bookplate-kicker > div {
+  display: grid;
+  gap: 1px;
+}
+
+.compare-bookplate-kicker small {
+  color: var(--dim);
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: .13em;
+}
+
+.compare-bookplate-kicker b {
+  font-family: var(--font-round);
+  font-size: 13px;
+  text-transform: lowercase;
 }
 .compare-heading {
   display: flex;
@@ -177,9 +342,26 @@
 .compare-metrics {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 24px;
-  max-width: 600px;
-  margin-top: 28px;
+  gap: 8px;
+  max-width: 640px;
+  margin-top: 22px;
+}
+
+.comparison-result .compare-metrics .metric {
+  min-height: 96px;
+  padding: 13px 14px;
+  border: 1px solid color-mix(in srgb, var(--edge) 68%, transparent);
+  border-radius: 9px 13px 10px 12px;
+  background: color-mix(in srgb, var(--raised) 34%, var(--panel));
+  box-shadow: none;
+}
+
+.comparison-result .compare-metrics .metric-icon {
+  opacity: .72;
+}
+
+.comparison-result .compare-metrics .metric > b {
+  font-size: 25px;
 }
 
 .compare-highlight {
@@ -231,6 +413,27 @@
 }
 
 .compare-signature.familiar { margin-top: 24px; }
+
+.compare-stamp {
+  position: relative;
+  max-width: 760px;
+  border: 2px dashed color-mix(in srgb, var(--accent) 42%, var(--edge));
+  border-radius: 15px 18px 14px 17px;
+  background: color-mix(in srgb, var(--accent) 4%, var(--panel));
+  box-shadow: none;
+  transform: rotate(-.18deg);
+}
+
+.compare-stamp::after {
+  content: "SHELF SIGNATURE";
+  position: absolute;
+  right: 14px;
+  top: 12px;
+  color: color-mix(in srgb, var(--accent) 48%, var(--dim));
+  font-size: 7px;
+  font-weight: 900;
+  letter-spacing: .13em;
+}
 
 .compare-corners {
   display: grid;
@@ -448,7 +651,13 @@
   .familiar-actions { display: grid; }
   .familiar-actions button { width: 100%; }
   .social-actions { justify-content: flex-start; }
+  .invite-arrival { grid-template-columns: 42px minmax(0, 1fr); padding: 15px; }
+  .invite-arrival-mark { width: 38px; height: 38px; border-radius: 10px; font-size: 19px; }
+  .invite-arrival-copy { padding-right: 0; }
+  .invite-arrival::after { display: none; }
+  .invite-steps { flex-wrap: wrap; }
   .compare-invite { align-items: stretch; flex-direction: column; }
+  .compare-invite-actions { display: grid; grid-template-columns: 1fr 1fr; }
   .compare-invite button { width: 100%; }
   .compare-form { grid-template-columns: 1fr; }
   .compare-form > span { display: none; }
@@ -468,6 +677,8 @@
   .steam-person { width: calc(50% - 18px); }
   .compare-actions { display: grid; }
   .compare-actions button { width: 100%; }
+  .comparison-result { padding: 19px 15px 22px 21px; border-radius: 18px; }
+  .compare-invite-actions { grid-template-columns: 1fr; }
   .compare-highlight-hours { flex-direction: column; }
   .shared-game,
   .compare-handoff { grid-template-columns: 38px minmax(0, 1fr); }

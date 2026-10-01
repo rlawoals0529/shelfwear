@@ -688,75 +688,160 @@ export async function renderComparisonCard(input: ComparisonCardInput): Promise<
   const ctx = canvas.getContext("2d");
   if (!ctx) throw new Error("Canvas is not available in this browser.");
 
+  // Shelfwear's comparison card is intentionally a physical object: part old library
+  // checkout card, part game shelf. It should still read as Shelfwear with the art removed.
   ctx.fillStyle = theme.bg;
   ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
-  const wash = ctx.createLinearGradient(0, 0, WIDTH, HEIGHT);
-  wash.addColorStop(0, theme.panel);
-  wash.addColorStop(.48, theme.bg);
-  wash.addColorStop(1, theme.raised);
-  ctx.globalAlpha = .9;
-  ctx.fillStyle = wash;
-  ctx.fillRect(0, 0, WIDTH, HEIGHT);
+  const cardX = 32;
+  const cardY = 28;
+  const cardW = WIDTH - 64;
+  const cardH = HEIGHT - 56;
+  roundedRect(ctx, cardX, cardY, cardW, cardH, 34);
+  ctx.fillStyle = theme.panel;
+  ctx.fill();
+  ctx.strokeStyle = theme.edge;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Quiet ruled-paper texture.
+  ctx.save();
+  roundedRect(ctx, cardX, cardY, cardW, cardH, 34);
+  ctx.clip();
+  ctx.strokeStyle = theme.edge;
+  ctx.globalAlpha = .18;
+  ctx.lineWidth = 1;
+  for (let y = 76; y < HEIGHT - 48; y += 34) {
+    ctx.beginPath();
+    ctx.moveTo(cardX + 24, y);
+    ctx.lineTo(cardX + cardW - 24, y);
+    ctx.stroke();
+  }
   ctx.globalAlpha = 1;
 
-  drawSparkle(ctx, WIDTH - 92, 72, 17, theme.accent);
-  drawSparkle(ctx, 90, HEIGHT - 91, 11, theme.accent2);
+  const spine = ctx.createLinearGradient(cardX, cardY, cardX, cardY + cardH);
+  spine.addColorStop(0, theme.accent);
+  spine.addColorStop(1, theme.accent2);
+  ctx.fillStyle = spine;
+  ctx.fillRect(cardX, cardY + 34, 9, cardH - 68);
+
+  // Tiny punched holes sell the card-object metaphor without adding semantic noise.
+  ctx.fillStyle = theme.bg;
+  ctx.beginPath();
+  ctx.arc(cardX + cardW - 31, cardY + 31, 7, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(cardX + cardW - 31, cardY + cardH - 31, 7, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
 
   ctx.fillStyle = theme.accent;
-  ctx.font = "800 21px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  ctx.fillText("SHELFWEAR  /  TWO SHELVES", PAD, 57);
-
-  ctx.fillStyle = theme.fg;
-  ctx.font = "800 47px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  const heading = wrapByMeasure(ctx, input.leftName + " × " + input.rightName, WIDTH - PAD * 2, 1)[0] ?? "Two shelves";
-  ctx.fillText(heading, PAD, 126);
+  ctx.font = "900 17px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.fillText("SHELFWEAR / SHARED SHELF", PAD + 8, 68);
 
   ctx.fillStyle = theme.dim;
-  ctx.font = "500 18px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  ctx.fillText("public Steam libraries compared from the data Steam returned", PAD, 162);
+  ctx.font = "800 11px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.fillText("LIBRARY CARD  ·  PUBLIC STEAM DATA", PAD + 8, 91);
 
-  const metricsY = 198;
-  const metricGap = 13;
-  const metricW = (WIDTH - PAD * 2 - metricGap * 2) / 3;
-  const metrics = [
-    { label: "LIBRARY OVERLAP", value: Math.round(input.comparison.overlapPercent) + "%" },
-    { label: "OWNED BY BOTH", value: String(input.comparison.sharedCount) },
-    { label: "PLAYED BY BOTH", value: String(input.comparison.mutuallyPlayedCount) },
-  ];
+  ctx.fillStyle = theme.fg;
+  ctx.font = "850 45px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  const heading = wrapByMeasure(ctx, input.leftName + " × " + input.rightName, WIDTH - (PAD + 8) * 2, 1)[0] ?? "Two shelves";
+  ctx.fillText(heading, PAD + 8, 144);
 
-  metrics.forEach((metric, index) => {
-    const x = PAD + index * (metricW + metricGap);
-    roundedRect(ctx, x, metricsY, metricW, 122, 20);
-    ctx.fillStyle = theme.panel;
+  ctx.fillStyle = theme.dim;
+  ctx.font = "500 16px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.fillText("two public shelves, rebuilt live", PAD + 8, 174);
+
+  const tagY = 202;
+  const sideW = 318;
+  const sideH = 104;
+  const leftX = PAD + 8;
+  const rightX = WIDTH - PAD - 8 - sideW;
+
+  const drawShelfTag = (x: number, name: string, total: number, unique: number, accent: string): void => {
+    roundedRect(ctx, x, tagY, sideW, sideH, 11);
+    ctx.fillStyle = theme.raised;
     ctx.fill();
     ctx.strokeStyle = theme.edge;
     ctx.lineWidth = 2;
     ctx.stroke();
 
-    ctx.fillStyle = index === 1 ? theme.accent2 : theme.accent;
-    roundedRect(ctx, x + 14, metricsY + 13, 38, 6, 3);
-    ctx.fill();
+    ctx.fillStyle = accent;
+    ctx.fillRect(x, tagY, 7, sideH);
 
     ctx.fillStyle = theme.dim;
-    ctx.font = "800 14px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-    ctx.fillText(metric.label, x + 16, metricsY + 38);
+    ctx.font = "800 11px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+    ctx.fillText("SHELF LABEL", x + 20, tagY + 27);
+
     ctx.fillStyle = theme.fg;
-    ctx.font = "800 40px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-    ctx.fillText(metric.value, x + 16, metricsY + 88);
+    ctx.font = "800 21px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+    const display = wrapByMeasure(ctx, name, sideW - 40, 1)[0] ?? name;
+    ctx.fillText(display, x + 20, tagY + 56);
+
+    ctx.fillStyle = theme.dim;
+    ctx.font = "600 13px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+    ctx.fillText(String(total) + " games · " + String(unique) + " only here", x + 20, tagY + 82);
+  };
+
+  drawShelfTag(leftX, input.leftName, input.comparison.leftCount, input.comparison.leftOnlyCount, theme.accent);
+  drawShelfTag(rightX, input.rightName, input.comparison.rightCount, input.comparison.rightOnlyCount, theme.accent2);
+
+  // Overlap stamp: the one large number on the card.
+  const stampX = WIDTH / 2;
+  const stampY = tagY + sideH / 2;
+  ctx.save();
+  ctx.translate(stampX, stampY);
+  ctx.rotate(-.035);
+  ctx.strokeStyle = theme.accent;
+  ctx.globalAlpha = .82;
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.arc(0, 0, 73, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(0, 0, 63, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = theme.fg;
+  ctx.textAlign = "center";
+  ctx.font = "900 34px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.fillText(Math.round(input.comparison.overlapPercent) + "%", 0, 3);
+  ctx.fillStyle = theme.accent;
+  ctx.font = "900 9px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.fillText("OVERLAP", 0, 24);
+  ctx.textAlign = "left";
+  ctx.restore();
+
+  const pillY = 326;
+  const pillW = 206;
+  const pillGap = 12;
+  const pillStart = (WIDTH - (pillW * 2 + pillGap)) / 2;
+  [
+    ["OWNED BY BOTH", String(input.comparison.sharedCount)],
+    ["PLAYED BY BOTH", String(input.comparison.mutuallyPlayedCount)],
+  ].forEach(([label, value], index) => {
+    const x = pillStart + index * (pillW + pillGap);
+    roundedRect(ctx, x, pillY, pillW, 55, 10);
+    ctx.fillStyle = theme.raised;
+    ctx.fill();
+    ctx.strokeStyle = theme.edge;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.fillStyle = index ? theme.accent2 : theme.accent;
+    ctx.font = "900 10px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+    ctx.fillText(label!, x + 13, pillY + 22);
+    ctx.fillStyle = theme.fg;
+    ctx.font = "850 20px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+    ctx.fillText(value!, x + 13, pillY + 44);
   });
 
   ctx.fillStyle = theme.fg;
-  ctx.font = "800 27px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  ctx.fillText("Games both actually played", PAD, 372);
+  ctx.font = "850 24px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.fillText("Games checked out by both shelves", PAD + 8, 430);
   ctx.fillStyle = theme.dim;
-  ctx.font = "500 16px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  const leftCorner = wrapByMeasure(ctx, input.leftName + " only: " + input.comparison.leftOnlyCount, 420, 1)[0] ?? "";
-  const rightCorner = wrapByMeasure(ctx, input.rightName + " only: " + input.comparison.rightOnlyCount, 420, 1)[0] ?? "";
-  ctx.fillText(leftCorner, PAD, 400);
-  ctx.textAlign = "right";
-  ctx.fillText(rightCorner, WIDTH - PAD, 400);
-  ctx.textAlign = "left";
+  ctx.font = "500 14px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.fillText("ordered by the lower of the two recorded playtimes", PAD + 8, 455);
 
   const games = input.comparison.mutuallyPlayed.slice(0, 6);
   const images = await Promise.all(games.map((game) =>
@@ -764,42 +849,50 @@ export async function renderComparisonCard(input: ComparisonCardInput): Promise<
   ));
 
   const cols = 2;
-  const gameGap = 14;
-  const gameW = (WIDTH - PAD * 2 - gameGap) / cols;
-  const gameH = 174;
-  const gamesTop = 430;
+  const gameGap = 12;
+  const gameW = (WIDTH - (PAD + 8) * 2 - gameGap) / cols;
+  const gameH = 142;
+  const gamesTop = 480;
 
   for (let index = 0; index < 6; index++) {
     const row = Math.floor(index / cols);
     const col = index % cols;
-    const x = PAD + col * (gameW + gameGap);
-    const y = gamesTop + row * (gameH + gameGap);
+    const x = PAD + 8 + col * (gameW + gameGap);
+    const y = gamesTop + row * (gameH + 10);
     const game = games[index];
     const cover = images[index] ?? null;
 
-    roundedRect(ctx, x, y, gameW, gameH, 18);
-    ctx.fillStyle = theme.panel;
+    roundedRect(ctx, x, y, gameW, gameH, 11);
+    ctx.fillStyle = theme.raised;
     ctx.fill();
     ctx.strokeStyle = theme.edge;
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 1.5;
     ctx.stroke();
+
+    // Little checkout tab.
+    ctx.fillStyle = col ? theme.accent2 : theme.accent;
+    roundedRect(ctx, x + 11, y + 10, 39, 19, 5);
+    ctx.fill();
+    ctx.fillStyle = theme.bg;
+    ctx.font = "900 9px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+    ctx.fillText(String(index + 1).padStart(2, "0"), x + 20, y + 23);
 
     if (!game) {
       ctx.fillStyle = theme.dim;
-      ctx.font = "600 16px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-      ctx.fillText(index === 0 ? "No shared played game in the public data." : "—", x + 18, y + gameH / 2 + 5);
+      ctx.font = "600 15px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+      ctx.fillText(index === 0 ? "No shared played game in the public data." : "—", x + 65, y + 75);
       continue;
     }
 
     const artX = x + 12;
-    const artY = y + 12;
-    const artSize = gameH - 24;
+    const artY = y + 39;
+    const artSize = 90;
     ctx.save();
-    roundedRect(ctx, artX, artY, artSize, artSize, 13);
+    roundedRect(ctx, artX, artY, artSize, artSize, 8);
     ctx.clip();
     const artBg = ctx.createLinearGradient(artX, artY, artX + artSize, artY + artSize);
-    artBg.addColorStop(0, theme.raised);
-    artBg.addColorStop(1, index % 2 ? theme.accent2 : theme.accent);
+    artBg.addColorStop(0, theme.panel);
+    artBg.addColorStop(1, col ? theme.accent2 : theme.accent);
     ctx.globalAlpha = cover ? 1 : .35;
     ctx.fillStyle = artBg;
     ctx.fillRect(artX, artY, artSize, artSize);
@@ -807,61 +900,107 @@ export async function renderComparisonCard(input: ComparisonCardInput): Promise<
     if (cover) drawCover(ctx, cover, artX, artY, artSize);
     if (!cover) {
       ctx.fillStyle = theme.fg;
-      ctx.font = "800 58px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-      ctx.fillText((game.name ?? ("app " + game.appid)).trim().charAt(0).toUpperCase(), artX + 25, artY + 92);
+      ctx.font = "800 40px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+      ctx.fillText((game.name ?? ("app " + game.appid)).trim().charAt(0).toUpperCase(), artX + 25, artY + 59);
     }
     ctx.restore();
 
-    const copyX = artX + artSize + 17;
-    const copyW = gameW - (copyX - x) - 15;
+    const copyX = artX + artSize + 15;
+    const copyW = gameW - (copyX - x) - 14;
     ctx.fillStyle = theme.fg;
-    ctx.font = "800 19px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+    ctx.font = "800 17px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
     const gameName = game.name ?? ("app " + game.appid);
     wrapByMeasure(ctx, gameName, copyW, 2)
-      .forEach((line, lineIndex) => ctx.fillText(line, copyX, y + 42 + lineIndex * 24));
+      .forEach((line, lineIndex) => ctx.fillText(line, copyX, y + 54 + lineIndex * 22));
+
+    ctx.strokeStyle = theme.edge;
+    ctx.globalAlpha = .55;
+    ctx.beginPath();
+    ctx.moveTo(copyX, y + 91);
+    ctx.lineTo(x + gameW - 14, y + 91);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
 
     ctx.fillStyle = theme.dim;
-    ctx.font = "600 14px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-    const leftLine = wrapByMeasure(ctx, input.leftName + ": " + hours(game.leftMinutes) + "h", copyW, 1)[0] ?? "";
-    const rightLine = wrapByMeasure(ctx, input.rightName + ": " + hours(game.rightMinutes) + "h", copyW, 1)[0] ?? "";
-    ctx.fillText(leftLine, copyX, y + 111);
-    ctx.fillText(rightLine, copyX, y + 135);
+    ctx.font = "650 12px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+    const leftLine = wrapByMeasure(ctx, input.leftName + "  " + hours(game.leftMinutes) + "h", copyW, 1)[0] ?? "";
+    const rightLine = wrapByMeasure(ctx, input.rightName + "  " + hours(game.rightMinutes) + "h", copyW, 1)[0] ?? "";
+    ctx.fillText(leftLine, copyX, y + 112);
+    ctx.fillText(rightLine, copyX, y + 130);
   }
 
-  const signatureTop = 1016;
-  roundedRect(ctx, PAD, signatureTop, WIDTH - PAD * 2, 214, 24);
+  const signatureTop = 950;
+  const signatureW = WIDTH - (PAD + 8) * 2;
+  roundedRect(ctx, PAD + 8, signatureTop, signatureW, 180, 13);
   ctx.fillStyle = theme.panel;
   ctx.fill();
-  ctx.strokeStyle = theme.edge;
-  ctx.lineWidth = 2;
+  ctx.strokeStyle = theme.accent;
+  ctx.lineWidth = 3;
+  ctx.setLineDash([9, 7]);
   ctx.stroke();
+  ctx.setLineDash([]);
 
-  ctx.font = "92px 'Segoe UI Emoji', 'Apple Color Emoji', sans-serif";
+  ctx.font = "76px 'Segoe UI Emoji', 'Apple Color Emoji', sans-serif";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText(comparisonGlyph(input.comparison.signature.object), PAD + 86, signatureTop + 105);
+  ctx.fillText(comparisonGlyph(input.comparison.signature.object), PAD + 84, signatureTop + 92);
   ctx.textAlign = "left";
   ctx.textBaseline = "alphabetic";
 
   ctx.fillStyle = theme.accent;
-  ctx.font = "800 14px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  ctx.fillText("SHARED SHELF SIGNATURE", PAD + 166, signatureTop + 42);
+  ctx.font = "900 11px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.fillText("SHARED SHELF SIGNATURE / STAMPED", PAD + 150, signatureTop + 35);
   ctx.fillStyle = theme.fg;
-  ctx.font = "800 30px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  ctx.fillText(input.comparison.signature.name, PAD + 166, signatureTop + 82);
-  ctx.fillStyle = theme.dim;
-  ctx.font = "500 17px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  const evidence = input.comparison.signature.description + " " + input.comparison.signature.evidence;
-  wrapByMeasure(ctx, evidence, WIDTH - PAD * 2 - 190, 3)
-    .forEach((line, index) => ctx.fillText(line, PAD + 166, signatureTop + 116 + index * 24));
-
+  ctx.font = "850 28px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.fillText(input.comparison.signature.name, PAD + 150, signatureTop + 72);
   ctx.fillStyle = theme.dim;
   ctx.font = "500 15px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  ctx.fillText("A comparison of public library data, not a compatibility score.", PAD, 1282);
+  const evidence = input.comparison.signature.description + " " + input.comparison.signature.evidence;
+  wrapByMeasure(ctx, evidence, signatureW - 185, 3)
+    .forEach((line, index) => ctx.fillText(line, PAD + 150, signatureTop + 103 + index * 22));
+
+  const handoff = input.comparison.oneSidedPlayed[0];
+  const noteTop = 1153;
+  if (handoff) {
+    const leftPlayed = handoff.leftMinutes > 0;
+    const playedName = leftPlayed ? input.leftName : input.rightName;
+    const unplayedName = leftPlayed ? input.rightName : input.leftName;
+    const playedMinutes = leftPlayed ? handoff.leftMinutes : handoff.rightMinutes;
+    ctx.save();
+    ctx.translate(PAD + 16, noteTop + 8);
+    ctx.rotate(.008);
+    roundedRect(ctx, 0, 0, WIDTH - (PAD + 16) * 2, 82, 8);
+    ctx.fillStyle = theme.raised;
+    ctx.fill();
+    ctx.strokeStyle = theme.edge;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    ctx.fillStyle = theme.accent2;
+    ctx.font = "900 10px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+    ctx.fillText("HANDOFF NOTE", 15, 24);
+    ctx.fillStyle = theme.fg;
+    ctx.font = "800 17px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+    const handoffName = wrapByMeasure(ctx, handoff.name ?? ("app " + handoff.appid), 360, 1)[0] ?? "";
+    ctx.fillText(handoffName, 15, 50);
+    ctx.fillStyle = theme.dim;
+    ctx.font = "600 12px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+    const handoffLine = playedName + " " + hours(playedMinutes) + "h · " + unplayedName + " 0h recorded";
+    ctx.fillText(wrapByMeasure(ctx, handoffLine, 520, 1)[0] ?? handoffLine, 420, 49);
+    ctx.restore();
+  } else {
+    ctx.fillStyle = theme.dim;
+    ctx.font = "600 13px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+    ctx.fillText("CHECKED OUT BY TWO LIBRARIES", PAD + 8, noteTop + 48);
+  }
+
+  ctx.fillStyle = theme.dim;
+  ctx.font = "500 13px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.fillText("A comparison of public library data, not a compatibility score.", PAD + 8, 1297);
   ctx.fillStyle = theme.accent;
-  ctx.font = "800 17px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.font = "900 15px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
   ctx.textAlign = "right";
-  ctx.fillText("shelfwear ♡", WIDTH - PAD, 1282);
+  ctx.fillText("shelfwear ♡", WIDTH - PAD - 8, 1297);
   ctx.textAlign = "left";
 
   return canvasBlob(canvas);

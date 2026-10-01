@@ -25,7 +25,7 @@ For sharing, Shelfwear can make:
 - **Copy summary** — a text version of the nine for sharing anywhere.
 - **Share shelf** — a stateless URL containing only the resolved public SteamID. Opening it prefills the profile so Shelfwear can rebuild the result live; no library snapshot is stored.
 - **Compare two shelves** — ownership overlap, each shelf’s unique corner, games with recorded playtime on both profiles, “easy handoffs” where only one profile has recorded time in a jointly owned game, a shared-shelf signature, and a downloadable 1080×1350 friend comparison card. Finished comparison links contain only the two public SteamIDs.
-- **Invite a friend** — after loading your own public shelf, copy a one-sided invite URL containing only your resolved public SteamID. The recipient lands in Compare with your side filled in and adds only their own public Steam profile.
+- **Invite a friend** — after loading your own public shelf, copy either a one-sided invite URL or a ready-to-send invite message. The URL contains only your resolved public SteamID. The recipient lands on a ruled-paper Shelf Invite, sees the three-step handoff, and adds only their own public Steam profile.
 
 ## What it tells you
 
@@ -61,7 +61,7 @@ The builder can export a 1080×1350 PNG carrying the selected card look and auth
 
 ## Friend comparison cards
 
-After loading two public profiles, Shelfwear can export a 1080×1350 comparison card with the two display names, library overlap, shared ownership count, played-by-both count, each shelf's unique-game count, up to six mutually played games with each person's recorded hours, and the existing shared-shelf signature. Shared games reuse Shelfwear's same-origin Steam artwork proxy and official icon fallback.
+After loading two public profiles, Shelfwear can export a 1080×1350 **library-card-style** comparison artifact with a ruled-paper field, shelf labels for both profiles, a stamped overlap mark, checkout-slip rows for up to six mutually played games, a stamped shared-shelf signature, and an optional handoff note when one side has played a jointly owned game and the other has 0h recorded. It still carries the same display names, library overlap, shared ownership count, played-by-both count, each shelf's unique-game count, and recorded hours. Shared games reuse Shelfwear's same-origin Steam artwork proxy and official icon fallback.
 
 The on-page comparison also shows **easy handoffs**: games owned by both profiles where exactly one side has recorded playtime. They are ordered by the recorded playtime on the side that has played them. This is only a visibility shortcut for shared ownership/playtime, not a recommendation score.
 
