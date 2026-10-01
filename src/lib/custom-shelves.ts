@@ -127,3 +127,71 @@ export function shelfStoryFromCustomShelf(shelf: CustomShelf): {
     })),
   };
 }
+
+
+export interface CustomShelvesBackup {
+  schema: "shelfwear.custom-shelves.v1";
+  exportedAt: string;
+  shelves: CustomShelf[];
+}
+
+export function customShelvesBackupObject(
+  shelves: readonly CustomShelf[],
+  exportedAt = new Date().toISOString(),
+): CustomShelvesBackup {
+  return {
+    schema: "shelfwear.custom-shelves.v1",
+    exportedAt,
+    shelves: normaliseCustomShelves(shelves),
+  };
+}
+
+export function customShelvesBackupText(
+  shelves: readonly CustomShelf[],
+  exportedAt = new Date().toISOString(),
+): string {
+  return JSON.stringify(customShelvesBackupObject(shelves, exportedAt), null, 2) + "\n";
+}
+
+export function parseCustomShelvesBackup(text: string): CustomShelvesBackup {
+  let value: unknown;
+  try {
+    value = JSON.parse(text);
+  } catch {
+    throw new Error("That file is not valid JSON.");
+  }
+
+  if (!value || typeof value !== "object") {
+    throw new Error("That file is not a Shelfwear shelves backup.");
+  }
+
+  const input = value as Record<string, unknown>;
+  if (input.schema !== "shelfwear.custom-shelves.v1") {
+    throw new Error("Unsupported Shelfwear shelves backup version.");
+  }
+
+  if (!Array.isArray(input.shelves)) {
+    throw new Error("This backup does not contain a shelves list.");
+  }
+
+  const shelves = normaliseCustomShelves(input.shelves);
+  const hadCandidates = input.shelves.length > 0;
+  if (hadCandidates && shelves.length === 0) {
+    throw new Error("No valid Shelfwear shelves were found in this backup.");
+  }
+
+  const exportedAt = typeof input.exportedAt === "string" && input.exportedAt.trim()
+    ? input.exportedAt.trim().slice(0, 80)
+    : "";
+
+  return {
+    schema: "shelfwear.custom-shelves.v1",
+    exportedAt,
+    shelves,
+  };
+}
+
+export function customShelvesBackupFilename(now = new Date()): string {
+  const date = now.toISOString().slice(0, 10);
+  return `shelfwear-my-shelves-${date}.json`;
+}
