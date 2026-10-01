@@ -361,6 +361,7 @@ export async function renderCuratedCard(input: CuratedTopGames): Promise<Blob> {
   if (typeof document === "undefined") throw new Error("Share cards require a browser.");
   const theme = currentShareCardTheme();
   const style = input.style ?? "scrapbook";
+  const finish = input.finish ?? "archive";
   const canvas = document.createElement("canvas");
   canvas.width = WIDTH;
   canvas.height = HEIGHT;
@@ -403,8 +404,13 @@ export async function renderCuratedCard(input: CuratedTopGames): Promise<Blob> {
     ctx.fillRect(sheetX, sheetY + 30, 8, sheetH - 60);
     ctx.restore();
 
-    drawSparkle(ctx, WIDTH - 93, 86, 15, theme.accent);
-    drawSparkle(ctx, WIDTH - 128, 112, 7, theme.accent2);
+    if (finish === "archive") {
+      drawSparkle(ctx, WIDTH - 93, 86, 10, theme.accent);
+    } else if (finish === "doodles") {
+      drawSparkle(ctx, WIDTH - 93, 82, 18, theme.accent);
+      drawSparkle(ctx, WIDTH - 132, 112, 9, theme.accent2);
+      drawSparkle(ctx, PAD + 18, 176, 7, theme.accent2);
+    }
   } else {
     const paper = ctx.createLinearGradient(0, 0, WIDTH, HEIGHT);
     if (style === "poster") {
@@ -435,16 +441,16 @@ export async function renderCuratedCard(input: CuratedTopGames): Promise<Blob> {
   if (style === "scrapbook") {
     ctx.save();
     ctx.translate(PAD + 115, 85);
-    ctx.rotate(-.045);
+    ctx.rotate(finish === "clean" ? 0 : -.045);
     ctx.fillStyle = theme.raised;
     ctx.strokeStyle = theme.edge;
     ctx.lineWidth = 1.5;
     roundedRect(ctx, 0, 0, 136, 30, 5);
     ctx.fill();
     ctx.stroke();
-    ctx.fillStyle = theme.accent;
+    ctx.fillStyle = finish === "doodles" ? theme.accent2 : theme.accent;
     ctx.font = "900 10px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-    ctx.fillText("HAND-PICKED ♡", 15, 20);
+    ctx.fillText(finish === "archive" ? "HAND-PICKED ♡" : finish === "doodles" ? "LITTLE STORY ✦" : "SHELF STORY", 15, 20);
     ctx.restore();
   }
 
@@ -468,7 +474,11 @@ export async function renderCuratedCard(input: CuratedTopGames): Promise<Blob> {
       game.appid ? loadImage(proxiedSteamCover(game.appid, game.iconHash)) : Promise.resolve(null)
     ),
   );
-  const scrapbookAngles = [-.012, .006, -.004, .008, -.006, .011, -.008, .004, -.003];
+  const scrapbookAngles = finish === "clean"
+    ? [0, 0, 0, 0, 0, 0, 0, 0, 0]
+    : finish === "doodles"
+      ? [-.016, .01, -.007, .012, -.009, .015, -.012, .008, -.006]
+      : [-.012, .006, -.004, .008, -.006, .011, -.008, .004, -.003];
 
   for (let index = 0; index < 9; index++) {
     const row = Math.floor(index / 3);
@@ -566,7 +576,7 @@ export async function renderCuratedCard(input: CuratedTopGames): Promise<Blob> {
     }
     ctx.restore();
 
-    if (style === "scrapbook" && game) {
+    if (style === "scrapbook" && game && finish === "archive") {
       ctx.save();
       ctx.translate(x + tile / 2, y + 7);
       ctx.rotate(index % 2 ? .035 : -.035);
@@ -576,6 +586,8 @@ export async function renderCuratedCard(input: CuratedTopGames): Promise<Blob> {
       ctx.fillRect(-25, -5, 50, 14);
       ctx.strokeRect(-25, -5, 50, 14);
       ctx.restore();
+    } else if (style === "scrapbook" && game && finish === "doodles") {
+      drawSparkle(ctx, x + tile - 18, y + 19, 7, index % 2 ? theme.accent2 : theme.accent);
     } else if (style === "polaroid" && game) {
       ctx.strokeStyle = "rgba(255,255,255,.34)";
       ctx.lineWidth = 8;
@@ -609,17 +621,23 @@ export async function renderCuratedCard(input: CuratedTopGames): Promise<Blob> {
 
   ctx.save();
   ctx.translate(WIDTH - PAD - 66, footerY + 51);
-  ctx.rotate(-.025);
-  ctx.strokeStyle = theme.accent;
+  ctx.rotate(finish === "archive" ? -.025 : finish === "doodles" ? .018 : 0);
+  ctx.strokeStyle = finish === "doodles" ? theme.accent2 : theme.accent;
   ctx.lineWidth = 2;
-  ctx.setLineDash([5, 4]);
-  roundedRect(ctx, -64, -20, 128, 40, 5);
-  ctx.stroke();
+  if (finish === "archive") ctx.setLineDash([5, 4]);
+  if (finish === "doodles") {
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 64, 21, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  } else {
+    roundedRect(ctx, -64, -20, 128, 40, 5);
+    ctx.stroke();
+  }
   ctx.setLineDash([]);
-  ctx.fillStyle = theme.accent;
+  ctx.fillStyle = finish === "doodles" ? theme.accent2 : finish === "clean" ? theme.fg : theme.accent;
   ctx.font = "900 9px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
   ctx.textAlign = "center";
-  ctx.fillText("ARCHIVE COPY", 0, 4);
+  ctx.fillText(finish === "archive" ? "ARCHIVE COPY" : finish === "doodles" ? "♡  ✦  ♡" : "SHELFWEAR", 0, 4);
   ctx.restore();
   ctx.textAlign = "left";
 

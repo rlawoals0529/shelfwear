@@ -135,7 +135,20 @@
   margin-top: 16px;
 }
 
+.story-finish-picker {
+  display: grid;
+  gap: 8px;
+  max-width: 900px;
+  margin-top: 12px;
+}
+
 .story-style-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.story-finish-options {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
@@ -154,6 +167,19 @@
   text-align: left;
 }
 
+.story-finish-options button {
+  min-height: 68px;
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 10px 14px 11px 13px;
+  background: color-mix(in srgb, var(--panel) 94%, var(--raised));
+  box-shadow: none;
+  text-align: left;
+}
+
 .story-style-options button b {
   color: var(--fg);
   font-family: var(--font-round);
@@ -166,9 +192,26 @@
   line-height: 1.4;
 }
 
+.story-finish-options button b {
+  color: var(--fg);
+  font-family: var(--font-round);
+  font-size: 11px;
+}
+
+.story-finish-options button span {
+  color: var(--dim);
+  font-size: 9px;
+  line-height: 1.4;
+}
+
 .story-style-options button.active {
   border-color: color-mix(in srgb, var(--accent) 52%, var(--edge));
   background: color-mix(in srgb, var(--accent) 9%, var(--panel));
+}
+
+.story-finish-options button.active {
+  border-color: color-mix(in srgb, var(--accent-2) 52%, var(--edge));
+  background: color-mix(in srgb, var(--accent-2) 8%, var(--panel));
 }
 
 .curated-privacy {
@@ -329,6 +372,47 @@
   background: color-mix(in srgb, var(--accent-2) 13%, var(--panel));
 }
 
+.curated-card-preview.story-finish-clean::before,
+.curated-card-preview.story-finish-clean::after {
+  display: none;
+}
+
+.curated-card-preview.story-finish-clean .curated-doodle {
+  display: none;
+}
+
+.curated-card-preview.story-finish-clean .curated-sticker {
+  border-style: solid;
+  background: color-mix(in srgb, var(--raised) 48%, var(--panel));
+  transform: none;
+}
+
+.curated-card-preview.story-finish-clean .curated-story-stamp {
+  border-style: solid;
+  transform: none;
+}
+
+.curated-card-preview.story-finish-doodles::before {
+  transform: rotate(-11deg);
+}
+
+.curated-card-preview.story-finish-doodles::after {
+  transform: rotate(10deg);
+}
+
+.curated-card-preview.story-finish-doodles .curated-sticker {
+  border-color: color-mix(in srgb, var(--accent-2) 48%, var(--edge));
+  background: color-mix(in srgb, var(--accent-2) 10%, var(--panel));
+  transform: rotate(-1deg);
+}
+
+.curated-card-preview.story-finish-doodles .curated-story-stamp {
+  border-style: solid;
+  border-radius: 999px;
+  letter-spacing: .18em;
+  transform: rotate(1deg);
+}
+
 .curated-card-preview.story-style-polaroid {
   border-radius: 18px;
   background:
@@ -462,6 +546,11 @@
   background: rgba(239, 226, 214, .72);
   transform: translateX(-50%) rotate(-2deg);
   pointer-events: none;
+}
+
+.story-style-scrapbook.story-finish-clean .curated-game-tile::before,
+.story-style-scrapbook.story-finish-doodles .curated-game-tile::before {
+  display: none;
 }
 
 .curated-nine-grid {
@@ -809,7 +898,8 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .story-style-options {
+  .story-style-options,
+  .story-finish-options {
     grid-template-columns: 1fr;
   }
 
@@ -924,7 +1014,8 @@
     grid-template-columns: 28px minmax(0, 1fr);
   }
 
-  .story-style-picker {
+  .story-style-picker,
+  .story-finish-picker {
     margin-top: 14px;
   }
 

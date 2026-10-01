@@ -1,4 +1,5 @@
 export type ShelfStoryStyle = "scrapbook" | "polaroid" | "poster";
+export type ShelfStoryFinish = "archive" | "doodles" | "clean";
 
 export interface CuratedGame {
   name: string;
@@ -15,12 +16,20 @@ export interface CuratedTopGames {
   games: CuratedGame[];
   /** Visual treatment only. It never changes the underlying game data. */
   style?: ShelfStoryStyle;
+  /** Small finishing treatment only; defaults to Shelfwear's archive mark. */
+  finish?: ShelfStoryFinish;
 }
 
 export const SHELF_STORY_STYLES: readonly { id: ShelfStoryStyle; label: string; description: string }[] = [
   { id: "scrapbook", label: "Scrapbook", description: "Tape, soft paper edges, and little doodles." },
   { id: "polaroid", label: "Polaroid", description: "Bright photo-card frames with more breathing room." },
   { id: "poster", label: "Poster", description: "Cleaner edges and a bolder, more graphic grid." },
+] as const;
+
+export const SHELF_STORY_FINISHES: readonly { id: ShelfStoryFinish; label: string; description: string }[] = [
+  { id: "archive", label: "Archive", description: "Catalog stamp, tape, and the full Shelfwear paper trail." },
+  { id: "doodles", label: "Doodles", description: "Keep the paper look, swap the archive stamp for hearts and sparkles." },
+  { id: "clean", label: "Clean", description: "Same Shelfwear structure with the decorative marks turned down." },
 ] as const;
 
 export interface ShelfStoryPreset {
@@ -115,8 +124,18 @@ export function normaliseCuratedTopGames(input: Partial<CuratedTopGames>): Curat
     input.style === "polaroid" || input.style === "poster" || input.style === "scrapbook"
       ? input.style
       : undefined;
+  const finish: ShelfStoryFinish | undefined =
+    input.finish === "doodles" || input.finish === "clean" || input.finish === "archive"
+      ? input.finish
+      : undefined;
 
-  return { title, caption, games, ...(style ? { style } : {}) };
+  return {
+    title,
+    caption,
+    games,
+    ...(style ? { style } : {}),
+    ...(finish ? { finish } : {}),
+  };
 }
 
 const toBase64Url = (value: string): string => {
@@ -140,6 +159,7 @@ export function encodeCuratedTopGames(input: CuratedTopGames): string {
     t: list.title,
     c: list.caption || undefined,
     s: list.style && list.style !== "scrapbook" ? list.style : undefined,
+    f: list.finish && list.finish !== "archive" ? list.finish : undefined,
     g: list.games.map((game) => {
       if (game.note) return [game.name, game.appid, game.iconHash ?? null, game.note];
       if (game.appid) return game.iconHash ? [game.name, game.appid, game.iconHash] : [game.name, game.appid];
@@ -156,6 +176,7 @@ export function decodeCuratedTopGames(value: string | null | undefined): Curated
       t?: unknown;
       c?: unknown;
       s?: unknown;
+      f?: unknown;
       g?: unknown;
     };
     if (!parsed || typeof parsed !== "object" || !Array.isArray(parsed.g)) return null;
@@ -173,6 +194,7 @@ export function decodeCuratedTopGames(value: string | null | undefined): Curated
       title: typeof parsed.t === "string" ? parsed.t : "shelf story",
       caption: typeof parsed.c === "string" ? parsed.c : "",
       style: parsed.s === "polaroid" || parsed.s === "poster" || parsed.s === "scrapbook" ? parsed.s : undefined,
+      finish: parsed.f === "doodles" || parsed.f === "clean" || parsed.f === "archive" ? parsed.f : undefined,
       games,
     });
   } catch {
