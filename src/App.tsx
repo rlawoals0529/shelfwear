@@ -1089,7 +1089,7 @@ export default function App() {
                     <b>
                       {historyObservationOverview.minutesDelta > 0 ? "+" : ""}{hours(historyObservationOverview.minutesDelta)}h
                       {" · "}
-                      {historyObservationOverview.gamesDelta > 0 ? "+" : ""}{historyObservationOverview.gamesDelta} games
+                      {historyObservationOverview.gamesDelta > 0 ? "+" : ""}{historyObservationOverview.gamesDelta} {Math.abs(historyObservationOverview.gamesDelta) === 1 ? "game" : "games"}
                       {" · "}
                       {historyObservationOverview.playedDelta > 0 ? "+" : ""}{historyObservationOverview.playedDelta} played
                     </b>
