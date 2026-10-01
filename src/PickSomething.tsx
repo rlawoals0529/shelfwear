@@ -4,6 +4,7 @@ import { buildPickPool, drawGame, type PickPoolKind } from "./lib/pick.js";
 import type { CustomShelf } from "./lib/custom-shelves.js";
 
 interface PickSomethingProps {
+  id?: string;
   games: Game[];
   hasRealLocalData: boolean;
   customShelves: CustomShelf[];
@@ -22,6 +23,7 @@ const plural = (count: number, one: string, many = `${one}s`): string =>
   count === 1 ? one : many;
 
 export default function PickSomething({
+  id,
   games,
   hasRealLocalData,
   customShelves,
@@ -116,7 +118,7 @@ export default function PickSomething({
   };
 
   return (
-    <section className="panel pick-panel" aria-labelledby="pick-something-title">
+    <section id={id} className="panel pick-panel" aria-labelledby="pick-something-title">
       <div className="pick-heading">
         <div>
           <p className="eyebrow">Catalog drawer</p>

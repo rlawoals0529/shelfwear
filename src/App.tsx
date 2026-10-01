@@ -41,6 +41,7 @@ import {
 } from "./lib/custom-shelves.js";
 import AchievementCabinet from "./AchievementCabinet.js";
 import PickSomething from "./PickSomething.js";
+import ShelfMap from "./ShelfMap.js";
 import {
   clearShelfHistory,
   readShelfHistory,
@@ -624,6 +625,30 @@ export default function App() {
   // visitor explicitly loads files from this PC. The sample contains synthetic
   // local-shaped data, so it must not unlock real-device controls.
   const hasRealLocalData = loaded.kind === "local";
+  const shelfMapEntries = useMemo(() => {
+    const entries = [{ id: "steam", label: "Load" }];
+    if (loaded.kind === "steam" && loaded.steamid) {
+      entries.push(
+        { id: "recent", label: "Recent" },
+        { id: "history", label: "History" },
+      );
+    }
+    if (shelf.untouched.length > 0 || shelf.played.length > 0) {
+      entries.push({ id: "disk-shelf", label: "Disk shelf" });
+    }
+    entries.push(
+      { id: "overview", label: "Overview" },
+      { id: "pick", label: "Pick" },
+    );
+    if (nine.length > 0) entries.push({ id: "your-nine", label: "Your nine" });
+    entries.push(
+      { id: "compare", label: "Compare" },
+      { id: "party", label: "Party" },
+      { id: "local", label: "Local files" },
+      { id: "library", label: "Library" },
+    );
+    return entries;
+  }, [loaded.kind, loaded.steamid, nine.length, shelf.played.length, shelf.untouched.length]);
   const effectiveLibrarySort: LibrarySort =
     !hasRealLocalData && (librarySort === "recent" || librarySort === "largest")
       ? "most-played"
@@ -885,7 +910,7 @@ export default function App() {
 
   return (
     <div className="wrap rhythm">
-      <header className="hero">
+      <header className="hero" id="shelfwear-top">
         <div className="hero-charm" aria-hidden="true">
           <span className="hero-charm-spark">✦</span>
           <span className="hero-charm-face">૮₍ ˶ᵔ ᵕ ᵔ˶ ₎ა</span>
@@ -930,6 +955,8 @@ export default function App() {
           <CuteIcon name="heart" className="button-icon" /> Shelf stories
         </button>
       </nav>
+
+      {view === "shelf" && <ShelfMap entries={shelfMapEntries} />}
 
       {view === "shelf" ? (
         <>
@@ -979,7 +1006,7 @@ export default function App() {
       </section>
 
       {loaded.kind === "steam" && loaded.steamid && (
-        <section className="panel recent-panel">
+        <section className="panel recent-panel" id="recent">
           <div className="recent-heading">
             <SectionTitle
               icon="clock"
@@ -1039,7 +1066,7 @@ export default function App() {
       )}
 
       {loaded.kind === "steam" && loaded.steamid && (
-        <section className="panel history-panel">
+        <section className="panel history-panel" id="history">
           <div className="history-heading">
             <SectionTitle
               icon="archive"
@@ -1204,7 +1231,7 @@ export default function App() {
       )}
 
       {(shelf.untouched.length > 0 || shelf.played.length > 0) && (
-        <section className="panel figure shelf-panel">
+        <section className="panel figure shelf-panel" id="disk-shelf">
           <SectionTitle icon="shelf" eyebrow="Little shelf view">The shelf</SectionTitle>
           {/* Two shelves, untouched on top. Shelfwear is the trade term for what stock takes
               from sitting unsold, so the games that have never run are the ones wearing it:
@@ -1231,7 +1258,7 @@ export default function App() {
         </section>
       )}
 
-      <section className="panel stats-panel">
+      <section className="panel stats-panel" id="overview">
         <SectionTitle icon="sparkles" eyebrow="Tiny stats">What it adds up to</SectionTitle>
         <div className="grid stats-grid">
           <MetricCard icon="list" value={<Ticker value={stats.games} />} label="games here" />
@@ -1290,13 +1317,14 @@ export default function App() {
       </section>
 
       <PickSomething
+        id="pick"
         games={loaded.games}
         hasRealLocalData={hasRealLocalData}
         customShelves={customShelves}
       />
 
       {nine.length > 0 && (
-        <section className="panel social-panel">
+        <section className="panel social-panel" id="your-nine">
           <div className="social-heading">
             <div className="social-title-wrap">
               <SectionTitle icon="nine" eyebrow="Your little game postcard" note="The nine games with the most recorded playtime.">Your nine</SectionTitle>
@@ -1683,7 +1711,7 @@ export default function App() {
 
       {/* The local picker remains available even after the Worker path exists. It is the only
           mode that can say anything about the machine's disk, and it sends nothing away. */}
-      <section className="panel local-panel">
+      <section className="panel local-panel" id="local">
         <SectionTitle icon="folder" eyebrow="Private mode">Or keep it completely local</SectionTitle>
         <div
           className={over ? "drop over" : "drop"}
@@ -1716,7 +1744,7 @@ export default function App() {
         </p>
       </section>
 
-      <section className="panel library-panel">
+      <section className="panel library-panel" id="library">
         <div className="library-heading">
           <SectionTitle icon="list" eyebrow="The whole shelf">Everything ({loaded.games.length})</SectionTitle>
           <div className="library-heading-meta">
