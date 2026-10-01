@@ -175,8 +175,10 @@ test("Shelf Story notes and card styles survive sharing and appear in exports", 
   await page.getByRole("button", { name: "Add game", exact: true }).click();
   await page.getByLabel("Why Hades belongs in this story").fill("roguelikes finally clicked");
   await page.getByRole("button", { name: /^Poster/ }).click();
+  await page.getByRole("button", { name: /^Doodles/ }).click();
 
   await expect(page.locator(".curated-card-preview")).toHaveClass(/story-style-poster/);
+  await expect(page.locator(".curated-card-preview")).toHaveClass(/story-finish-doodles/);
   await expect(page.locator(".curated-game-note")).toHaveText("roguelikes finally clicked");
 
   await page.getByRole("button", { name: "Copy story link" }).click();
@@ -184,6 +186,7 @@ test("Shelf Story notes and card styles survive sharing and appear in exports", 
   await page.goto(copied);
 
   await expect(page.getByRole("button", { name: /^Poster/ })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("button", { name: /^Doodles/ })).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByLabel("Why Hades belongs in this story")).toHaveValue("roguelikes finally clicked");
 
   const downloadPromise = page.waitForEvent("download");
@@ -195,6 +198,7 @@ test("Shelf Story notes and card styles survive sharing and appear in exports", 
   );
   expect(drawnText).toContain("roguelikes finally clicked");
   expect(drawnText).toContain("a hand-picked story · poster card · not ranked by playtime");
+  expect(drawnText).toContain("♡  ✦  ♡");
 });
 
 test("new story links use story= and old top= links still open", async ({ page, context }) => {
