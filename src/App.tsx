@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { readLocalConfig, readManifest, buildLibrary, summarise, shelve, hours, gb, type Game, type Spine, type Stats } from "./lib/library.js";
 import { analyticsFor, type LibraryAnalytics } from "./lib/analytics.js";
 import { familiarFor, steamCover, steamHeader, steamIcon, topNine } from "./lib/profile.js";
@@ -33,8 +33,10 @@ import { SAMPLE_CONFIG, SAMPLE_MANIFESTS } from "./lib/sample.js";
 import { curatedFromSearch, curatedShareUrl, SHELF_STORY_FINISHES, SHELF_STORY_PRESETS, SHELF_STORY_STYLES, steamAppIdFromInput, type CuratedTopGames } from "./lib/top-games.js";
 import {
   CUSTOM_SHELF_PRESETS,
+  MAX_CUSTOM_SHELF_GAMES,
   MAX_CUSTOM_SHELVES,
   cleanShelfName,
+  customShelfGamesFromLibrary,
   customShelvesBackupFilename,
   customShelvesBackupText,
   customShelfShareText,
@@ -379,6 +381,9 @@ export default function App() {
   const [libraryVisibleLimit, setLibraryVisibleLimit] = useState(LIBRARY_RENDER_BATCH);
   const [selectedLibraryGameAppId, setSelectedLibraryGameAppId] = useState<string | null>(null);
   const [libraryRandomMessage, setLibraryRandomMessage] = useState<string | null>(null);
+  const [libraryShelfComposerOpen, setLibraryShelfComposerOpen] = useState(false);
+  const [libraryShelfDraft, setLibraryShelfDraft] = useState("");
+  const [libraryShelfStatus, setLibraryShelfStatus] = useState<{ id: string; message: string } | null>(null);
   const [customShelves, setCustomShelves] = useState<CustomShelf[]>(() => readCustomShelves());
   const [activeShelfId, setActiveShelfId] = useState<string | null>(() => readCustomShelves()[0]?.id ?? null);
   const [drawerShelfId, setDrawerShelfId] = useState<string>(() => readCustomShelves()[0]?.id ?? "");
@@ -808,6 +813,11 @@ export default function App() {
     setLibraryRandomMessage(null);
   }, [effectiveLibraryFilter, libraryQuery, loaded.games]);
 
+  useEffect(() => {
+    setLibraryShelfStatus(null);
+  }, [effectiveLibraryFilter, libraryQuery, loaded.games]);
+
+
   const openRandomLibraryResult = () => {
     const game = drawGame(visibleGames);
     if (!game) return;
@@ -870,6 +880,32 @@ export default function App() {
       return { ...shelf, games: [...shelf.games, next].slice(0, 50), updatedAt: Date.now() };
     }));
   }, []);
+
+  const createShelfFromCurrentResults = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const name = cleanShelfName(libraryShelfDraft);
+    if (!name || !visibleGames.length || customShelves.length >= MAX_CUSTOM_SHELVES) return;
+
+    const games = customShelfGamesFromLibrary(visibleGames);
+    const id = typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `shelf-${Date.now()}-${customShelves.length + 1}`;
+    const now = Date.now();
+    const shelf: CustomShelf = { id, name, games, createdAt: now, updatedAt: now };
+
+    setCustomShelves((current) => [...current, shelf]);
+    setActiveShelfId(id);
+    setDrawerShelfId(id);
+    setLibraryShelfDraft("");
+    setLibraryShelfComposerOpen(false);
+    setLibraryShelfStatus({
+      id,
+      message: visibleGames.length > MAX_CUSTOM_SHELF_GAMES
+        ? `Filed the first ${games.length} of ${visibleGames.length} current results into “${name}” (shelf limit ${MAX_CUSTOM_SHELF_GAMES}).`
+        : `Filed ${games.length} current ${games.length === 1 ? "result" : "results"} into “${name}”.`,
+    });
+  };
+
 
   const updateCustomShelf = useCallback((shelfId: string, updater: (shelf: CustomShelf) => CustomShelf) => {
     setCustomShelves((current) => current.map((shelf) =>
@@ -1968,6 +2004,19 @@ export default function App() {
             >
               <CuteIcon name="sparkles" className="button-icon" /> Random result
             </button>
+            <button
+              type="button"
+              className="library-make-shelf-action"
+              disabled={!visibleGames.length || customShelves.length >= MAX_CUSTOM_SHELVES}
+              title={customShelves.length >= MAX_CUSTOM_SHELVES ? `Shelf limit reached (${MAX_CUSTOM_SHELVES})` : undefined}
+              aria-expanded={libraryShelfComposerOpen}
+              onClick={() => {
+                setLibraryShelfComposerOpen((open) => !open);
+                setLibraryShelfStatus(null);
+              }}
+            >
+              <CuteIcon name="archive" className="button-icon" /> Make shelf
+            </button>
             <div className="library-export-actions" aria-label="Export the currently loaded library">
               <button type="button" onClick={() => downloadLibraryExport("csv")}>
                 <CuteIcon name="download" className="button-icon" /> Export CSV
@@ -1978,6 +2027,36 @@ export default function App() {
             </div>
           </div>
         </div>
+
+        {libraryShelfComposerOpen && (
+          <form className="library-shelf-composer" onSubmit={createShelfFromCurrentResults}>
+            <div className="library-shelf-composer-copy">
+              <span className="eyebrow">File this view</span>
+              <b>Make a shelf from the current results</b>
+              <small>
+                Uses the current search/filter pool in its current order, up to {MAX_CUSTOM_SHELF_GAMES} games.
+                The shelf keeps AppIDs, names, and public icon hashes when available—not playtime, disk size, install state, or recency.
+              </small>
+            </div>
+            <label>
+              <span>Shelf name</span>
+              <input
+                value={libraryShelfDraft}
+                onChange={(event) => setLibraryShelfDraft(event.target.value)}
+                maxLength={40}
+                placeholder="e.g. Shortlist"
+                aria-label="Name for shelf from current results"
+                autoFocus
+              />
+            </label>
+            <div className="library-shelf-composer-actions">
+              <button type="button" onClick={() => { setLibraryShelfComposerOpen(false); setLibraryShelfDraft(""); }}>Cancel</button>
+              <button type="submit" className="primary" disabled={!cleanShelfName(libraryShelfDraft)}>
+                File {Math.min(visibleGames.length, MAX_CUSTOM_SHELF_GAMES)} {visibleGames.length === 1 ? "game" : "games"}
+              </button>
+            </div>
+          </form>
+        )}
 
         <div className="library-tools">
           <div className="library-search">
@@ -2081,6 +2160,14 @@ export default function App() {
               : "Public Steam profiles show owned games and playtime. Exports intentionally omit install, disk, and local last-played fields because Steam does not provide them here."}
         </p>
         {libraryRandomMessage && <p className="library-random-status" role="status">{libraryRandomMessage}</p>}
+        {libraryShelfStatus && (
+          <div className="library-shelf-status" role="status">
+            <span>{libraryShelfStatus.message}</span>
+            <button type="button" onClick={() => { setActiveShelfId(libraryShelfStatus.id); setView("shelves"); }}>
+              Open in My shelves
+            </button>
+          </div>
+        )}
 
         {selectedLibraryGame && (
           <aside className="library-catalog-drawer" aria-label={`Details for ${selectedLibraryGame.name ?? `app ${selectedLibraryGame.appid}`}`}>
