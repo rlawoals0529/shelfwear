@@ -7,7 +7,7 @@ import { comparePartyLibraries, type PartyComparison, type PartyGame } from "./l
 import { comparisonCardFilename, curatedCardFilename, downloadBlob, familiarCardFilename, historyMilestoneFilename, proxiedSteamCover, renderComparisonCard, renderCuratedCard, renderFamiliarCard, renderHistoryMilestoneCard, renderShareCard, shareCardFilename } from "./lib/share-card.js";
 import { libraryExportCsv, libraryExportFilename, libraryExportJson, type LibraryExportFormat } from "./lib/export.js";
 import { fillResolvedProfileSlot, findResolvedProfileSlot } from "./lib/profile-slots.js";
-import { shareOrCopyLink, type ShareOutcome } from "./lib/share.js";
+import { shareOrCopyLink, shareOrCopyText, type ShareOutcome } from "./lib/share.js";
 import { renderShelfReceipt, shelfReceiptFilename } from "./lib/receipt-card.js";
 import {
   comparisonShareUrl,
@@ -37,6 +37,7 @@ import {
   cleanShelfName,
   customShelvesBackupFilename,
   customShelvesBackupText,
+  customShelfShareText,
   nextDuplicateShelfName,
   parseCustomShelvesBackup,
   readCustomShelves,
@@ -2255,6 +2256,7 @@ function CustomShelvesPage({
   const [backupMessage, setBackupMessage] = useState<string | null>(null);
   const [backupError, setBackupError] = useState<string | null>(null);
   const [managementMessage, setManagementMessage] = useState<string | null>(null);
+  const [shareMessage, setShareMessage] = useState<string | null>(null);
   const backupPicker = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -2391,6 +2393,21 @@ function CustomShelvesPage({
       setBackupError(error instanceof Error ? error.message : String(error));
     } finally {
       if (backupPicker.current) backupPicker.current.value = "";
+    }
+  };
+
+  const shareActiveShelf = async () => {
+    if (!active?.games.length) return;
+    setShareMessage(null);
+    try {
+      const outcome = await shareOrCopyText({
+        title: active.name,
+        text: customShelfShareText(active),
+      });
+      if (outcome === "shared") setShareMessage(`Shared “${active.name}” without private notes.`);
+      if (outcome === "copied") setShareMessage(`Copied “${active.name}” without private notes.`);
+    } catch (error) {
+      setShareMessage(error instanceof Error ? error.message : String(error));
     }
   };
 
@@ -2544,10 +2561,16 @@ function CustomShelvesPage({
                     aria-label="Rename active shelf"
                   />
                 </label>
-                <button type="button" disabled={!active.games.length} onClick={() => onStory(active)}>
-                  <CuteIcon name="heart" className="button-icon" /> Turn into Shelf Story
-                </button>
+                <div className="custom-shelf-head-actions">
+                  <button type="button" disabled={!active.games.length} onClick={() => void shareActiveShelf()}>
+                    <CuteIcon name="share" className="button-icon" /> Share game list
+                  </button>
+                  <button type="button" disabled={!active.games.length} onClick={() => onStory(active)}>
+                    <CuteIcon name="heart" className="button-icon" /> Turn into Shelf Story
+                  </button>
+                </div>
               </div>
+              {shareMessage && <p className="custom-shelf-share-status" role="status">{shareMessage}</p>}
 
               <div className="custom-shelf-add">
                 <label>
