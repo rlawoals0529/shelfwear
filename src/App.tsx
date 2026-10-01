@@ -1560,7 +1560,11 @@ function AnalyticsPage({
 
   return (
     <main className="analytics-page">
-      <section className="panel analytics-intro">
+      <section className="panel analytics-intro analytics-ledger-sheet">
+        <div className="analytics-catalog-meta">
+          <span>SHELFWEAR / READING ROOM</span>
+          <span>{kind === "steam" ? "PUBLIC STEAM SHELF" : kind === "local" ? "LOCAL FILE SHELF" : "DEMO SHELF"}</span>
+        </div>
         <SectionTitle
           icon="chart"
           eyebrow="A closer look"
@@ -1590,17 +1594,18 @@ function AnalyticsPage({
         </div>
       </section>
 
-      <section className="panel analytics-kpis">
+      <section className="panel analytics-kpis analytics-ledger-sheet">
         <SectionTitle icon="sparkles" eyebrow="At a glance">The shape of the shelf</SectionTitle>
         <div className="analytics-kpi-grid">
-          <div className="analytics-kpi"><span>Played</span><b>{analytics.utilizationPercent}%</b><small>{stats.played} titles</small></div>
-          <div className="analytics-kpi"><span>Untouched</span><b>{analytics.untouchedPercent}%</b><small>{stats.neverPlayed} titles</small></div>
-          <div className="analytics-kpi"><span>Median played game</span><b>{analytics.medianPlayedHours}h</b><small>among games with time</small></div>
-          <div className="analytics-kpi"><span>Half your hours</span><b>{stats.halfOfHoursIn}</b><small>{stats.halfOfHoursIn === 1 ? "title" : "titles"}</small></div>
+          <div className="analytics-kpi"><i>01</i><span>Played</span><b>{analytics.utilizationPercent}%</b><small>{stats.played} titles</small></div>
+          <div className="analytics-kpi"><i>02</i><span>Untouched</span><b>{analytics.untouchedPercent}%</b><small>{stats.neverPlayed} titles</small></div>
+          <div className="analytics-kpi"><i>03</i><span>Median played game</span><b>{analytics.medianPlayedHours}h</b><small>among games with time</small></div>
+          <div className="analytics-kpi"><i>04</i><span>Half your hours</span><b>{stats.halfOfHoursIn}</b><small>{stats.halfOfHoursIn === 1 ? "title" : "titles"}</small></div>
         </div>
       </section>
 
-      <section className="panel analytics-distribution">
+      <section className="panel analytics-distribution analytics-ledger-sheet">
+        <div className="analytics-section-code">SHELF DEPTH / 01</div>
         <SectionTitle icon="clock" eyebrow="Playtime">How deep the library goes</SectionTitle>
         <div className="analytics-bars">
           {analytics.playtimeBuckets.map((bucket) => (
@@ -1613,7 +1618,8 @@ function AnalyticsPage({
         </div>
       </section>
 
-      <section className="panel analytics-hours">
+      <section className="panel analytics-hours analytics-ledger-sheet">
+        <div className="analytics-section-code">HOUR LEDGER / 02</div>
         <SectionTitle icon="chart" eyebrow="Concentration">Where the hours go</SectionTitle>
         <div className="concentration-grid">
           <div><span>Top game</span><b>{analytics.topGameSharePercent}%</b></div>
@@ -1636,7 +1642,8 @@ function AnalyticsPage({
       </section>
 
       {(analytics.knownDiskShareUntouchedPercent !== null || analytics.recentActivity) && (
-        <section className="panel analytics-local">
+        <section className="panel analytics-local analytics-ledger-sheet">
+          <div className="analytics-section-code">LOCAL INSERT / 03</div>
           <SectionTitle icon="folder" eyebrow="Local-only detail">What your files add</SectionTitle>
           <div className="analytics-local-grid">
             {analytics.knownDiskShareUntouchedPercent !== null && (
