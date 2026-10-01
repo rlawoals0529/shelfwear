@@ -19,8 +19,8 @@ test("summarizes active Shelf Index state and resets search/filter/sort together
   await summary.getByRole("button", { name: "Reset view" }).click();
 
   await expect(page.getByLabel("Search games in the whole shelf")).toHaveValue("");
-  await expect(page.getByRole("button", { name: "All", exact: true })).toHaveAttribute("aria-pressed", "true");
-  await expect(page.getByRole("button", { name: "Most played" })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator(".library-filter button.active")).toHaveText("All");
+  await expect(page.locator(".library-sort button.active")).toHaveText("Most played");
   await expect(page.getByRole("button", { name: "Compact" })).toHaveAttribute("aria-pressed", "true");
   await expect(summary).toHaveCount(0);
 
