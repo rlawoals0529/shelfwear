@@ -262,6 +262,7 @@ test("whole-shelf rows open a factual local catalog record without fetching artw
   });
 
   await page.locator('input[type="file"]').setInputFiles(ALL);
+  artworkRequests.length = 0;
   await page.getByRole("button", { name: "Open details for Fixture Alpha" }).click();
 
   const drawer = page.getByRole("complementary", { name: "Details for Fixture Alpha" });
@@ -327,7 +328,7 @@ test("custom shelves persist locally and hand off cleanly into Shelf Stories", a
   await expect(drawer.getByRole("button", { name: "Already filed" })).toBeDisabled();
 
   await page.getByRole("button", { name: "My shelves" }).click();
-  await expect(page.getByRole("button", { name: /Comfort games/ })).toBeVisible();
+  await expect(page.locator(".custom-shelf-tabs button.active")).toContainText("Comfort games");
   await expect(page.locator(".custom-shelf-game")).toHaveCount(1);
   await expect(page.locator(".custom-shelf-game")).toContainText("Fixture Alpha");
 
