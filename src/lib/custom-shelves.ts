@@ -120,7 +120,10 @@ export function shelfStoryFromCustomShelf(shelf: CustomShelf): {
 } {
   return {
     title: shelf.name,
-    caption: `a hand-picked shelf of ${Math.min(9, shelf.games.length)} ${shelf.games.length === 1 ? "game" : "games"}`,
-    games: shelf.games.slice(0, 9),
+    caption: `a hand-picked shelf of ${Math.min(9, shelf.games.length)} ${Math.min(9, shelf.games.length) === 1 ? "game" : "games"}`,
+    games: shelf.games.slice(0, 9).map((game) => ({
+      ...game,
+      ...(game.note ? { note: game.note.slice(0, 42) } : {}),
+    })),
   };
 }
