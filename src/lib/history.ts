@@ -19,6 +19,8 @@ export interface ShelfHistoryRecord {
 export interface ShelfHistoryThreshold {
   appid: string;
   hours: 2 | 10 | 50 | 100;
+  fromMinutes: number;
+  toMinutes: number;
 }
 
 export interface ShelfHistoryDelta {
@@ -98,7 +100,7 @@ export function diffShelfHistory(
     if (prior === 0 && minutes > 0) newlyPlayed.push(appid);
     for (const [hours, thresholdMinutes] of THRESHOLDS) {
       if (prior < thresholdMinutes && minutes >= thresholdMinutes) {
-        thresholds.push({ appid, hours });
+        thresholds.push({ appid, hours, fromMinutes: prior, toMinutes: minutes });
       }
     }
   }
