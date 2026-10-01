@@ -6,6 +6,11 @@ export interface ShelfwearShareData {
   url: string;
 }
 
+export interface ShelfwearTextShareData {
+  title: string;
+  text: string;
+}
+
 interface ShareNavigator {
   share?: (data: ShareData) => Promise<void>;
   clipboard?: {
@@ -43,5 +48,30 @@ export async function shareOrCopyLink(
     throw new Error("Sharing is unavailable in this browser.");
   }
   await target.clipboard.writeText(data.url);
+  return "copied";
+}
+
+
+/**
+ * Share authored text without attaching a URL. This is used for browser-local content where
+ * creating a public-looking link would imply persistence Shelfwear does not provide.
+ */
+export async function shareOrCopyText(
+  data: ShelfwearTextShareData,
+  target: ShareNavigator = navigator,
+): Promise<ShareOutcome> {
+  if (typeof target.share === "function") {
+    try {
+      await target.share({ title: data.title, text: data.text });
+      return "shared";
+    } catch (error) {
+      if (errorName(error) === "AbortError") return "cancelled";
+    }
+  }
+
+  if (!target.clipboard?.writeText) {
+    throw new Error("Sharing is unavailable in this browser.");
+  }
+  await target.clipboard.writeText(data.text);
   return "copied";
 }
