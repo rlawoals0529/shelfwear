@@ -46,6 +46,19 @@ export interface AchievementCabinetCardInput {
   theme?: Partial<ShareCardTheme>;
 }
 
+export interface HistoryMilestoneCardInput {
+  gameName: string;
+  appid: string;
+  iconHash?: string | null;
+  profileName?: string | null;
+  milestoneHours: 2 | 10 | 50 | 100;
+  fromMinutes: number;
+  toMinutes: number;
+  fromAt: number;
+  toAt: number;
+  theme?: Partial<ShareCardTheme>;
+}
+
 const WIDTH = 1080;
 const HEIGHT = 1350;
 const PAD = 54;
@@ -1083,6 +1096,218 @@ export async function renderAchievementCabinetCard(input: AchievementCabinetCard
   ctx.textAlign = "right";
   ctx.fillText("shelfwear ♡", WIDTH - PAD - 8, 1252);
   ctx.textAlign = "left";
+
+  return canvasBlob(canvas);
+}
+
+
+
+export function historyMilestoneFilename(gameName: string, milestoneHours: number): string {
+  const stem = gameName
+    .replace(/[™®©]/g, "")
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 42) || "game";
+  return "shelfwear-" + stem + "-" + milestoneHours + "h-milestone.png";
+}
+
+const historySnapshotDate = (value: number): string =>
+  new Date(value).toISOString().slice(0, 10);
+
+export async function renderHistoryMilestoneCard(input: HistoryMilestoneCardInput): Promise<Blob> {
+  if (typeof document === "undefined") throw new Error("Share cards require a browser.");
+  const theme = { ...DEFAULT_THEME, ...currentShareCardTheme(), ...input.theme };
+  const canvas = document.createElement("canvas");
+  canvas.width = WIDTH;
+  canvas.height = HEIGHT;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) throw new Error("Canvas is not available in this browser.");
+
+  ctx.fillStyle = theme.bg;
+  ctx.fillRect(0, 0, WIDTH, HEIGHT);
+
+  const slipX = 74;
+  const slipY = 38;
+  const slipW = WIDTH - 148;
+  const slipH = HEIGHT - 76;
+  roundedRect(ctx, slipX, slipY, slipW, slipH, 22);
+  ctx.fillStyle = theme.panel;
+  ctx.fill();
+  ctx.strokeStyle = theme.edge;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  ctx.save();
+  roundedRect(ctx, slipX, slipY, slipW, slipH, 22);
+  ctx.clip();
+  ctx.strokeStyle = theme.edge;
+  ctx.globalAlpha = .14;
+  ctx.lineWidth = 1;
+  for (let y = slipY + 54; y < slipY + slipH - 28; y += 32) {
+    ctx.beginPath();
+    ctx.moveTo(slipX + 18, y);
+    ctx.lineTo(slipX + slipW - 18, y);
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = theme.accent;
+  ctx.fillRect(slipX, slipY + 28, 7, slipH - 56);
+  ctx.restore();
+
+  ctx.fillStyle = theme.accent;
+  ctx.font = "900 17px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.fillText("SHELFWEAR / MILESTONE SLIP", slipX + 34, slipY + 48);
+
+  ctx.fillStyle = theme.dim;
+  ctx.font = "800 10px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.textAlign = "right";
+  ctx.fillText("LOCAL HISTORY · OBSERVED BETWEEN SAVED STATES", slipX + slipW - 28, slipY + 48);
+  ctx.textAlign = "left";
+
+  if (input.profileName) {
+    ctx.fillStyle = theme.dim;
+    ctx.font = "650 14px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+    ctx.fillText("SHELF: " + (wrapByMeasure(ctx, input.profileName, 420, 1)[0] ?? input.profileName), slipX + 34, slipY + 82);
+  }
+
+  const stampX = slipX + slipW - 184;
+  const stampY = slipY + 154;
+  ctx.save();
+  ctx.translate(stampX, stampY);
+  ctx.rotate(-.035);
+  ctx.strokeStyle = theme.accent;
+  ctx.lineWidth = 5;
+  ctx.beginPath();
+  ctx.arc(0, 0, 93, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(0, 0, 81, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.fillStyle = theme.accent;
+  ctx.textAlign = "center";
+  ctx.font = "900 42px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.fillText(String(input.milestoneHours) + "H", 0, 10);
+  ctx.font = "900 9px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.fillText("MILESTONE", 0, 39);
+  ctx.restore();
+  ctx.textAlign = "left";
+
+  ctx.fillStyle = theme.fg;
+  ctx.font = "850 52px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  const titleLines = wrapByMeasure(ctx, input.gameName, 610, 2);
+  titleLines.forEach((line, index) => ctx.fillText(line, slipX + 34, slipY + 145 + index * 58));
+
+  ctx.fillStyle = theme.dim;
+  ctx.font = "600 18px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.fillText("crossed " + input.milestoneHours + " recorded lifetime hours between two Shelfwear snapshots", slipX + 34, slipY + 272);
+
+  const artX = slipX + 34;
+  const artY = slipY + 320;
+  const artSize = 286;
+  roundedRect(ctx, artX, artY, artSize, artSize, 14);
+  ctx.fillStyle = theme.raised;
+  ctx.fill();
+  ctx.strokeStyle = theme.edge;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  const cover = await loadImage(proxiedSteamCover(input.appid, input.iconHash));
+  if (cover) {
+    ctx.save();
+    roundedRect(ctx, artX, artY, artSize, artSize, 14);
+    ctx.clip();
+    drawCover(ctx, cover, artX, artY, artSize);
+    ctx.restore();
+  } else {
+    ctx.fillStyle = theme.accent2;
+    ctx.font = "900 104px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText(input.gameName.trim().charAt(0).toUpperCase() || "♡", artX + artSize / 2, artY + 178);
+    ctx.textAlign = "left";
+  }
+
+  const evidenceX = artX + artSize + 28;
+  const evidenceW = slipX + slipW - 34 - evidenceX;
+  ctx.fillStyle = theme.accent;
+  ctx.font = "900 11px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.fillText("OBSERVED EVIDENCE", evidenceX, artY + 18);
+
+  const evidence = [
+    ["PREVIOUS SAVED TOTAL", hours(input.fromMinutes) + "h"],
+    ["CURRENT SAVED TOTAL", hours(input.toMinutes) + "h"],
+    ["THRESHOLD", input.milestoneHours + "h"],
+  ];
+  evidence.forEach(([label, value], index) => {
+    const y = artY + 38 + index * 76;
+    roundedRect(ctx, evidenceX, y, evidenceW, 64, 8);
+    ctx.fillStyle = index % 2 ? theme.panel : theme.raised;
+    ctx.fill();
+    ctx.strokeStyle = theme.edge;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    ctx.fillStyle = theme.dim;
+    ctx.font = "850 9px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+    ctx.fillText(label!, evidenceX + 13, y + 23);
+    ctx.fillStyle = theme.fg;
+    ctx.font = "850 23px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+    ctx.fillText(value!, evidenceX + 13, y + 50);
+  });
+
+  const dateY = artY + artSize + 52;
+  roundedRect(ctx, artX, dateY, slipW - 68, 104, 10);
+  ctx.fillStyle = theme.raised;
+  ctx.fill();
+  ctx.strokeStyle = theme.edge;
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  ctx.fillStyle = theme.dim;
+  ctx.font = "900 10px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.fillText("SHELFWEAR SAW THESE SAVED STATES", artX + 16, dateY + 28);
+  ctx.fillStyle = theme.fg;
+  ctx.font = "800 24px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.fillText(historySnapshotDate(input.fromAt) + "  →  " + historySnapshotDate(input.toAt), artX + 16, dateY + 65);
+
+  const noteY = dateY + 140;
+  ctx.strokeStyle = theme.accent2;
+  ctx.lineWidth = 2;
+  ctx.setLineDash([8, 6]);
+  roundedRect(ctx, artX, noteY, slipW - 68, 150, 10);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.fillStyle = theme.accent2;
+  ctx.font = "900 11px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.fillText("WHAT THIS CARD CAN SAY", artX + 16, noteY + 29);
+  ctx.fillStyle = theme.fg;
+  ctx.font = "650 20px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  const note = "Shelfwear observed the saved total move from below " + input.milestoneHours + "h to at least " + input.milestoneHours + "h. It does not know the exact moment the milestone happened.";
+  wrapByMeasure(ctx, note, slipW - 104, 4).forEach((line, index) => ctx.fillText(line, artX + 16, noteY + 64 + index * 27));
+
+  ctx.save();
+  ctx.translate(slipX + slipW - 140, slipY + slipH - 92);
+  ctx.rotate(-.028);
+  ctx.strokeStyle = theme.accent;
+  ctx.lineWidth = 3;
+  ctx.setLineDash([7, 5]);
+  roundedRect(ctx, -104, -30, 208, 60, 7);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = theme.accent;
+  ctx.font = "900 11px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("MILESTONE OBSERVED", 0, 5);
+  ctx.restore();
+
+  ctx.fillStyle = theme.dim;
+  ctx.font = "700 10px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.textAlign = "left";
+  ctx.fillText("MILESTONE SLIP / 1080×1350", slipX + 34, slipY + slipH - 84);
+  ctx.fillText("Not a Steam event timestamp.", slipX + 34, slipY + slipH - 58);
 
   return canvasBlob(canvas);
 }
