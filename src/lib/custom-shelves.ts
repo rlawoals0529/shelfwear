@@ -195,3 +195,18 @@ export function customShelvesBackupFilename(now = new Date()): string {
   const date = now.toISOString().slice(0, 10);
   return `shelfwear-my-shelves-${date}.json`;
 }
+
+
+export function nextDuplicateShelfName(name: string, existingNames: readonly string[]): string {
+  const used = new Set(existingNames.map((value) => value.trim().toLowerCase()).filter(Boolean));
+  const base = cleanShelfName(name) || "Shelf";
+
+  for (let copy = 1; copy <= MAX_CUSTOM_SHELVES + 1; copy++) {
+    const suffix = copy === 1 ? " copy" : ` copy ${copy}`;
+    const room = Math.max(1, 40 - suffix.length);
+    const candidate = cleanShelfName(base.slice(0, room) + suffix);
+    if (candidate && !used.has(candidate.toLowerCase())) return candidate;
+  }
+
+  return cleanShelfName(base.slice(0, 32) + " duplicate") || "Shelf copy";
+}

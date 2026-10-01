@@ -7,6 +7,7 @@ import {
   customShelvesBackupObject,
   customShelvesBackupText,
   normaliseCustomShelves,
+  nextDuplicateShelfName,
   parseCustomShelvesBackup,
   shelfStoryFromCustomShelf,
   type CustomShelf,
@@ -138,5 +139,21 @@ describe("custom shelf backups", () => {
   it("uses a dated, portable filename", () => {
     expect(customShelvesBackupFilename(new Date("2026-10-01T05:00:00.000Z")))
       .toBe("shelfwear-my-shelves-2026-10-01.json");
+  });
+});
+
+
+describe("duplicate shelf naming", () => {
+  it("uses a readable copy suffix and avoids existing names case-insensitively", () => {
+    expect(nextDuplicateShelfName("Comfort games", ["Comfort games"]))
+      .toBe("Comfort games copy");
+    expect(nextDuplicateShelfName("Comfort games", ["Comfort games", "comfort games copy"]))
+      .toBe("Comfort games copy 2");
+  });
+
+  it("keeps duplicate names inside the shelf-name limit", () => {
+    const name = nextDuplicateShelfName("x".repeat(60), ["x".repeat(40)]);
+    expect(name.length).toBeLessThanOrEqual(40);
+    expect(name).toMatch(/copy/);
   });
 });

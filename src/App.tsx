@@ -36,6 +36,7 @@ import {
   cleanShelfName,
   customShelvesBackupFilename,
   customShelvesBackupText,
+  nextDuplicateShelfName,
   parseCustomShelvesBackup,
   readCustomShelves,
   shelfStoryFromCustomShelf,
@@ -805,6 +806,28 @@ export default function App() {
   const deleteCustomShelf = useCallback((shelfId: string) => {
     setCustomShelves((current) => current.filter((shelf) => shelf.id !== shelfId));
   }, []);
+
+  const duplicateCustomShelf = useCallback((shelfId: string): string | null => {
+    if (customShelves.length >= MAX_CUSTOM_SHELVES) return null;
+    const source = customShelves.find((shelf) => shelf.id === shelfId);
+    if (!source) return null;
+    const id = typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `shelf-${Date.now()}-${customShelves.length + 1}`;
+    const now = Date.now();
+    const copy: CustomShelf = {
+      ...source,
+      id,
+      name: nextDuplicateShelfName(source.name, customShelves.map((shelf) => shelf.name)),
+      games: source.games.map((game) => ({ ...game })),
+      createdAt: now,
+      updatedAt: now,
+    };
+    setCustomShelves((current) => [...current, copy]);
+    setActiveShelfId(id);
+    setDrawerShelfId(id);
+    return id;
+  }, [customShelves]);
 
   const restoreCustomShelves = useCallback((next: CustomShelf[]) => {
     setCustomShelves(next);
@@ -2078,6 +2101,7 @@ export default function App() {
           onSelect={setActiveShelfId}
           onUpdate={updateCustomShelf}
           onDelete={deleteCustomShelf}
+          onDuplicate={duplicateCustomShelf}
           onRestore={restoreCustomShelves}
           onStory={turnShelfIntoStory}
         />
@@ -2100,6 +2124,7 @@ function CustomShelvesPage({
   onSelect,
   onUpdate,
   onDelete,
+  onDuplicate,
   onRestore,
   onStory,
 }: {
@@ -2110,6 +2135,7 @@ function CustomShelvesPage({
   onSelect: (id: string) => void;
   onUpdate: (id: string, updater: (shelf: CustomShelf) => CustomShelf) => void;
   onDelete: (id: string) => void;
+  onDuplicate: (id: string) => string | null;
   onRestore: (shelves: CustomShelf[]) => void;
   onStory: (shelf: CustomShelf) => void;
 }) {
@@ -2119,6 +2145,7 @@ function CustomShelvesPage({
   const [gameQuery, setGameQuery] = useState("");
   const [backupMessage, setBackupMessage] = useState<string | null>(null);
   const [backupError, setBackupError] = useState<string | null>(null);
+  const [managementMessage, setManagementMessage] = useState<string | null>(null);
   const backupPicker = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -2200,6 +2227,26 @@ function CustomShelvesPage({
       ...shelf,
       games: shelf.games.filter((_, gameIndex) => gameIndex !== index),
     }));
+  };
+
+  const duplicateActiveShelf = () => {
+    if (!active) return;
+    const sourceName = active.name;
+    const id = onDuplicate(active.id);
+    if (id) {
+      setManagementMessage(`Duplicated “${sourceName}”. The copy is now active.`);
+    }
+  };
+
+  const confirmDeleteActiveShelf = () => {
+    if (!active) return;
+    const confirmed = window.confirm(
+      `Delete “${active.name}”? This removes the shelf and its private notes from this browser. Your Steam library is not affected.`,
+    );
+    if (!confirmed) return;
+    const name = active.name;
+    onDelete(active.id);
+    setManagementMessage(`Deleted “${name}”.`);
   };
 
   const downloadBackup = () => {
@@ -2348,15 +2395,27 @@ function CustomShelvesPage({
             <div className="custom-shelf-sheet">
               <div className="custom-shelf-sheet-meta">
                 <span>SHELF FILE / {active.games.length.toString().padStart(2, "0")} ENTRIES</span>
-                <button
-                  type="button"
-                  className="danger-subtle"
-                  onClick={() => onDelete(active.id)}
-                  aria-label={"Delete " + active.name}
-                >
-                  delete shelf
-                </button>
+                <div className="custom-shelf-sheet-actions">
+                  <button
+                    type="button"
+                    className="duplicate-subtle"
+                    disabled={shelves.length >= MAX_CUSTOM_SHELVES}
+                    onClick={duplicateActiveShelf}
+                    aria-label={"Duplicate " + active.name}
+                  >
+                    duplicate shelf
+                  </button>
+                  <button
+                    type="button"
+                    className="danger-subtle"
+                    onClick={confirmDeleteActiveShelf}
+                    aria-label={"Delete " + active.name}
+                  >
+                    delete shelf
+                  </button>
+                </div>
               </div>
+              {managementMessage && <p className="custom-shelf-management-status" role="status">{managementMessage}</p>}
 
               <div className="custom-shelf-head">
                 <label>

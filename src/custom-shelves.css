@@ -256,7 +256,15 @@
   margin-bottom: 14px;
 }
 
-.custom-shelf-sheet-meta .danger-subtle {
+.custom-shelf-sheet-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.custom-shelf-sheet-meta .danger-subtle,
+.custom-shelf-sheet-meta .duplicate-subtle {
   min-height: 28px;
   padding: 5px 8px;
   border-style: dashed;
@@ -268,8 +276,22 @@
   text-transform: uppercase;
 }
 
+.custom-shelf-sheet-meta .duplicate-subtle:hover:not(:disabled) {
+  color: var(--fg);
+  border-color: color-mix(in srgb, var(--accent-2) 48%, var(--edge));
+}
+
 .custom-shelf-sheet-meta .danger-subtle:hover {
   color: var(--fg);
+}
+
+.custom-shelf-management-status {
+  margin: -6px 0 12px;
+  padding: 7px 9px;
+  border-left: 3px solid color-mix(in srgb, var(--accent-2) 48%, var(--edge));
+  color: var(--fg);
+  background: color-mix(in srgb, var(--accent-2) 6%, transparent);
+  font-size: 9px;
 }
 
 .custom-shelf-head {
@@ -513,6 +535,16 @@
     align-items: flex-start;
     flex-direction: column;
     gap: 4px;
+  }
+
+  .custom-shelf-sheet-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .custom-shelf-sheet-actions button {
+    width: 100%;
   }
 
   .custom-shelf-presets {
