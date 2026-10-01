@@ -86,16 +86,22 @@ jobs:
           grep -qi '^access-control-allow-origin: https://rlawoals0529.github.io' /tmp/shelfwear-api-headers.txt
           grep -q '"error"' /tmp/shelfwear-api-body.json
 
-          achievement_status="$(
-            curl --silent --show-error --retry 4 --retry-delay 2 \
-              --header 'Origin: https://rlawoals0529.github.io' \
-              --dump-header /tmp/shelfwear-achievement-headers.txt \
-              --output /tmp/shelfwear-achievement-body.json \
-              --write-out '%{http_code}' \
-              "$DEPLOYMENT_URL/api/steam/achievements?steamid=bad&appid=10"
-          )"
+          achievement_status=""
+          for attempt in 1 2 3 4 5 6; do
+            achievement_status="$(
+              curl --silent --show-error \
+                --header 'Origin: https://rlawoals0529.github.io' \
+                --dump-header /tmp/shelfwear-achievement-headers.txt \
+                --output /tmp/shelfwear-achievement-body.json \
+                --write-out '%{http_code}' \
+                "$DEPLOYMENT_URL/api/steam/achievements?steamid=bad&appid=10"
+            )"
+            [ "$achievement_status" = "400" ] && break
+            echo "Achievement route returned $achievement_status on propagation check $attempt/6; retrying..."
+            sleep 2
+          done
           if [ "$achievement_status" != "400" ]; then
-            echo "::error::Expected the invalid-achievement smoke check to return 400; got $achievement_status."
+            echo "::error::Expected the deployed achievement route to settle on 400; got $achievement_status."
             cat /tmp/shelfwear-achievement-body.json
             exit 1
           fi
