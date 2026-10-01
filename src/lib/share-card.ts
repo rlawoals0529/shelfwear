@@ -878,6 +878,7 @@ export async function renderFamiliarCard(input: FamiliarCardInput): Promise<Blob
 
 export function achievementCabinetFilename(gameName: string): string {
   const stem = gameName
+    .replace(/[™®©]/g, "")
     .normalize("NFKD")
     .replace(/[\u0300-\u036f]/g, "")
     .toLowerCase()
