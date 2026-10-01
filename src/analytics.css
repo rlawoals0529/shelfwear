@@ -357,6 +357,219 @@
   line-height: 1.55;
 }
 
+
+/* Reading-room pass: analytics should feel like something pulled from the same library
+   drawer as Stories/Familiar/Compare, not a generic KPI dashboard. */
+.analytics-ledger-sheet {
+  position: relative;
+  overflow: hidden;
+  border-left: 7px solid color-mix(in srgb, var(--accent-2) 68%, var(--edge));
+  background:
+    repeating-linear-gradient(0deg, transparent 0 33px, color-mix(in srgb, var(--edge) 13%, transparent) 33px 34px),
+    color-mix(in srgb, var(--panel) 98%, var(--raised));
+}
+
+.analytics-ledger-sheet::after {
+  content: "";
+  position: absolute;
+  inset: 12px 13px auto auto;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--bg);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--edge) 72%, transparent);
+}
+
+.analytics-intro.analytics-ledger-sheet {
+  background:
+    repeating-linear-gradient(0deg, transparent 0 33px, color-mix(in srgb, var(--edge) 13%, transparent) 33px 34px),
+    radial-gradient(circle at 90% 5%, color-mix(in srgb, var(--accent) 8%, transparent), transparent 22rem),
+    color-mix(in srgb, var(--panel) 98%, var(--raised));
+}
+
+.analytics-catalog-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: -4px 0 17px;
+  padding-bottom: 9px;
+  border-bottom: 1px dashed color-mix(in srgb, var(--edge) 72%, transparent);
+  color: var(--fg);
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: .12em;
+}
+
+.analytics-catalog-meta span:first-child {
+  color: var(--accent-text);
+}
+
+.analytics-section-code {
+  width: fit-content;
+  margin: -2px 0 12px auto;
+  padding: 4px 7px;
+  border: 1px dashed color-mix(in srgb, var(--edge) 76%, transparent);
+  border-radius: 4px;
+  color: var(--fg);
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: .11em;
+  transform: rotate(.25deg);
+}
+
+.analytics-donut {
+  position: relative;
+  border: 1px solid color-mix(in srgb, var(--edge) 72%, transparent);
+  box-shadow: 0 9px 22px color-mix(in srgb, var(--fg) 6%, transparent);
+}
+
+.analytics-donut::after {
+  content: "SHELF USE";
+  position: absolute;
+  right: -29px;
+  bottom: 18px;
+  padding: 4px 6px;
+  border: 1px dashed color-mix(in srgb, var(--accent) 50%, var(--edge));
+  border-radius: 4px;
+  color: var(--fg);
+  background: var(--panel);
+  font-size: 7px;
+  font-weight: 900;
+  letter-spacing: .11em;
+  transform: rotate(-6deg);
+}
+
+.analytics-kpi-grid {
+  gap: 8px;
+}
+
+.analytics-kpi {
+  position: relative;
+  min-height: 132px;
+  align-content: start;
+  padding: 15px 14px 14px 45px;
+  border-radius: 7px 10px 8px 9px;
+  background: color-mix(in srgb, var(--raised) 31%, var(--panel));
+  box-shadow: none;
+}
+
+.analytics-kpi > i {
+  position: absolute;
+  left: 12px;
+  top: 14px;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--edge) 76%, transparent);
+  border-radius: 4px;
+  color: var(--fg);
+  background: var(--panel);
+  font-size: 8px;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.analytics-kpi > span {
+  min-height: 30px;
+  font-size: 9px;
+  font-weight: 850;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+}
+
+.analytics-kpi b {
+  font-size: clamp(26px, 3.5vw, 34px);
+}
+
+.analytics-bars {
+  padding: 5px 0 3px;
+}
+
+.analytics-bar-row {
+  min-height: 40px;
+  padding: 4px 7px;
+  border-bottom: 1px solid color-mix(in srgb, var(--edge) 54%, transparent);
+}
+
+.analytics-bar-row:last-child {
+  border-bottom: 0;
+}
+
+.analytics-bar-track {
+  height: 8px;
+  border-radius: 2px;
+  background:
+    repeating-linear-gradient(90deg, color-mix(in srgb, var(--raised) 75%, var(--panel)) 0 17px, color-mix(in srgb, var(--edge) 36%, transparent) 17px 18px);
+}
+
+.analytics-bar-track i {
+  border-radius: 2px;
+}
+
+.concentration-grid > div {
+  position: relative;
+  min-height: 105px;
+  padding: 17px 16px;
+  border-radius: 8px 11px 7px 10px;
+  background: color-mix(in srgb, var(--raised) 28%, var(--panel));
+  box-shadow: none;
+}
+
+.concentration-grid > div::after {
+  content: "RECORDED";
+  position: absolute;
+  right: 10px;
+  bottom: 9px;
+  color: var(--dim);
+  font-size: 7px;
+  font-weight: 850;
+  letter-spacing: .08em;
+}
+
+.top-games-analytics {
+  border-top: 1px dashed color-mix(in srgb, var(--edge) 72%, transparent);
+  padding-top: 8px;
+}
+
+.top-game-row {
+  min-height: 55px;
+  padding: 8px 6px;
+  border: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--edge) 54%, transparent);
+  border-radius: 0;
+  background: transparent;
+}
+
+.top-game-row:last-child {
+  border-bottom: 0;
+}
+
+.top-game-rank {
+  border-radius: 5px;
+  color: var(--fg);
+  background: color-mix(in srgb, var(--raised) 34%, var(--panel));
+}
+
+.top-game-track {
+  border-radius: 2px;
+}
+
+.local-insight,
+.activity-insight {
+  border-radius: 8px 11px 8px 10px;
+  background: color-mix(in srgb, var(--raised) 28%, var(--panel));
+  box-shadow: none;
+}
+
+.analytics-footnote {
+  border-radius: 8px 12px 9px 11px;
+  background:
+    repeating-linear-gradient(0deg, transparent 0 29px, color-mix(in srgb, var(--edge) 12%, transparent) 29px 30px),
+    color-mix(in srgb, var(--panel) 92%, transparent);
+}
+
 @media (max-width: 760px) {
   .view-tabs {
     top: 8px;
@@ -365,6 +578,12 @@
   .analytics-summary {
     grid-template-columns: 1fr;
     gap: 18px;
+  }
+
+  .analytics-catalog-meta {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 3px;
   }
 
   .analytics-donut-wrap {
@@ -404,6 +623,10 @@
   .analytics-kpi-grid,
   .concentration-grid {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .analytics-kpi {
+    min-height: 116px;
   }
 
   .concentration-grid > div:last-child {
