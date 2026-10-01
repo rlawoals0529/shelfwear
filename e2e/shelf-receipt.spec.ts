@@ -103,6 +103,6 @@ test("local Shelf Receipts can show biggest known installs from real files", asy
   const text = await page.evaluate(() => (window as unknown as { __receiptLocalText: string[] }).__receiptLocalText);
   expect(text).toContain("LOCAL STEAM FILES · THIS PC");
   expect(text).toContain("BIGGEST KNOWN INSTALLS");
-  expect(text).toContain("Fixture Never Launched");
+  expect(text).toContain("FIXTURE NEVER LAUNCHED");
   expect(text).toContain("50.0 GB");
 });
