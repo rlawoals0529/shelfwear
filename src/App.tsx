@@ -423,6 +423,8 @@ export default function App() {
     setRecentError(null);
     setShelfHistory(null);
     setShelfHistoryDelta(null);
+    setHistoryMilestoneError(null);
+    setHistoryMilestoneRendering(null);
     setImporting(true);
     try {
       const data = await fetchPublicSteamLibrary(steamProfile);
@@ -472,6 +474,7 @@ export default function App() {
     writeShelfHistory(record);
     setShelfHistory(record);
     setShelfHistoryDelta(null);
+    setHistoryMilestoneError(null);
   }, [loaded.games, loaded.kind, loaded.steamid]);
 
   const clearHistory = useCallback(() => {
@@ -479,6 +482,8 @@ export default function App() {
     clearShelfHistory(loaded.steamid);
     setShelfHistory(null);
     setShelfHistoryDelta(null);
+    setHistoryMilestoneError(null);
+    setHistoryMilestoneRendering(null);
   }, [loaded.kind, loaded.steamid]);
 
   const downloadHistoryMilestone = useCallback(async (milestone: ShelfHistoryThreshold) => {
