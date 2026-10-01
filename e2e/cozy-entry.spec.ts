@@ -294,7 +294,7 @@ test("long Steam names truncate cleanly and the main view buttons stay aligned",
   expect(nameMetrics.whiteSpace).toBe("nowrap");
 
   const tabs = page.locator(".view-tabs button");
-  await expect(tabs).toHaveCount(3);
+  await expect(tabs).toHaveCount(4);
   const boxes = await tabs.evaluateAll((elements) => elements.map((element) => {
     const rect = element.getBoundingClientRect();
     return { y: rect.y, width: rect.width, height: rect.height };
