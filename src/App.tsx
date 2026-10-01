@@ -423,6 +423,23 @@ export default function App() {
   const librarySearchRef = useRef<HTMLInputElement>(null);
   const libraryCatalogRef = useRef<HTMLElement>(null);
 
+  const closeLibraryIndex = useCallback((returnToRow = true) => {
+    const appid = selectedLibraryGameAppId;
+    setSelectedLibraryGameAppId(null);
+    setLibraryRandomMessage(null);
+    if (!returnToRow || !appid) return;
+
+    window.requestAnimationFrame(() => {
+      const rowButton = document.querySelector<HTMLButtonElement>(
+        `.library-row[data-appid="${appid}"] .library-row-details`,
+      );
+      if (!rowButton) return;
+      rowButton.focus({ preventScroll: true });
+      rowButton.scrollIntoView({ block: "center", behavior: "smooth" });
+    });
+  }, [selectedLibraryGameAppId]);
+
+
   useEffect(() => {
     writeLocalPreference(LIBRARY_SORT_KEY, librarySort);
   }, [librarySort]);
@@ -463,13 +480,13 @@ export default function App() {
       }
       if (selectedLibraryGameAppId) {
         event.preventDefault();
-        setSelectedLibraryGameAppId(null);
+        closeLibraryIndex();
       }
     };
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [libraryQuery, selectedLibraryGameAppId, view]);
+  }, [closeLibraryIndex, libraryQuery, selectedLibraryGameAppId, view]);
 
   useEffect(() => {
     writeCustomShelves(customShelves);
@@ -2323,7 +2340,7 @@ export default function App() {
                 >
                   <CuteIcon name="down" />
                 </button>
-                <button type="button" onClick={() => { setSelectedLibraryGameAppId(null); setLibraryRandomMessage(null); }} aria-label="Close game details"><CuteIcon name="close" /></button>
+                <button type="button" onClick={() => closeLibraryIndex()} aria-label="Close game details"><CuteIcon name="close" /></button>
               </div>
             </div>
             <div className="library-catalog-body">
