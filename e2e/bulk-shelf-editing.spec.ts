@@ -22,6 +22,36 @@ async function seedBulkShelf(page: Page) {
   await expect(page.getByLabel("Rename active shelf")).toHaveValue("Big Shelf");
 }
 
+async function seedLongBulkShelf(page: Page) {
+  await page.goto("/");
+  await page.evaluate(() => {
+    const games = Array.from({ length: 50 }, (_, index) => ({
+      appid: String(index + 1),
+      name: `Game ${index + 1}`,
+      note: `note ${index + 1}`,
+    }));
+    localStorage.setItem("shelfwear:custom-shelves:v1", JSON.stringify([
+      {
+        id: "bulk-shelf",
+        name: "Big Shelf",
+        createdAt: 1,
+        updatedAt: 1,
+        games,
+      },
+      {
+        id: "target-shelf",
+        name: "Later Shelf",
+        createdAt: 2,
+        updatedAt: 2,
+        games: [],
+      },
+    ]));
+  });
+  await page.reload();
+  await page.getByRole("button", { name: "My shelves" }).click();
+  await expect(page.getByLabel("Rename active shelf")).toHaveValue("Big Shelf");
+}
+
 async function shelfOrder(page: Page) {
   return page.locator(".custom-shelf-game-copy > b").allTextContents();
 }
@@ -85,6 +115,36 @@ test("bulk removal requires confirmation and only removes selected shelf entries
   ]);
 });
 
+test("bulk edit docket stays reachable while working through a 50-game shelf", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await seedLongBulkShelf(page);
+
+  await page.getByRole("button", { name: "Bulk edit" }).click();
+  const lastGame = page.getByRole("checkbox", { name: "Select Game 50 for bulk editing" });
+  await lastGame.scrollIntoViewIfNeeded();
+  await lastGame.check();
+
+  const docket = page.locator(".custom-shelf-bulk-docket");
+  await expect(docket).toHaveCSS("position", "sticky");
+  await expect(docket.locator(".custom-shelf-bulk-count")).toContainText("1 of 50 selected");
+  await expect(docket.getByLabel("Destination shelf for selected games")).toBeVisible();
+  await expect(docket).toContainText("1 can be added");
+
+  const box = await docket.boundingBox();
+  expect(box).not.toBeNull();
+  expect(box!.y).toBeGreaterThanOrEqual(0);
+  expect(box!.y).toBeLessThanOrEqual(16);
+
+  await docket.getByRole("button", { name: "Move to top" }).click();
+  await expect(docket.getByRole("button", { name: "Undo" })).toBeVisible();
+  expect((await shelfOrder(page))[0]).toBe("Game 50");
+
+  await docket.getByRole("button", { name: "Undo" }).click();
+  const restored = await shelfOrder(page);
+  expect(restored[0]).toBe("Game 1");
+  expect(restored[49]).toBe("Game 50");
+});
+
 test("bulk selection is keyboard-accessible and fits on a phone", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await seedBulkShelf(page);
@@ -95,7 +155,9 @@ test("bulk selection is keyboard-accessible and fits on a phone", async ({ page 
   await page.keyboard.press("Space");
   await expect(checkbox).toBeChecked();
 
+  const docket = page.locator(".custom-shelf-bulk-docket");
   const toolbar = page.locator(".custom-shelf-bulk-toolbar");
+  await expect(docket).toHaveCSS("position", "static");
   await expect(toolbar).toBeVisible();
   expect(await toolbar.evaluate((element) => element.scrollWidth - element.clientWidth)).toBeLessThanOrEqual(1);
 
