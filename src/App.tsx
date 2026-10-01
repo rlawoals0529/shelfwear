@@ -1401,8 +1401,12 @@ function TopGamesPage({ loadedGames, initial }: { loadedGames: Game[]; initial: 
         <div className="curated-layout">
           <div className="curated-preview-wrap">
             <div className={`curated-card-preview story-style-${list.style ?? "scrapbook"}`}>
+              <div className="curated-artifact-meta">
+                <span>SHELFWEAR / SHELF STORY</span>
+                <span>{String(list.games.length).padStart(2, "0")} PICKS</span>
+              </div>
               <div className="curated-preview-heading">
-                <span className="curated-sticker">♡ shelfwear</span>
+                <span className="curated-sticker">hand-picked ♡</span>
                 <span className="curated-doodle curated-doodle-star" aria-hidden="true"><CuteIcon name="sparkles" /></span>
                 <span className="curated-doodle curated-doodle-heart" aria-hidden="true"><CuteIcon name="heart" /></span>
                 <h3>{list.title}</h3>
@@ -1457,7 +1461,10 @@ function TopGamesPage({ loadedGames, initial }: { loadedGames: Game[]; initial: 
                   );
                 })}
               </div>
-              <div className="curated-preview-footer"><span>picked for this story, not decided by playtime</span><span>૮ ˶ᵔ ᵕ ᵔ˶ ა</span></div>
+              <div className="curated-preview-footer">
+                <span>picked for this story, not decided by playtime</span>
+                <span className="curated-story-stamp">ARCHIVE COPY</span>
+              </div>
             </div>
           </div>
 
