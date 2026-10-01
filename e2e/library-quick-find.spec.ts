@@ -16,7 +16,7 @@ test("slash focuses Shelf Index search and Escape clears it", async ({ page }) =
   await page.keyboard.press("/");
   await expect(search).toBeFocused();
 
-  await search.fill("never");
+  await search.fill("hades");
   await expect(page.locator(".library-rows .library-row")).toHaveCount(1);
   await expect(page.getByRole("button", { name: "Clear library search" })).toBeVisible();
 
