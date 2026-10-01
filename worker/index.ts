@@ -8,6 +8,28 @@ type SteamPlayer = {
   avatarfull?: string;
 };
 
+type SteamPlayerAchievement = {
+  apiname?: string;
+  achieved?: number;
+  unlocktime?: number;
+  name?: string;
+  description?: string;
+};
+
+type SteamSchemaAchievement = {
+  name?: string;
+  displayName?: string;
+  hidden?: number;
+  description?: string;
+  icon?: string;
+  icongray?: string;
+};
+
+type SteamGlobalAchievement = {
+  name?: string;
+  percent?: number | string;
+};
+
 const ALLOWED_ORIGINS = new Set([
   "https://rlawoals0529.github.io",
   "https://shelfwear.rlawoals0529.workers.dev",
@@ -97,6 +119,133 @@ async function library(profile: string, key: string, request: Request): Promise<
       minutes: game.playtime_forever ?? 0,
       iconHash: game.img_icon_url && /^[a-f0-9]{40}$/i.test(game.img_icon_url) ? game.img_icon_url : null,
     })),
+  });
+}
+
+function safeAchievementImage(value: string | undefined): string | null {
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    if (url.protocol !== "https:") return null;
+    const hostname = url.hostname.toLowerCase();
+    const allowed = hostname === "steamstatic.com"
+      || hostname.endsWith(".steamstatic.com")
+      || hostname === "steampowered.com"
+      || hostname.endsWith(".steampowered.com")
+      || hostname === "steamcdn-a.akamaihd.net";
+    return allowed ? url.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
+async function achievements(steamid: string, appid: string, key: string, request: Request): Promise<Response> {
+  if (!/^\d{17}$/.test(steamid)) return json(request, { error: "Add a valid 17-digit public SteamID." }, 400);
+  if (!/^\d{1,10}$/.test(appid)) return json(request, { error: "Add a valid numeric Steam AppID." }, 400);
+
+  const playerUrl = new URL("https://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v1/");
+  playerUrl.searchParams.set("key", key);
+  playerUrl.searchParams.set("steamid", steamid);
+  playerUrl.searchParams.set("appid", appid);
+  playerUrl.searchParams.set("l", "english");
+
+  const schemaUrl = new URL("https://api.steampowered.com/ISteamUserStats/GetSchemaForGame/v2/");
+  schemaUrl.searchParams.set("key", key);
+  schemaUrl.searchParams.set("appid", appid);
+  schemaUrl.searchParams.set("l", "english");
+
+  const globalUrl = new URL("https://api.steampowered.com/ISteamUserStats/GetGlobalAchievementPercentagesForApp/v2/");
+  globalUrl.searchParams.set("gameid", appid);
+
+  const [playerResponse, schemaResponse, globalResponse] = await Promise.all([
+    fetch(playerUrl),
+    fetch(schemaUrl),
+    fetch(globalUrl),
+  ]);
+
+  if (!playerResponse.ok) {
+    return json(request, { error: "Steam did not return achievements for this game and profile." }, 502);
+  }
+
+  const playerPayload = await playerResponse.json() as {
+    playerstats?: {
+      steamID?: string;
+      gameName?: string;
+      achievements?: SteamPlayerAchievement[];
+      success?: boolean;
+      error?: string;
+    };
+  };
+  const player = playerPayload.playerstats;
+  if (!player?.success) {
+    const reason = player?.error?.trim();
+    return json(request, {
+      error: reason || "Achievements are unavailable for this public profile or game.",
+    }, 404);
+  }
+
+  let schemaAchievements: SteamSchemaAchievement[] = [];
+  if (schemaResponse.ok) {
+    const schemaPayload = await schemaResponse.json() as {
+      game?: { availableGameStats?: { achievements?: SteamSchemaAchievement[] } };
+    };
+    schemaAchievements = schemaPayload.game?.availableGameStats?.achievements ?? [];
+  }
+  const schemaByName = new Map(
+    schemaAchievements
+      .filter((achievement) => achievement.name)
+      .map((achievement) => [achievement.name!, achievement]),
+  );
+
+  let globalAchievements: SteamGlobalAchievement[] = [];
+  if (globalResponse.ok) {
+    const globalPayload = await globalResponse.json() as {
+      achievementpercentages?: { achievements?: SteamGlobalAchievement[] };
+    };
+    globalAchievements = globalPayload.achievementpercentages?.achievements ?? [];
+  }
+  const globalByName = new Map<string, number>();
+  for (const achievement of globalAchievements) {
+    if (!achievement.name) continue;
+    const percent = Number(achievement.percent);
+    if (Number.isFinite(percent) && percent >= 0 && percent <= 100) {
+      globalByName.set(achievement.name, Math.round(percent * 100) / 100);
+    }
+  }
+
+  const mapped = (player.achievements ?? []).flatMap((achievement) => {
+    const apiName = achievement.apiname?.trim();
+    if (!apiName) return [];
+    const schema = schemaByName.get(apiName);
+    const unlockTime = typeof achievement.unlocktime === "number" && achievement.unlocktime > 0
+      ? achievement.unlocktime
+      : null;
+    const achieved = achievement.achieved === 1;
+    const icon = safeAchievementImage(achieved ? schema?.icon : schema?.icongray);
+
+    return [{
+      apiName,
+      name: achievement.name?.trim() || schema?.displayName?.trim() || apiName,
+      description: achievement.description?.trim() || schema?.description?.trim() || null,
+      achieved,
+      unlockTime,
+      globalPercent: globalByName.get(apiName) ?? null,
+      hidden: schema?.hidden === 1,
+      icon,
+    }];
+  });
+
+  const unlocked = mapped.filter((achievement) => achievement.achieved).length;
+  const total = mapped.length;
+
+  return json(request, {
+    steamid,
+    appid,
+    gameName: player.gameName?.trim() || null,
+    total,
+    unlocked,
+    completionPercent: total ? Math.round((unlocked / total) * 100) : 0,
+    achievements: mapped,
   });
 }
 
@@ -282,6 +431,16 @@ export default {
         const profile = url.searchParams.get("profile") ?? "";
         if (!profile || profile.length > 240) return json(request, { error: "Add a Steam profile URL or SteamID." }, 400);
         return library(profile, env.STEAM_WEB_API_KEY, request);
+      }
+
+      if (url.pathname === "/api/steam/achievements") {
+        if (!env.STEAM_WEB_API_KEY) return json(request, { error: "Steam achievements are not configured on this deployment." }, 503);
+        return achievements(
+          url.searchParams.get("steamid") ?? "",
+          url.searchParams.get("appid") ?? "",
+          env.STEAM_WEB_API_KEY,
+          request,
+        );
       }
     }
     return new Response(null, { status: 404 });

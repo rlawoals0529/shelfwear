@@ -1,5 +1,9 @@
-import { describe, expect, it } from "vitest";
-import { SHELFWEAR_WORKER_ORIGIN, STEAM_PROFILE_PREFIX, comparisonShareUrl, hasSteamProfileInput, inviteShareUrl, normaliseSteamProfileInput, sharedComparisonFromSearch, sharedInviteFromSearch, sharedSteamFromSearch, steamApiUrl, steamShareUrl } from "./steam.js";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { SHELFWEAR_WORKER_ORIGIN, STEAM_PROFILE_PREFIX, comparisonShareUrl, fetchSteamAchievements, hasSteamProfileInput, inviteShareUrl, normaliseSteamProfileInput, sharedComparisonFromSearch, sharedInviteFromSearch, sharedSteamFromSearch, steamApiUrl, steamShareUrl } from "./steam.js";
+
+afterEach(() => {
+  vi.unstubAllGlobals();
+});
 
 describe("Steam share URLs", () => {
   it("creates a single-shelf link without retaining unrelated query data", () => {
@@ -57,5 +61,63 @@ describe("Steam API routing", () => {
       .toBe("/api/steam/library?profile=x");
     expect(steamApiUrl("/api/steam/library?profile=x", "localhost"))
       .toBe("/api/steam/library?profile=x");
+  });
+});
+
+
+describe("Steam achievements", () => {
+  it("fetches one selected game from the same API routing layer", async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      expect(String(input)).toContain("/api/steam/achievements?steamid=76561198000000000&appid=10");
+      return new Response(JSON.stringify({
+        steamid: "76561198000000000",
+        appid: "10",
+        gameName: "Shared Quest",
+        total: 2,
+        unlocked: 1,
+        completionPercent: 50,
+        achievements: [
+          {
+            apiName: "ACH_FIRST",
+            name: "First Step",
+            description: "Do the thing",
+            achieved: true,
+            unlockTime: 1700000000,
+            globalPercent: 12.34,
+            hidden: false,
+            icon: null,
+          },
+          {
+            apiName: "ACH_LOCKED",
+            name: "Still Locked",
+            description: null,
+            achieved: false,
+            unlockTime: null,
+            globalPercent: 2.1,
+            hidden: true,
+            icon: null,
+          },
+        ],
+      }), { status: 200, headers: { "content-type": "application/json" } });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const cabinet = await fetchSteamAchievements("76561198000000000", "10");
+    expect(cabinet).toMatchObject({
+      gameName: "Shared Quest",
+      total: 2,
+      unlocked: 1,
+      completionPercent: 50,
+    });
+    expect(cabinet.achievements[0]).toMatchObject({ name: "First Step", globalPercent: 12.34, achieved: true });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("rejects invalid IDs before making a request", async () => {
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(fetchSteamAchievements("bad", "10")).rejects.toThrow(/resolved public SteamID/);
+    await expect(fetchSteamAchievements("76561198000000000", "bad")).rejects.toThrow(/numeric Steam AppID/);
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

@@ -21,6 +21,7 @@ For sharing, Shelfwear can make:
 - **Your nine** — the nine titles with the most recorded playtime, in a 3×3 grid.
 - **Shelf Stories** — prompt-driven, hand-picked collections such as Games that shaped me, comfort games, and multiplayer memories.
 - **My shelves** — browser-local personal collections such as comfort games, currently playing, childhood favorites, backlog, multiplayer, or a custom shelf. Games can be filed from the Shelf Index, reordered, annotated, and handed off into Shelf Stories.
+- **Achievement Cabinet** — public-Steam-only, on-demand achievement details for one selected game, including completion, rarest unlocked achievement when Steam provides global percentages, latest recorded unlock, and a selectable 1080×1350 Trophy Cabinet card.
 - **Download card** — a 1080×1350 PNG rendered in the current Shelfwear palette. Local/sample mode is fully browser-only; Steam mode asks Shelfwear's same-origin Worker cover endpoint for public artwork and falls back to typographic tiles when artwork is unavailable.
 - **Shelf familiar** — a deterministic mascot based only on observable library patterns, presented as a cataloged library specimen with three visible evidence fields, a field note explaining why it was chosen, and its own downloadable 1080×1350 bookplate card. It describes the library shape, not the person.
 - **Copy summary** — a text version of the nine for sharing anywhere.
@@ -46,6 +47,8 @@ Public-profile mode uses Steam's `GetOwnedGames` response. It can be broader tha
 
 The `/api/steam/cover/:appid` route is different: it is a tightly scoped proxy for public Steam artwork, accepts only a numeric app ID, and may be cached because it contains no user-specific library data. It exists so exported canvas cards remain origin-clean instead of depending on third-party CORS behavior.
 
+Achievement Cabinet is deliberately **on demand**. Shelfwear does not crawl every game's achievements during library import. For a selected public-Steam game, the Worker combines Steam's player-achievement response with the game's achievement schema and global achievement percentages when those endpoints provide them. The Steam Web API key remains server-side, the response uses `Cache-Control: no-store`, and Shelfwear does not persist the achievement payload in browser storage or a server database.
+
 ## Whole-shelf browsing
 
 The **Everything** section is interactive rather than a fixed dump of games. Visitors can search by title, sort by most/least played or alphabetically, and filter to **Played**, **Never played**, **100h+**, or **Under 2h played**. Games opened in the Shelf Index can also be filed directly into a browser-local custom shelf. The under-two-hours slice requires recorded playtime greater than zero, so never-played games stay a separate factual category. Every row can also open a small **Shelf Index** record showing only what the current source actually knows: recorded playtime and play state everywhere; install state, known size, and last recorded launch only for real local-file imports. Public Steam records may show the same official artwork already available from the public import, while local-file records intentionally do not fetch artwork automatically. Only real local-file mode enables **Recently played on this PC**, **Largest installed**, and **Installed on this PC**. Public Steam imports never show those controls, and the built-in sample keeps its synthetic local data clearly marked as demo data instead of presenting it as a device fact. The list can switch between cozy and compact row density without changing the underlying data. Shelfwear remembers the selected row density and last sort choice in browser `localStorage`; search/filter state, open catalog records, and Steam library contents are not persisted server-side for these preferences.
@@ -55,6 +58,12 @@ The **Everything** section is interactive rather than a fixed dump of games. Vis
 **My shelves** is the local curation layer between browsing and sharing. A visitor can create up to 12 named shelves, start from lightweight presets such as **Comfort games**, **Currently playing**, **Childhood favorites**, **Backlog**, or **Multiplayer**, add games from the loaded library or directly from a Shelf Index record, reorder them, and attach short private notes.
 
 Custom shelves live under `shelfwear:custom-shelves:v1` in that browser's `localStorage`. Shelfwear stores only the custom shelf IDs/names, selected game AppIDs/names, optional public icon hashes, order, timestamps, and notes. It does **not** persist the imported library's playtime, disk-size, install, or recency dataset with the shelf. A shelf can stay local or send its first nine games, in order, into Shelf Stories; those shelf notes become editable Story notes.
+
+## Achievement Cabinet
+
+For a loaded **public Steam profile**, opening a game's Shelf Index exposes an optional **Achievement Cabinet**. Nothing is fetched until the visitor presses **Load achievements** for that game. The cabinet shows the literal unlocked/total count and completion percentage returned from the combined Steam responses, the rarest unlocked achievement only when a global percentage is available, and the latest recorded unlock only when Steam provides a non-zero unlock timestamp.
+
+Unlocked achievements can be pinned (up to six) into a 1080×1350 **Trophy Cabinet** artifact. The share card uses achievement names, descriptions, rarity percentages, and unlock dates already returned for that selected game; it does not infer difficulty, skill, prestige, or player personality. Local-file and sample modes do not expose this control because those sources do not contain account achievement data.
 
 ## Shelf Stories
 
