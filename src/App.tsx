@@ -808,32 +808,26 @@ export default function App() {
   }, []);
 
   const duplicateCustomShelf = useCallback((shelfId: string): string | null => {
-    let createdId: string | null = null;
-    setCustomShelves((current) => {
-      if (current.length >= MAX_CUSTOM_SHELVES) return current;
-      const source = current.find((shelf) => shelf.id === shelfId);
-      if (!source) return current;
-      const id = typeof crypto !== "undefined" && "randomUUID" in crypto
-        ? crypto.randomUUID()
-        : `shelf-${Date.now()}-${current.length + 1}`;
-      const now = Date.now();
-      const copy: CustomShelf = {
-        ...source,
-        id,
-        name: nextDuplicateShelfName(source.name, current.map((shelf) => shelf.name)),
-        games: source.games.map((game) => ({ ...game })),
-        createdAt: now,
-        updatedAt: now,
-      };
-      createdId = id;
-      return [...current, copy];
-    });
-    if (createdId) {
-      setActiveShelfId(createdId);
-      setDrawerShelfId(createdId);
-    }
-    return createdId;
-  }, []);
+    if (customShelves.length >= MAX_CUSTOM_SHELVES) return null;
+    const source = customShelves.find((shelf) => shelf.id === shelfId);
+    if (!source) return null;
+    const id = typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `shelf-${Date.now()}-${customShelves.length + 1}`;
+    const now = Date.now();
+    const copy: CustomShelf = {
+      ...source,
+      id,
+      name: nextDuplicateShelfName(source.name, customShelves.map((shelf) => shelf.name)),
+      games: source.games.map((game) => ({ ...game })),
+      createdAt: now,
+      updatedAt: now,
+    };
+    setCustomShelves((current) => [...current, copy]);
+    setActiveShelfId(id);
+    setDrawerShelfId(id);
+    return id;
+  }, [customShelves]);
 
   const restoreCustomShelves = useCallback((next: CustomShelf[]) => {
     setCustomShelves(next);
