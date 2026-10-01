@@ -2652,12 +2652,15 @@ function CustomShelvesPage({
       mode,
     );
     if (!result.addedAppIds.length) {
-      const reason = result.duplicateAppIds.length
-        ? `Every selected game is already on “${bulkTargetShelf.name}”.`
-        : result.capacityBlockedAppIds.length
-          ? `“${bulkTargetShelf.name}” is already at the ${MAX_CUSTOM_SHELF_GAMES}-game limit.`
-          : "Nothing could be transferred.";
-      setBulkMessage(reason);
+      const reasons = [
+        result.duplicateAppIds.length
+          ? `${result.duplicateAppIds.length} already ${result.duplicateAppIds.length === 1 ? "is" : "are"} on “${bulkTargetShelf.name}”`
+          : "",
+        result.capacityBlockedAppIds.length
+          ? `${result.capacityBlockedAppIds.length} ${result.capacityBlockedAppIds.length === 1 ? "is" : "are"} blocked by the ${MAX_CUSTOM_SHELF_GAMES}-game limit`
+          : "",
+      ].filter(Boolean);
+      setBulkMessage(reasons.length ? `Nothing transferred: ${reasons.join("; ")}.` : "Nothing could be transferred.");
       setBulkUndo(null);
       return;
     }
