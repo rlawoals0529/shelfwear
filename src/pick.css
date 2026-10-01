@@ -7,7 +7,7 @@
   content: "";
   position: absolute;
   inset: 12px;
-  border: 1px dashed color-mix(in srgb, var(--ink) 16%, transparent);
+  border: 1px dashed color-mix(in srgb, var(--fg) 16%, transparent);
   border-radius: calc(var(--radius) - 4px);
   pointer-events: none;
 }
@@ -76,24 +76,24 @@
   margin: 0.9rem 0 0;
   font-size: 0.88rem;
   line-height: 1.45;
-  color: var(--muted);
+  color: var(--dim);
 }
 
 .pick-ticket {
   margin-top: 0.9rem;
   padding: 18px;
-  border: 1px solid color-mix(in srgb, var(--ink) 18%, transparent);
+  border: 1px solid color-mix(in srgb, var(--fg) 18%, transparent);
   border-radius: 10px;
   background:
     repeating-linear-gradient(
       to bottom,
       transparent 0,
       transparent 30px,
-      color-mix(in srgb, var(--ink) 7%, transparent) 30px,
-      color-mix(in srgb, var(--ink) 7%, transparent) 31px
+      color-mix(in srgb, var(--fg) 7%, transparent) 30px,
+      color-mix(in srgb, var(--fg) 7%, transparent) 31px
     ),
-    color-mix(in srgb, var(--paper) 88%, white 12%);
-  box-shadow: 0 8px 24px color-mix(in srgb, var(--ink) 7%, transparent);
+    color-mix(in srgb, var(--panel) 88%, white 12%);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--fg) 7%, transparent);
 }
 
 .pick-ticket-meta {
@@ -101,7 +101,7 @@
   justify-content: space-between;
   gap: 12px;
   padding-bottom: 9px;
-  border-bottom: 1px solid color-mix(in srgb, var(--ink) 20%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--fg) 20%, transparent);
   font-size: 0.67rem;
   font-weight: 800;
   letter-spacing: 0.1em;
@@ -121,9 +121,9 @@
   place-items: center;
   min-width: 78px;
   aspect-ratio: 1;
-  border: 2px solid color-mix(in srgb, var(--ink) 35%, transparent);
+  border: 2px solid color-mix(in srgb, var(--fg) 35%, transparent);
   border-radius: 50%;
-  font-family: var(--mono);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   font-weight: 800;
   letter-spacing: 0.04em;
   transform: rotate(-3deg);
@@ -148,12 +148,12 @@
 .pick-proof,
 .pick-empty p {
   margin: 0.35rem 0 0;
-  color: var(--muted);
+  color: var(--dim);
 }
 
 .pick-proof {
   padding-top: 12px;
-  border-top: 1px dashed color-mix(in srgb, var(--ink) 20%, transparent);
+  border-top: 1px dashed color-mix(in srgb, var(--fg) 20%, transparent);
   font-size: 0.82rem;
   line-height: 1.45;
 }
