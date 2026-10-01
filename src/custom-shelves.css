@@ -455,6 +455,28 @@
   font-size: 9px;
 }
 
+.custom-shelf-bulk-docket {
+  margin-top: 16px;
+}
+
+.custom-shelf-bulk-docket .custom-shelf-bulk-toolbar {
+  margin-top: 0;
+}
+
+@media (min-width: 901px) {
+  .custom-shelf-bulk-docket {
+    position: sticky;
+    top: 8px;
+    z-index: 6;
+    padding: 5px 0 7px;
+    background: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--panel) 97%, transparent) 0 calc(100% - 5px),
+      transparent 100%
+    );
+  }
+}
+
 .custom-shelf-bulk-toolbar {
   display: grid;
   grid-template-columns: minmax(220px, 1fr) auto auto;
