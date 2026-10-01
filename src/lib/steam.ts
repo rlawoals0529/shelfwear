@@ -14,6 +14,27 @@ export interface PublicSteamLibrary {
   games: Game[];
 }
 
+export interface SteamAchievement {
+  apiName: string;
+  name: string;
+  description: string | null;
+  achieved: boolean;
+  unlockTime: number | null;
+  globalPercent: number | null;
+  hidden: boolean;
+  icon: string | null;
+}
+
+export interface SteamAchievementCabinet {
+  steamid: string;
+  appid: string;
+  gameName: string | null;
+  total: number;
+  unlocked: number;
+  completionPercent: number;
+  achievements: SteamAchievement[];
+}
+
 export const STEAM_PROFILE_PREFIX = "https://steamcommunity.com/id/";
 export const SHELFWEAR_WORKER_ORIGIN = "https://shelfwear.rlawoals0529.workers.dev";
 
@@ -72,6 +93,45 @@ export async function fetchPublicSteamLibrary(profile: string): Promise<PublicSt
       bytes: null,
       installed: false,
     })),
+  };
+}
+
+interface ApiAchievements extends Partial<SteamAchievementCabinet> {
+  error?: string;
+}
+
+export async function fetchSteamAchievements(steamid: string, appid: string): Promise<SteamAchievementCabinet> {
+  if (!/^\d{17}$/.test(steamid)) throw new Error("Achievement Cabinet needs a resolved public SteamID.");
+  if (!/^\d{1,10}$/.test(appid)) throw new Error("Achievement Cabinet needs a numeric Steam AppID.");
+
+  const query = new URLSearchParams({ steamid, appid });
+  const response = await fetch(steamApiUrl(`/api/steam/achievements?${query.toString()}`));
+  const data = await response.json().catch(() => null) as ApiAchievements | null;
+
+  if (!data) throw new Error("Steam achievement data is unavailable on this deployment.");
+  if (!response.ok || !Array.isArray(data.achievements)) {
+    throw new Error(data.error ?? "Steam achievements are unavailable for this game.");
+  }
+
+  return {
+    steamid,
+    appid,
+    gameName: typeof data.gameName === "string" ? data.gameName : null,
+    total: typeof data.total === "number" ? data.total : data.achievements.length,
+    unlocked: typeof data.unlocked === "number" ? data.unlocked : data.achievements.filter((achievement) => achievement.achieved).length,
+    completionPercent: typeof data.completionPercent === "number" ? data.completionPercent : 0,
+    achievements: data.achievements.map((achievement) => ({
+      apiName: String(achievement.apiName ?? ""),
+      name: String(achievement.name ?? achievement.apiName ?? "Achievement"),
+      description: typeof achievement.description === "string" ? achievement.description : null,
+      achieved: achievement.achieved === true,
+      unlockTime: typeof achievement.unlockTime === "number" && achievement.unlockTime > 0 ? achievement.unlockTime : null,
+      globalPercent: typeof achievement.globalPercent === "number" && Number.isFinite(achievement.globalPercent)
+        ? achievement.globalPercent
+        : null,
+      hidden: achievement.hidden === true,
+      icon: typeof achievement.icon === "string" ? achievement.icon : null,
+    })).filter((achievement) => achievement.apiName),
   };
 }
 
