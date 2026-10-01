@@ -952,28 +952,41 @@
   }
 
   .custom-shelf-game {
-    grid-template-columns: 1fr;
+    grid-template-columns: 27px minmax(0, 1fr);
   }
 
   .custom-shelf-game.bulk-editing {
-    grid-template-columns: 22px minmax(0, 1fr);
+    grid-template-columns: 22px 27px minmax(0, 1fr);
   }
 
-  .custom-shelf-game.bulk-editing .custom-shelf-rank,
-  .custom-shelf-game.bulk-editing .custom-shelf-game-copy {
+  .custom-shelf-game.bulk-editing .custom-shelf-rank {
     grid-column: 2;
+    align-self: start;
+    margin-top: 2px;
+  }
+
+  .custom-shelf-game.bulk-editing .custom-shelf-game-copy {
+    grid-column: 3;
   }
 
   .custom-shelf-rank {
     width: 27px;
     height: 27px;
+    align-self: start;
+    margin-top: 2px;
+  }
+
+  .custom-shelf-game-select {
+    align-self: start;
+    margin-top: 7px;
   }
 
   .custom-shelf-game-actions {
-    grid-column: 1;
+    grid-column: 2;
   }
 
   .library-file-to-shelf > div {
     grid-template-columns: 1fr;
   }
 }
+
