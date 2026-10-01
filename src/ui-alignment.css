@@ -97,17 +97,26 @@
 /* Share actions use the same visual rhythm as the main view switch. */
 .social-actions {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(124px, 1fr));
-  width: min(100%, 430px);
-  max-width: 430px;
-  gap: 7px;
+  grid-template-columns: repeat(auto-fit, minmax(132px, 1fr));
+  width: min(100%, 448px);
+  max-width: 448px;
+  gap: 8px;
   align-items: stretch;
 }
 
 .social-actions button {
   width: 100%;
-  min-height: 42px;
+  min-width: 0;
+  min-height: 46px;
   margin: 0;
+  padding: 9px 12px;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
+.social-actions .button-icon {
+  width: 15px;
+  height: 15px;
 }
 
 /* A square Steam icon is a fallback, not a cover. Present it as a centered little app badge

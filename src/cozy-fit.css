@@ -254,18 +254,20 @@ h1.display {
   padding-bottom: clamp(28px, 4vw, 40px);
 }
 
-.social-heading,
+.social-heading {
+  width: min(100%, 900px);
+  max-width: 900px;
+  margin-inline: auto;
+  align-items: flex-end;
+  margin-bottom: 20px;
+}
+
 .social-panel > .note,
 .nine-grid,
 .familiar {
   width: min(100%, 790px);
   max-width: 790px;
   margin-inline: auto;
-}
-
-.social-heading {
-  align-items: flex-end;
-  margin-bottom: 18px;
 }
 
 .social-actions {
