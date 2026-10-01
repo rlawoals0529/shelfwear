@@ -20,4 +20,5 @@ import "./custom-shelves.css";
 import "./achievement-cabinet.css";
 import "./history.css";
 import "./pick.css";
+import "./receipt.css";
 createRoot(document.getElementById("root")!).render(<StrictMode><App /></StrictMode>);
