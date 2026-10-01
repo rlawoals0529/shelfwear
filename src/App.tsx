@@ -4,7 +4,7 @@ import { analyticsFor, type LibraryAnalytics } from "./lib/analytics.js";
 import { familiarFor, steamCover, steamHeader, steamIcon, topNine } from "./lib/profile.js";
 import { compareLibraries, type LibraryComparison, type SharedGame } from "./lib/compare.js";
 import { comparePartyLibraries, type PartyComparison, type PartyGame } from "./lib/party.js";
-import { comparisonCardFilename, curatedCardFilename, downloadBlob, familiarCardFilename, historyMilestoneFilename, proxiedSteamCover, renderComparisonCard, renderCuratedCard, renderFamiliarCard, renderHistoryMilestoneCard, renderShareCard, shareCardFilename } from "./lib/share-card.js";
+import { comparisonCardFilename, curatedCardFilename, downloadBlob, familiarCardFilename, historyMilestoneFilename, proxiedSteamCover, renderComparisonCard, renderCuratedCard, renderFamiliarCard, renderHistoryMilestoneCard, renderShareCard, shareCardFilename } from "./lib/share-card.js";\nimport { libraryExportCsv, libraryExportFilename, libraryExportJson, type LibraryExportFormat } from "./lib/export.js";
 import {
   comparisonShareUrl,
   fetchPublicSteamLibrary,
@@ -783,6 +783,23 @@ export default function App() {
     setShareCopied(true);
     window.setTimeout(() => setShareCopied(false), 1600);
   }, [loaded.steamid]);
+
+  const downloadLibraryExport = useCallback((format: LibraryExportFormat) => {
+    const context = {
+      kind: loaded.kind,
+      sourceLabel: loaded.source,
+      generatedAt: new Date().toISOString(),
+      ...(loaded.steamid ? { steamid: loaded.steamid } : {}),
+      ...(loaded.profile?.name ? { profileName: loaded.profile.name } : {}),
+    };
+    const body = format === "csv"
+      ? libraryExportCsv(loaded.games, context)
+      : libraryExportJson(loaded.games, context);
+    const type = format === "csv"
+      ? "text/csv;charset=utf-8"
+      : "application/json;charset=utf-8";
+    downloadBlob(new Blob([body], { type }), libraryExportFilename(format, context));
+  }, [loaded]);
 
   const copyComparisonLink = useCallback(async () => {
     if (!comparison) return;
@@ -1606,9 +1623,19 @@ export default function App() {
       <section className="panel library-panel">
         <div className="library-heading">
           <SectionTitle icon="list" eyebrow="The whole shelf">Everything ({loaded.games.length})</SectionTitle>
-          <span className="library-result-count">
-            showing <b>{visibleGames.length}</b>{visibleGames.length !== loaded.games.length ? ` of ${loaded.games.length}` : ""}
-          </span>
+          <div className="library-heading-meta">
+            <span className="library-result-count">
+              showing <b>{visibleGames.length}</b>{visibleGames.length !== loaded.games.length ? ` of ${loaded.games.length}` : ""}
+            </span>
+            <div className="library-export-actions" aria-label="Export the currently loaded library">
+              <button type="button" onClick={() => downloadLibraryExport("csv")}>
+                <CuteIcon name="download" className="button-icon" /> Export CSV
+              </button>
+              <button type="button" onClick={() => downloadLibraryExport("json")}>
+                <CuteIcon name="download" className="button-icon" /> Export JSON
+              </button>
+            </div>
+          </div>
         </div>
 
         <div className="library-tools">
@@ -1687,10 +1714,10 @@ export default function App() {
 
         <p className={`library-data-note ${loaded.kind}`}>
           {loaded.kind === "local"
-            ? "Install state, disk size, and recency come only from the Steam files loaded from this PC."
+            ? "Install state, disk size, and recency come only from the Steam files loaded from this PC. CSV/JSON exports keep those fields and label their local-file provenance."
             : loaded.kind === "sample"
-              ? "Demo local data is shown in the sample. Load your own Steam files for real install size and recency."
-              : "Public Steam profiles show owned games and playtime. Shelfwear cannot see what is installed on another PC."}
+              ? "Demo local data is shown in the sample. Exports are labeled synthetic demo data, not observations from this PC."
+              : "Public Steam profiles show owned games and playtime. Exports intentionally omit install, disk, and local last-played fields because Steam does not provide them here."}
         </p>
 
         {selectedLibraryGame && (
