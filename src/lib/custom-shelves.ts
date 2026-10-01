@@ -37,6 +37,32 @@ export function customShelfGamesFromLibrary(games: readonly Game[]): CustomShelf
   return compact;
 }
 
+export type CustomShelfBulkPlacement = "top" | "bottom";
+
+export function moveSelectedCustomShelfGames(
+  games: readonly CustomShelfGame[],
+  selectedAppIds: Iterable<string>,
+  placement: CustomShelfBulkPlacement,
+): CustomShelfGame[] {
+  const selected = new Set(selectedAppIds);
+  const chosen: CustomShelfGame[] = [];
+  const rest: CustomShelfGame[] = [];
+
+  for (const game of games) {
+    (selected.has(game.appid) ? chosen : rest).push(game);
+  }
+
+  return placement === "top" ? [...chosen, ...rest] : [...rest, ...chosen];
+}
+
+export function removeSelectedCustomShelfGames(
+  games: readonly CustomShelfGame[],
+  selectedAppIds: Iterable<string>,
+): CustomShelfGame[] {
+  const selected = new Set(selectedAppIds);
+  return games.filter((game) => !selected.has(game.appid));
+}
+
 export const CUSTOM_SHELF_PRESETS = [
   { id: "comfort", name: "Comfort games" },
   { id: "playing", name: "Currently playing" },

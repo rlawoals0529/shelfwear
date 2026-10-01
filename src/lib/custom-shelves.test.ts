@@ -4,6 +4,8 @@ import {
   MAX_CUSTOM_SHELVES,
   cleanShelfName,
   customShelfGamesFromLibrary,
+  moveSelectedCustomShelfGames,
+  removeSelectedCustomShelfGames,
   customShelvesBackupFilename,
   customShelvesBackupObject,
   customShelvesBackupText,
@@ -14,6 +16,34 @@ import {
   shelfStoryFromCustomShelf,
   type CustomShelf,
 } from "./custom-shelves.js";
+
+describe("bulk custom-shelf editing", () => {
+  const games = [
+    { appid: "1", name: "One", note: "keep one" },
+    { appid: "2", name: "Two" },
+    { appid: "3", name: "Three", note: "keep three" },
+    { appid: "4", name: "Four" },
+  ];
+
+  it("moves selected games to the top as a stable block", () => {
+    const moved = moveSelectedCustomShelfGames(games, ["4", "2"], "top");
+    expect(moved.map((game) => game.appid)).toEqual(["2", "4", "1", "3"]);
+    expect(moved[0]).toBe(games[1]);
+    expect(moved[1]).toBe(games[3]);
+  });
+
+  it("moves selected games to the bottom while preserving both relative orders", () => {
+    const moved = moveSelectedCustomShelfGames(games, ["2", "4", "999"], "bottom");
+    expect(moved.map((game) => game.appid)).toEqual(["1", "3", "2", "4"]);
+    expect(moved.map((game) => game.note)).toEqual(["keep one", "keep three", undefined, undefined]);
+  });
+
+  it("removes only explicitly selected games and ignores stale ids", () => {
+    const remaining = removeSelectedCustomShelfGames(games, ["2", "999", "4"]);
+    expect(remaining.map((game) => game.appid)).toEqual(["1", "3"]);
+    expect(remaining[1]?.note).toBe("keep three");
+  });
+});
 
 describe("custom shelves", () => {
   it("turns library results into compact shelf entries without source metrics", () => {

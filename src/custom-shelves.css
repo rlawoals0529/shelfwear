@@ -371,6 +371,11 @@
   white-space: nowrap;
 }
 
+.custom-shelf-head-actions button.active {
+  border-color: color-mix(in srgb, var(--accent-2) 48%, var(--edge));
+  background: color-mix(in srgb, var(--accent-2) 8%, var(--panel));
+}
+
 .custom-shelf-share-status {
   margin: 8px 0 0;
   color: var(--fg);
@@ -450,6 +455,79 @@
   font-size: 9px;
 }
 
+.custom-shelf-bulk-toolbar {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) auto auto;
+  gap: 10px;
+  align-items: center;
+  margin-top: 16px;
+  padding: 10px 11px;
+  border: 1px dashed color-mix(in srgb, var(--accent-2) 48%, var(--edge));
+  border-radius: 10px 14px 11px 12px;
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--accent-2) 8%, transparent), transparent 42%),
+    color-mix(in srgb, var(--raised) 28%, var(--panel));
+}
+
+.custom-shelf-bulk-count {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 2px 5px;
+  align-items: baseline;
+  color: var(--fg);
+  font-size: 9px;
+}
+
+.custom-shelf-bulk-count b {
+  font-family: var(--font-round);
+  font-size: 13px;
+}
+
+.custom-shelf-bulk-count span {
+  grid-column: 1 / -1;
+  color: var(--dim);
+  font-size: 8px;
+  line-height: 1.45;
+}
+
+.custom-shelf-bulk-select-actions,
+.custom-shelf-bulk-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 5px;
+}
+
+.custom-shelf-bulk-toolbar button {
+  min-height: 32px;
+  padding: 5px 8px;
+  border-radius: 8px;
+  box-shadow: none;
+  font-size: 8px;
+  white-space: nowrap;
+}
+
+.custom-shelf-bulk-toolbar .danger-subtle {
+  border-style: dashed;
+  color: var(--dim);
+  background: transparent;
+}
+
+.custom-shelf-bulk-toolbar .danger-subtle:hover:not(:disabled) {
+  color: var(--fg);
+}
+
+.custom-shelf-bulk-status {
+  margin: 7px 0 0;
+  padding: 7px 9px;
+  border-left: 3px solid color-mix(in srgb, var(--accent-2) 52%, var(--edge));
+  border-radius: 0 9px 9px 0;
+  color: var(--fg);
+  background: color-mix(in srgb, var(--accent-2) 6%, transparent);
+  font-size: 9px;
+}
+
 .custom-shelf-games {
   display: grid;
   gap: 6px;
@@ -465,6 +543,30 @@
   border: 1px solid color-mix(in srgb, var(--edge) 60%, transparent);
   border-radius: 8px 10px 8px 9px;
   background: color-mix(in srgb, var(--raised) 24%, var(--panel));
+}
+
+.custom-shelf-game.bulk-editing {
+  grid-template-columns: 22px 34px minmax(0, 1fr);
+}
+
+.custom-shelf-game.selected {
+  border-color: color-mix(in srgb, var(--accent-2) 52%, var(--edge));
+  background: color-mix(in srgb, var(--accent-2) 7%, var(--panel));
+  box-shadow: inset 3px 0 0 color-mix(in srgb, var(--accent-2) 62%, transparent);
+}
+
+.custom-shelf-game-select {
+  width: 17px;
+  height: 17px;
+  margin: 0;
+  justify-self: center;
+  accent-color: var(--accent-2);
+  cursor: pointer;
+}
+
+.custom-shelf-game-select:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent) 58%, transparent);
+  outline-offset: 2px;
 }
 
 .custom-shelf-rank {
@@ -564,6 +666,16 @@
 }
 
 @media (max-width: 720px) {
+  .custom-shelf-bulk-toolbar {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .custom-shelf-bulk-select-actions,
+  .custom-shelf-bulk-actions {
+    justify-content: flex-start;
+  }
+
   .custom-shelf-switcher {
     align-items: stretch;
     flex-direction: column;
@@ -604,12 +716,31 @@
     grid-template-columns: 30px minmax(0, 1fr);
   }
 
+  .custom-shelf-game.bulk-editing {
+    grid-template-columns: 22px 30px minmax(0, 1fr);
+  }
+
   .custom-shelf-game-actions {
     grid-column: 2;
   }
 }
 
 @media (max-width: 480px) {
+  .custom-shelf-bulk-select-actions,
+  .custom-shelf-bulk-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+  }
+
+  .custom-shelf-bulk-toolbar button {
+    width: 100%;
+  }
+
+  .custom-shelf-bulk-actions .danger-subtle {
+    grid-column: 1 / -1;
+  }
+
   .custom-shelf-backup {
     padding: 11px;
   }
@@ -669,6 +800,15 @@
 
   .custom-shelf-game {
     grid-template-columns: 1fr;
+  }
+
+  .custom-shelf-game.bulk-editing {
+    grid-template-columns: 22px minmax(0, 1fr);
+  }
+
+  .custom-shelf-game.bulk-editing .custom-shelf-rank,
+  .custom-shelf-game.bulk-editing .custom-shelf-game-copy {
+    grid-column: 2;
   }
 
   .custom-shelf-rank {
