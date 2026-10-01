@@ -5,6 +5,7 @@
   position: relative;
   flex: 1 1 440px;
   min-width: 0;
+  padding-top: 4px;
 }
 
 .social-title-wrap .section-title {
@@ -13,8 +14,8 @@
 
 .social-doodle {
   position: absolute;
-  right: 4px;
-  top: -7px;
+  right: 8px;
+  top: 2px;
   display: inline-flex;
   align-items: center;
   gap: 4px;
