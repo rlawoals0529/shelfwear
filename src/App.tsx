@@ -4,7 +4,8 @@ import { analyticsFor, type LibraryAnalytics } from "./lib/analytics.js";
 import { familiarFor, steamCover, steamHeader, steamIcon, topNine } from "./lib/profile.js";
 import { compareLibraries, type LibraryComparison, type SharedGame } from "./lib/compare.js";
 import { comparePartyLibraries, type PartyComparison, type PartyGame } from "./lib/party.js";
-import { comparisonCardFilename, curatedCardFilename, downloadBlob, familiarCardFilename, historyMilestoneFilename, proxiedSteamCover, renderComparisonCard, renderCuratedCard, renderFamiliarCard, renderHistoryMilestoneCard, renderShareCard, shareCardFilename } from "./lib/share-card.js";\nimport { libraryExportCsv, libraryExportFilename, libraryExportJson, type LibraryExportFormat } from "./lib/export.js";
+import { comparisonCardFilename, curatedCardFilename, downloadBlob, familiarCardFilename, historyMilestoneFilename, proxiedSteamCover, renderComparisonCard, renderCuratedCard, renderFamiliarCard, renderHistoryMilestoneCard, renderShareCard, shareCardFilename } from "./lib/share-card.js";
+import { libraryExportCsv, libraryExportFilename, libraryExportJson, type LibraryExportFormat } from "./lib/export.js";
 import {
   comparisonShareUrl,
   fetchPublicSteamLibrary,
