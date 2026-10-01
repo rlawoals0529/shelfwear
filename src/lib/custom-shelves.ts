@@ -1,3 +1,5 @@
+import type { Game } from "./library.js";
+
 export interface CustomShelfGame {
   appid: string;
   name: string;
@@ -16,6 +18,24 @@ export interface CustomShelf {
 export const CUSTOM_SHELVES_KEY = "shelfwear:custom-shelves:v1";
 export const MAX_CUSTOM_SHELVES = 12;
 export const MAX_CUSTOM_SHELF_GAMES = 50;
+
+export function customShelfGamesFromLibrary(games: readonly Game[]): CustomShelfGame[] {
+  const compact: CustomShelfGame[] = [];
+  const seen = new Set<string>();
+
+  for (const game of games) {
+    if (seen.has(game.appid)) continue;
+    seen.add(game.appid);
+    compact.push({
+      appid: game.appid,
+      name: game.name ?? `app ${game.appid}`,
+      ...(game.iconHash ? { iconHash: game.iconHash } : {}),
+    });
+    if (compact.length >= MAX_CUSTOM_SHELF_GAMES) break;
+  }
+
+  return compact;
+}
 
 export const CUSTOM_SHELF_PRESETS = [
   { id: "comfort", name: "Comfort games" },
