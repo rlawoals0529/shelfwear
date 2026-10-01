@@ -51,11 +51,26 @@ Achievement Cabinet is deliberately **on demand**. Shelfwear does not crawl ever
 
 **Recently played** is a separate on-demand public-Steam request using Steam's dedicated recent-games endpoint. Shelfwear does not call it during ordinary library import. The response is `no-store` and keeps the API key server-side. Shelfwear shows the recent games, lifetime minutes, and the optional two-week playtime Steam returns; it does not reinterpret that list as local install state or invent a last-launch timestamp.
 
+**Shelf History** is different because it is intentionally persistent, but only after the visitor opts in for a resolved public SteamID. Its records stay in that browser's `localStorage`; the Worker never receives or stores them. Each saved state contains the SteamID, snapshot/check times, aggregate counts, and compact `[AppID, lifetime minutes]` pairs. Names, artwork, disk data, install state, local recency, and full API responses are not copied into history.
+
 ## Recently played
 
 For a loaded **public Steam profile**, Shelfwear can explicitly load a **Recently played** ledger. It is separate from the owned-games import and separate from the local-file **Recently played on this PC** sort. The ledger uses Steam's recent-games response and shows lifetime playtime plus **last two weeks** playtime only when Steam includes that field for a game.
 
 This feature is deliberately on demand. Opening a public shelf does not automatically make the extra recent-activity request, and local-file/sample mode does not expose the control. Shelfwear never manufactures a calendar timestamp from this endpoint.
+
+## Shelf History
+
+For a loaded **public Steam profile**, Shelfwear can opt into **Shelf History on this browser**. The first click saves a baseline; nothing before that baseline is inferred or reconstructed. On later loads of the same resolved SteamID, Shelfwear compares the newly fetched owned-games state against the last saved state and can report:
+
+- change in recorded lifetime hours and library count,
+- games newly visible on the saved shelf,
+- games that now have recorded playtime,
+- literal crossings of **2h**, **10h**, **50h**, and **100h** for titles already present in the previous saved state.
+
+A newly seen game is never backfilled with historical milestones because Shelfwear did not observe its earlier state. Snapshot timestamps mean only **“Shelfwear saw this library state then.”** They are not play-session timestamps.
+
+History is bounded to the most recent **8 changed states** per SteamID. Re-loading an unchanged library updates the local last-check time without adding a duplicate snapshot. **Clear local history** removes that SteamID's history record from the browser.
 
 ## Whole-shelf browsing
 
