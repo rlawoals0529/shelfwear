@@ -244,6 +244,36 @@ test("the whole shelf can be searched, filtered, sorted, and made compact", asyn
   await expect(page.locator(".library-result-count")).toContainText("showing 2 of 3");
 });
 
+
+test("whole-shelf rows open a factual local catalog record without fetching artwork", async ({ page }) => {
+  const artworkRequests: string[] = [];
+  await page.route("**/api/steam/cover/*", async (route) => {
+    artworkRequests.push(route.request().url());
+    await route.abort();
+  });
+
+  await page.locator('input[type="file"]').setInputFiles(ALL);
+  await page.getByRole("button", { name: "Open details for Fixture Alpha" }).click();
+
+  const drawer = page.getByRole("complementary", { name: "Details for Fixture Alpha" });
+  await expect(drawer).toBeVisible();
+  await expect(drawer).toContainText("SHELF INDEX / APP");
+  await expect(drawer).toContainText("Recorded playtime");
+  await expect(drawer).toContainText("Installed on this PC");
+  await expect(drawer).toContainText("Known size");
+  await expect(drawer).toContainText("Last recorded launch");
+  await expect(drawer).toContainText("No artwork is fetched automatically in local-file mode");
+  await expect(drawer.getByRole("link", { name: /Open Steam store/ })).toHaveAttribute("href", /store\.steampowered\.com\/app\//);
+  expect(artworkRequests).toEqual([]);
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(overflow).toBeLessThanOrEqual(1);
+
+  await drawer.getByRole("button", { name: "Close game details" }).click();
+  await expect(drawer).toBeHidden();
+});
+
 test("shelf browsing preferences stay in this browser across reloads", async ({ page }) => {
   await page.locator('input[type="file"]').setInputFiles(ALL);
   await page.getByRole("button", { name: "Least played" }).click();
