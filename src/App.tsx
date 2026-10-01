@@ -48,6 +48,7 @@ import {
 } from "./lib/custom-shelves.js";
 import AchievementCabinet from "./AchievementCabinet.js";
 import PickSomething from "./PickSomething.js";
+import { drawGame } from "./lib/pick.js";
 import ShelfMap from "./ShelfMap.js";
 import {
   clearShelfHistory,
@@ -377,6 +378,7 @@ export default function App() {
   );
   const [libraryVisibleLimit, setLibraryVisibleLimit] = useState(LIBRARY_RENDER_BATCH);
   const [selectedLibraryGameAppId, setSelectedLibraryGameAppId] = useState<string | null>(null);
+  const [libraryRandomMessage, setLibraryRandomMessage] = useState<string | null>(null);
   const [customShelves, setCustomShelves] = useState<CustomShelf[]>(() => readCustomShelves());
   const [activeShelfId, setActiveShelfId] = useState<string | null>(() => readCustomShelves()[0]?.id ?? null);
   const [drawerShelfId, setDrawerShelfId] = useState<string>(() => readCustomShelves()[0]?.id ?? "");
@@ -801,6 +803,19 @@ export default function App() {
     () => visibleGames.slice(0, libraryVisibleLimit),
     [libraryVisibleLimit, visibleGames],
   );
+
+  useEffect(() => {
+    setLibraryRandomMessage(null);
+  }, [effectiveLibraryFilter, libraryQuery, loaded.games]);
+
+  const openRandomLibraryResult = () => {
+    const game = drawGame(visibleGames);
+    if (!game) return;
+    setSelectedLibraryGameAppId(game.appid);
+    setLibraryRandomMessage(
+      `Randomly opened 1 of ${visibleGames.length} current Shelf Index ${visibleGames.length === 1 ? "result" : "results"}.`,
+    );
+  };
 
   const selectedLibraryGame = useMemo(
     () => loaded.games.find((game) => game.appid === selectedLibraryGameAppId) ?? null,
@@ -1944,6 +1959,15 @@ export default function App() {
                 <>showing <b>{visibleGames.length}</b>{visibleGames.length !== loaded.games.length ? ` of ${loaded.games.length}` : ""}</>
               )}
             </span>
+            <button
+              type="button"
+              className="library-random-action"
+              disabled={!visibleGames.length}
+              onClick={openRandomLibraryResult}
+              aria-label="Open one random current Shelf Index result"
+            >
+              <CuteIcon name="sparkles" className="button-icon" /> Random result
+            </button>
             <div className="library-export-actions" aria-label="Export the currently loaded library">
               <button type="button" onClick={() => downloadLibraryExport("csv")}>
                 <CuteIcon name="download" className="button-icon" /> Export CSV
@@ -2056,12 +2080,13 @@ export default function App() {
               ? "Demo local data is shown in the sample. Exports are labeled synthetic demo data, not observations from this PC."
               : "Public Steam profiles show owned games and playtime. Exports intentionally omit install, disk, and local last-played fields because Steam does not provide them here."}
         </p>
+        {libraryRandomMessage && <p className="library-random-status" role="status">{libraryRandomMessage}</p>}
 
         {selectedLibraryGame && (
           <aside className="library-catalog-drawer" aria-label={`Details for ${selectedLibraryGame.name ?? `app ${selectedLibraryGame.appid}`}`}>
             <div className="library-catalog-meta">
               <span>SHELF INDEX / APP {selectedLibraryGame.appid}</span>
-              <button type="button" onClick={() => setSelectedLibraryGameAppId(null)} aria-label="Close game details"><CuteIcon name="close" /></button>
+              <button type="button" onClick={() => { setSelectedLibraryGameAppId(null); setLibraryRandomMessage(null); }} aria-label="Close game details"><CuteIcon name="close" /></button>
             </div>
             <div className="library-catalog-body">
               <div className="library-catalog-art" aria-hidden="true">
@@ -2170,7 +2195,7 @@ export default function App() {
                   className="library-row-details"
                   aria-label={`Open details for ${g.name ?? `app ${g.appid}`}`}
                   aria-pressed={selectedLibraryGameAppId === g.appid}
-                  onClick={() => setSelectedLibraryGameAppId((current) => current === g.appid ? null : g.appid)}
+                  onClick={() => { setLibraryRandomMessage(null); setSelectedLibraryGameAppId((current) => current === g.appid ? null : g.appid); }}
                 >
                   index card
                 </button>
