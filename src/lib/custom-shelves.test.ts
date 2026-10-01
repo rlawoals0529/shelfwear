@@ -6,6 +6,7 @@ import {
   customShelfGamesFromLibrary,
   moveSelectedCustomShelfGames,
   removeSelectedCustomShelfGames,
+  transferSelectedCustomShelfGames,
   customShelvesBackupFilename,
   customShelvesBackupObject,
   customShelvesBackupText,
@@ -42,6 +43,75 @@ describe("bulk custom-shelf editing", () => {
     const remaining = removeSelectedCustomShelfGames(games, ["2", "999", "4"]);
     expect(remaining.map((game) => game.appid)).toEqual(["1", "3"]);
     expect(remaining[1]?.note).toBe("keep three");
+  });
+});
+
+describe("bulk shelf transfers", () => {
+  const shelves: CustomShelf[] = [
+    {
+      id: "source",
+      name: "Source",
+      createdAt: 1,
+      updatedAt: 1,
+      games: [
+        { appid: "1", name: "One", note: "source one" },
+        { appid: "2", name: "Two", note: "source two" },
+        { appid: "3", name: "Three", note: "source three" },
+      ],
+    },
+    {
+      id: "target",
+      name: "Target",
+      createdAt: 2,
+      updatedAt: 2,
+      games: [
+        { appid: "2", name: "Two", note: "target keeps its own note" },
+        { appid: "9", name: "Nine" },
+      ],
+    },
+  ];
+
+  it("copies selected games in source order and skips target duplicates", () => {
+    const result = transferSelectedCustomShelfGames(shelves, "source", "target", ["3", "2", "1"], "copy");
+    expect(result.addedAppIds).toEqual(["1", "3"]);
+    expect(result.duplicateAppIds).toEqual(["2"]);
+    expect(result.capacityBlockedAppIds).toEqual([]);
+    expect(result.shelves[0]?.games.map((game) => game.appid)).toEqual(["1", "2", "3"]);
+    expect(result.shelves[1]?.games.map((game) => game.appid)).toEqual(["2", "9", "1", "3"]);
+    expect(result.shelves[1]?.games[2]?.note).toBe("source one");
+    expect(result.shelves[1]?.games[0]?.note).toBe("target keeps its own note");
+  });
+
+  it("moves only games that were actually inserted and keeps duplicate selections on source", () => {
+    const result = transferSelectedCustomShelfGames(shelves, "source", "target", ["1", "2", "3"], "move");
+    expect(result.addedAppIds).toEqual(["1", "3"]);
+    expect(result.duplicateAppIds).toEqual(["2"]);
+    expect(result.shelves[0]?.games.map((game) => game.appid)).toEqual(["2"]);
+    expect(result.shelves[0]?.games[0]?.note).toBe("source two");
+    expect(result.shelves[1]?.games.map((game) => game.appid)).toEqual(["2", "9", "1", "3"]);
+  });
+
+  it("keeps capacity-blocked games on source during a move", () => {
+    const fullTarget: CustomShelf = {
+      id: "target",
+      name: "Target",
+      createdAt: 2,
+      updatedAt: 2,
+      games: Array.from({ length: MAX_CUSTOM_SHELF_GAMES - 1 }, (_, index) => ({
+        appid: String(100 + index),
+        name: `Target ${index}`,
+      })),
+    };
+    const result = transferSelectedCustomShelfGames([shelves[0]!, fullTarget], "source", "target", ["1", "2"], "move");
+    expect(result.addedAppIds).toEqual(["1"]);
+    expect(result.capacityBlockedAppIds).toEqual(["2"]);
+    expect(result.shelves[0]?.games.map((game) => game.appid)).toEqual(["2", "3"]);
+    expect(result.shelves[1]?.games).toHaveLength(MAX_CUSTOM_SHELF_GAMES);
+  });
+
+  it("does nothing for invalid or same-shelf transfers", () => {
+    expect(transferSelectedCustomShelfGames(shelves, "source", "source", ["1"], "copy").addedAppIds).toEqual([]);
+    expect(transferSelectedCustomShelfGames(shelves, "missing", "target", ["1"], "move").addedAppIds).toEqual([]);
   });
 });
 
