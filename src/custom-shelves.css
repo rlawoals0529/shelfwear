@@ -192,6 +192,56 @@
   line-height: 1.5;
 }
 
+.custom-shelf-switcher {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 14px;
+  margin: 0 0 10px;
+  padding: 10px 11px;
+  border: 1px dashed color-mix(in srgb, var(--edge) 68%, transparent);
+  border-radius: 10px 13px 11px 12px;
+  background: color-mix(in srgb, var(--raised) 24%, var(--panel));
+}
+
+.custom-shelf-switcher label {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+
+.custom-shelf-switcher label > span {
+  color: var(--dim);
+  font-size: 8px;
+  font-weight: 850;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.custom-shelf-switcher select {
+  width: min(360px, 60vw);
+  min-width: 0;
+  min-height: 36px;
+  padding: 7px 9px;
+  border: 1px solid color-mix(in srgb, var(--edge) 76%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--panel) 94%, var(--raised));
+  color: var(--fg);
+  font: inherit;
+  font-size: 10px;
+}
+
+.custom-shelf-switcher select:focus {
+  outline: 2px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  outline-offset: 1px;
+}
+
+.custom-shelf-switcher > span {
+  color: var(--dim);
+  font-size: 8px;
+  text-align: right;
+}
+
 .custom-shelf-tabs {
   display: flex;
   gap: 7px;
@@ -514,6 +564,19 @@
 }
 
 @media (max-width: 720px) {
+  .custom-shelf-switcher {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .custom-shelf-switcher select {
+    width: 100%;
+  }
+
+  .custom-shelf-switcher > span {
+    text-align: left;
+  }
+
   .custom-shelf-create,
   .custom-shelf-head,
   .custom-shelf-backup {
