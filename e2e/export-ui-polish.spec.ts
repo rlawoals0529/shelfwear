@@ -73,7 +73,7 @@ test("local CSV export carries real local provenance and device fields", async (
   const downloadPromise = page.waitForEvent("download");
   await page.getByRole("button", { name: "Export CSV" }).click();
   const download = await downloadPromise;
-  expect(download.suggestedFilename()).toBe("shelfwear-local-library-library.csv");
+  expect(download.suggestedFilename()).toBe("shelfwear-local-library.csv");
 
   const raw = await readFile((await download.path())!, "utf8");
   expect(raw.split("\r\n")[0]).toContain("installed_on_this_pc");
