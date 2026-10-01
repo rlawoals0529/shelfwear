@@ -45,6 +45,8 @@ import {
   clearShelfHistory,
   readShelfHistory,
   recordShelfHistoryVisit,
+  shelfHistoryOverview,
+  shelfHistorySparklinePoints,
   startShelfHistory,
   writeShelfHistory,
   type ShelfHistoryDelta,
@@ -604,6 +606,20 @@ export default function App() {
     [loaded.games],
   );
 
+  const historyObservationOverview = useMemo(
+    () => shelfHistory && loaded.kind === "steam"
+      ? shelfHistoryOverview(shelfHistory, loaded.games, shelfHistory.lastCheckedAt)
+      : null,
+    [loaded.games, loaded.kind, shelfHistory],
+  );
+  const historySparkPoints = useMemo(
+    () => historyObservationOverview
+      ? shelfHistorySparklinePoints(historyObservationOverview.observations)
+      : [],
+    [historyObservationOverview],
+  );
+  const historySparkPolyline = historySparkPoints.map((point) => `${point.x},${point.y}`).join(" ");
+
   // Installation, disk size, and local recency are only trustworthy after the
   // visitor explicitly loads files from this PC. The sample contains synthetic
   // local-shaped data, so it must not unlock real-device controls.
@@ -1065,6 +1081,46 @@ export default function App() {
                   <b>{loaded.games.length} games · {hours(loaded.games.reduce((sum, game) => sum + game.minutes, 0))}h</b>
                 </div>
               </div>
+
+              {historyObservationOverview && historyObservationOverview.observations.length > 1 && (
+                <div className="history-observation-overview">
+                  <div className="history-observation-copy">
+                    <small>{historyObservationOverview.baselineRetained ? "Since history began" : "Since earliest retained state"}</small>
+                    <b>
+                      {historyObservationOverview.minutesDelta > 0 ? "+" : ""}{hours(historyObservationOverview.minutesDelta)}h
+                      {" · "}
+                      {historyObservationOverview.gamesDelta > 0 ? "+" : ""}{historyObservationOverview.gamesDelta} games
+                      {" · "}
+                      {historyObservationOverview.playedDelta > 0 ? "+" : ""}{historyObservationOverview.playedDelta} played
+                    </b>
+                    <span>
+                      {new Date(historyObservationOverview.fromAt).toLocaleDateString()} → last check
+                    </span>
+                  </div>
+                  <div className="history-observation-chart">
+                    <svg
+                      viewBox="0 0 240 56"
+                      role="img"
+                      aria-label={`Recorded hours across ${historySparkPoints.length} saved Shelfwear states`}
+                      preserveAspectRatio="none"
+                    >
+                      <polyline className="history-observation-line" points={historySparkPolyline} />
+                      {historySparkPoints.map((point, index) => (
+                        <circle
+                          className="history-observation-dot"
+                          key={point.at + ":" + index}
+                          cx={point.x}
+                          cy={point.y}
+                          r="3.5"
+                        />
+                      ))}
+                    </svg>
+                    <small>
+                      Dots are saved Shelfwear states. Lines only connect observations; they do not reconstruct when play happened.
+                    </small>
+                  </div>
+                </div>
+              )}
 
               {shelfHistoryDelta ? (
                 <div className="history-delta">
