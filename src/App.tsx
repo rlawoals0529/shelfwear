@@ -391,6 +391,7 @@ export default function App() {
   const [historyMilestoneRendering, setHistoryMilestoneRendering] = useState<string | null>(null);
   const [historyMilestoneError, setHistoryMilestoneError] = useState<string | null>(null);
   const picker = useRef<HTMLInputElement>(null);
+  const librarySearchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     writeLocalPreference(LIBRARY_SORT_KEY, librarySort);
@@ -399,6 +400,46 @@ export default function App() {
   useEffect(() => {
     writeLocalPreference(LIBRARY_DENSITY_KEY, libraryDensity);
   }, [libraryDensity]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (view !== "shelf" || event.defaultPrevented) return;
+
+      const target = event.target as HTMLElement | null;
+      const editing =
+        target instanceof HTMLInputElement ||
+        target instanceof HTMLTextAreaElement ||
+        target instanceof HTMLSelectElement ||
+        Boolean(target?.isContentEditable);
+
+      if (
+        event.key === "/" &&
+        !editing &&
+        !event.metaKey &&
+        !event.ctrlKey &&
+        !event.altKey
+      ) {
+        event.preventDefault();
+        librarySearchRef.current?.focus();
+        librarySearchRef.current?.scrollIntoView({ block: "center" });
+        return;
+      }
+
+      if (event.key !== "Escape") return;
+      if (document.activeElement === librarySearchRef.current && libraryQuery) {
+        event.preventDefault();
+        setLibraryQuery("");
+        return;
+      }
+      if (selectedLibraryGameAppId) {
+        event.preventDefault();
+        setSelectedLibraryGameAppId(null);
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [libraryQuery, selectedLibraryGameAppId, view]);
 
   useEffect(() => {
     writeCustomShelves(customShelves);
@@ -1914,15 +1955,35 @@ export default function App() {
         </div>
 
         <div className="library-tools">
-          <label className="library-search">
-            <span>Find a game</span>
-            <input
-              value={libraryQuery}
-              onChange={(event) => setLibraryQuery(event.target.value)}
-              placeholder="Search this shelf…"
-              aria-label="Search games in the whole shelf"
-            />
-          </label>
+          <div className="library-search">
+            <div className="library-search-label">
+              <label htmlFor="library-search-input">Find a game</label>
+              <span className="library-search-shortcut" aria-hidden="true"><kbd>/</kbd> quick find</span>
+            </div>
+            <div className="library-search-field">
+              <input
+                ref={librarySearchRef}
+                id="library-search-input"
+                value={libraryQuery}
+                onChange={(event) => setLibraryQuery(event.target.value)}
+                placeholder="Search this shelf…"
+                aria-label="Search games in the whole shelf"
+              />
+              {libraryQuery && (
+                <button
+                  type="button"
+                  className="library-search-clear"
+                  onClick={() => {
+                    setLibraryQuery("");
+                    librarySearchRef.current?.focus();
+                  }}
+                  aria-label="Clear library search"
+                >
+                  <CuteIcon name="close" />
+                </button>
+              )}
+            </div>
+          </div>
 
           <div className="library-control-group library-sort">
             <span className="library-control-label">Sort by</span>
