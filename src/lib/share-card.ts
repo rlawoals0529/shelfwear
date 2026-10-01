@@ -649,104 +649,198 @@ export async function renderFamiliarCard(input: FamiliarCardInput): Promise<Blob
   ctx.fillStyle = theme.bg;
   ctx.fillRect(0, 0, WIDTH, HEIGHT);
 
-  const wash = ctx.createLinearGradient(0, 0, WIDTH, HEIGHT);
-  wash.addColorStop(0, theme.panel);
-  wash.addColorStop(.58, theme.bg);
-  wash.addColorStop(1, theme.raised);
-  ctx.globalAlpha = .88;
-  ctx.fillStyle = wash;
-  ctx.fillRect(0, 0, WIDTH, HEIGHT);
+  const sheetX = 32;
+  const sheetY = 28;
+  const sheetW = WIDTH - 64;
+  const sheetH = HEIGHT - 56;
+  roundedRect(ctx, sheetX, sheetY, sheetW, sheetH, 30);
+  ctx.fillStyle = theme.panel;
+  ctx.fill();
+  ctx.strokeStyle = theme.edge;
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  ctx.save();
+  roundedRect(ctx, sheetX, sheetY, sheetW, sheetH, 30);
+  ctx.clip();
+  ctx.strokeStyle = theme.edge;
+  ctx.globalAlpha = .16;
+  ctx.lineWidth = 1;
+  for (let y = 78; y < HEIGHT - 46; y += 34) {
+    ctx.beginPath();
+    ctx.moveTo(sheetX + 20, y);
+    ctx.lineTo(sheetX + sheetW - 20, y);
+    ctx.stroke();
+  }
   ctx.globalAlpha = 1;
 
-  drawSparkle(ctx, WIDTH - 106, 80, 18, theme.accent);
-  drawSparkle(ctx, 112, 228, 10, theme.accent2);
+  const spine = ctx.createLinearGradient(sheetX, sheetY, sheetX, sheetY + sheetH);
+  spine.addColorStop(0, theme.accent2);
+  spine.addColorStop(1, theme.accent);
+  ctx.fillStyle = spine;
+  ctx.fillRect(sheetX, sheetY + 32, 9, sheetH - 64);
+  ctx.restore();
 
   ctx.fillStyle = theme.accent;
-  ctx.font = "800 22px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  ctx.fillText("SHELFWEAR  /  SHELF FAMILIAR", PAD, 58);
+  ctx.font = "900 17px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.fillText("SHELFWEAR / LIBRARY SPECIMEN", PAD + 8, 65);
+
+  ctx.fillStyle = theme.dim;
+  ctx.font = "800 10px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.textAlign = "right";
+  ctx.fillText("OBSERVED PATTERN · EVIDENCE CATALOGED", WIDTH - PAD - 8, 65);
+  ctx.textAlign = "left";
 
   if (input.profileName) {
     ctx.fillStyle = theme.dim;
-    ctx.font = "600 18px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-    const profile = wrapByMeasure(ctx, input.profileName, WIDTH - PAD * 2, 1)[0] ?? input.profileName;
-    ctx.fillText(profile, PAD, 94);
+    ctx.font = "600 15px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+    const profile = wrapByMeasure(ctx, input.profileName, WIDTH - PAD * 2 - 16, 1)[0] ?? input.profileName;
+    ctx.fillText("SHELF: " + profile, PAD + 8, 94);
+  } else {
+    ctx.fillStyle = theme.dim;
+    ctx.font = "600 15px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+    ctx.fillText("SHELF: CURRENT LIBRARY", PAD + 8, 94);
   }
 
-  const glyphY = 345;
-  ctx.font = "240px 'Segoe UI Emoji', 'Apple Color Emoji', sans-serif";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-  ctx.fillText(input.familiar.glyph, WIDTH / 2, glyphY);
-  ctx.textAlign = "left";
-  ctx.textBaseline = "alphabetic";
-
-  ctx.fillStyle = theme.fg;
-  ctx.font = "800 68px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  const familiarName = wrapByMeasure(ctx, input.familiar.name, WIDTH - PAD * 2, 1)[0] ?? input.familiar.name;
-  const nameWidth = ctx.measureText(familiarName).width;
-  ctx.fillText(familiarName, (WIDTH - nameWidth) / 2, 555);
-
-  ctx.fillStyle = theme.dim;
-  ctx.font = "500 25px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  const description = wrapByMeasure(ctx, input.familiar.description, 820, 3);
-  description.forEach((line, index) => {
-    const width = ctx.measureText(line).width;
-    ctx.fillText(line, (WIDTH - width) / 2, 608 + index * 33);
-  });
-
-  ctx.fillStyle = theme.accent;
-  ctx.font = "800 17px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  ctx.fillText("WHY THIS ONE", PAD, 748);
-
-  const gap = 14;
-  const signalWidth = (WIDTH - PAD * 2 - gap * 2) / 3;
-  input.familiar.signals.slice(0, 3).forEach((signal, index) => {
-    const x = PAD + index * (signalWidth + gap);
-    const y = 772;
-    roundedRect(ctx, x, y, signalWidth, 142, 20);
-    ctx.fillStyle = theme.panel;
-    ctx.fill();
-
-    ctx.fillStyle = index === 1 ? theme.accent2 : theme.accent;
-    roundedRect(ctx, x + 12, y + 12, 34, 6, 3);
-    ctx.fill();
-
-    ctx.strokeStyle = theme.edge;
-    ctx.lineWidth = 2;
-    roundedRect(ctx, x, y, signalWidth, 142, 20);
-    ctx.stroke();
-
-    ctx.fillStyle = theme.dim;
-    ctx.font = "700 15px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-    ctx.fillText(signal.label.toUpperCase(), x + 18, y + 34);
-
-    ctx.fillStyle = theme.fg;
-    ctx.font = "800 28px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-    const value = wrapByMeasure(ctx, signal.value, signalWidth - 36, 2);
-    value.forEach((line, lineIndex) => ctx.fillText(line, x + 18, y + 75 + lineIndex * 31));
-  });
-
-  ctx.fillStyle = theme.fg;
-  ctx.font = "700 23px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  const evidence = wrapByMeasure(ctx, input.familiar.evidence, WIDTH - PAD * 2, 3);
-  evidence.forEach((line, index) => ctx.fillText(line, PAD, 976 + index * 31));
-
+  const specimenX = PAD + 8;
+  const specimenY = 132;
+  const specimenW = WIDTH - (PAD + 8) * 2;
+  const specimenH = 390;
+  roundedRect(ctx, specimenX, specimenY, specimenW, specimenH, 16);
+  ctx.fillStyle = theme.raised;
+  ctx.fill();
   ctx.strokeStyle = theme.edge;
   ctx.lineWidth = 2;
-  ctx.beginPath();
-  ctx.moveTo(PAD, 1110);
-  ctx.lineTo(WIDTH - PAD, 1110);
   ctx.stroke();
 
+  // The mascot is a classification mark inside the specimen plate, not a claim about the person.
+  const sealX = specimenX + 168;
+  const sealY = specimenY + 187;
+  ctx.save();
+  ctx.translate(sealX, sealY);
+  ctx.rotate(-.025);
+  ctx.strokeStyle = theme.accent2;
+  ctx.lineWidth = 4;
+  ctx.globalAlpha = .82;
+  ctx.beginPath();
+  ctx.arc(0, 0, 118, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(0, 0, 105, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.globalAlpha = 1;
+
+  ctx.font = "154px 'Segoe UI Emoji', 'Apple Color Emoji', sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(input.familiar.glyph, 0, -5);
+  ctx.fillStyle = theme.accent2;
+  ctx.font = "900 9px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.fillText("SHELF FAMILIAR", 0, 99);
+  ctx.restore();
+
+  const copyX = specimenX + 332;
+  const copyW = specimenW - 370;
   ctx.fillStyle = theme.dim;
-  ctx.font = "500 18px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  const disclaimer = "A playful description of observable library patterns — not a personality test.";
-  wrapByMeasure(ctx, disclaimer, 720, 2).forEach((line, index) => ctx.fillText(line, PAD, 1154 + index * 26));
+  ctx.font = "900 11px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.fillText("CLASSIFICATION / LIBRARY PATTERN", copyX, specimenY + 74);
+
+  ctx.fillStyle = theme.fg;
+  ctx.font = "850 48px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  const familiarName = wrapByMeasure(ctx, input.familiar.name, copyW, 2);
+  familiarName.forEach((line, index) => ctx.fillText(line, copyX, specimenY + 132 + index * 54));
+
+  ctx.fillStyle = theme.dim;
+  ctx.font = "500 20px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  const descriptionY = specimenY + 132 + familiarName.length * 54 + 24;
+  const description = wrapByMeasure(ctx, input.familiar.description, copyW, 4);
+  description.forEach((line, index) => ctx.fillText(line, copyX, descriptionY + index * 27));
 
   ctx.fillStyle = theme.accent;
-  ctx.font = "800 20px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.font = "900 13px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.fillText("EVIDENCE FIELDS", PAD + 8, 574);
+
+  const rowX = PAD + 8;
+  const rowW = WIDTH - (PAD + 8) * 2;
+  const rowH = 92;
+  const rowGap = 10;
+  input.familiar.signals.slice(0, 3).forEach((signal, index) => {
+    const y = 596 + index * (rowH + rowGap);
+    roundedRect(ctx, rowX, y, rowW, rowH, 10);
+    ctx.fillStyle = index % 2 ? theme.panel : theme.raised;
+    ctx.fill();
+    ctx.strokeStyle = theme.edge;
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    ctx.fillStyle = index === 1 ? theme.accent2 : theme.accent;
+    ctx.font = "900 22px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+    ctx.fillText(String(index + 1).padStart(2, "0"), rowX + 18, y + 53);
+
+    ctx.fillStyle = theme.dim;
+    ctx.font = "800 12px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+    ctx.fillText(signal.label.toUpperCase(), rowX + 70, y + 34);
+
+    ctx.fillStyle = theme.fg;
+    ctx.font = "800 22px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+    const value = wrapByMeasure(ctx, signal.value, rowW - 290, 2);
+    value.forEach((line, lineIndex) => ctx.fillText(line, rowX + 70, y + 63 + lineIndex * 24));
+
+    ctx.fillStyle = theme.dim;
+    ctx.font = "700 9px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+    ctx.textAlign = "right";
+    ctx.fillText("OBSERVED", rowX + rowW - 18, y + 51);
+    ctx.textAlign = "left";
+  });
+
+  const noteY = 920;
+  roundedRect(ctx, rowX, noteY, rowW, 174, 12);
+  ctx.fillStyle = theme.panel;
+  ctx.fill();
+  ctx.strokeStyle = theme.accent;
+  ctx.lineWidth = 2;
+  ctx.setLineDash([7, 6]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  ctx.fillStyle = theme.accent;
+  ctx.font = "900 12px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.fillText("FIELD NOTE / WHY THIS ONE", rowX + 18, noteY + 30);
+
+  ctx.fillStyle = theme.fg;
+  ctx.font = "700 22px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  const evidence = wrapByMeasure(ctx, input.familiar.evidence, rowW - 36, 4);
+  evidence.forEach((line, index) => ctx.fillText(line, rowX + 18, noteY + 66 + index * 29));
+
+  ctx.save();
+  ctx.translate(WIDTH - PAD - 104, 1160);
+  ctx.rotate(-.035);
+  ctx.strokeStyle = theme.accent;
+  ctx.lineWidth = 3;
+  ctx.setLineDash([7, 5]);
+  roundedRect(ctx, -92, -31, 184, 62, 7);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = theme.accent;
+  ctx.font = "900 13px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("CATALOGED", 0, 5);
+  ctx.restore();
+
+  ctx.fillStyle = theme.dim;
+  ctx.font = "500 15px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  const disclaimer = "Cataloged from observable library patterns only — not a personality test or a claim about you.";
+  wrapByMeasure(ctx, disclaimer, 680, 2).forEach((line, index) => ctx.fillText(line, PAD + 8, 1160 + index * 23));
+
+  ctx.fillStyle = theme.dim;
+  ctx.font = "700 10px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+  ctx.fillText("SPECIMEN CARD / 1080×1350", PAD + 8, 1250);
+
+  ctx.fillStyle = theme.accent;
+  ctx.font = "900 16px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
   ctx.textAlign = "right";
-  ctx.fillText("shelfwear ♡", WIDTH - PAD, 1208);
+  ctx.fillText("shelfwear ♡", WIDTH - PAD - 8, 1250);
   ctx.textAlign = "left";
 
   return canvasBlob(canvas);
