@@ -493,6 +493,9 @@ export default function App() {
     window.setTimeout(() => setPartyShareCopied(false), 1600);
   }, [partyResult]);
 
+  const partyDrawPool = partyResult?.result.ownedByAll ?? [];
+  const partyDraw = partyDrawPool.length ? partyDrawPool[partyDrawIndex % partyDrawPool.length] ?? null : null;
+
   const stats = useMemo(() => summarise(loaded.games), [loaded]);
   const shelf = useMemo(() => shelve(loaded.games), [loaded]);
   const nine = useMemo(() => topNine(loaded.games), [loaded]);
@@ -1142,6 +1145,133 @@ export default function App() {
                       </div>
                     );
                   })}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+      </section>
+
+      <section className="panel party-panel" id="party">
+        <SectionTitle icon="friends" eyebrow="For the group">Party Shelf</SectionTitle>
+        <p className="prose">
+          Put 3–5 public Steam shelves on the same table. Shelfwear shows literal shared ownership and playtime,
+          then draws tonight&apos;s game only from titles everyone owns.
+        </p>
+        {shared.party && <p className="share-hint">This Party Shelf came from a stateless link. Load it to rebuild all public libraries live.</p>}
+
+        <div className="party-form">
+          {partyProfiles.map((profile, index) => (
+            <div className="party-profile-row" key={index}>
+              <input
+                value={profile}
+                onChange={(event) => updatePartyProfile(index, event.target.value)}
+                placeholder={`${STEAM_PROFILE_PREFIX}friend-${index + 1}`}
+                aria-label={`Party Steam profile ${index + 1}`}
+              />
+              {partyProfiles.length > 3 && (
+                <button type="button" className="party-remove" onClick={() => removePartyProfile(index)} aria-label={`Remove Party Steam profile ${index + 1}`}>
+                  <CuteIcon name="close" />
+                </button>
+              )}
+            </div>
+          ))}
+          <div className="party-form-actions">
+            {partyProfiles.length < 5 && (
+              <button type="button" onClick={addPartyProfile}>+ Add friend</button>
+            )}
+            <button
+              type="button"
+              disabled={partying || partyProfiles.some((profile) => !hasSteamProfileInput(profile))}
+              onClick={() => void runPartyShelf()}
+            >
+              <CuteIcon name="friends" className="button-icon" />
+              {partying ? "Building party…" : shared.party ? "Load Party Shelf" : "Build Party Shelf"}
+            </button>
+          </div>
+        </div>
+        {partyError && <p className="err">{partyError}</p>}
+
+        {partyResult && (
+          <div className="party-result">
+            <div className="party-ledger-meta">
+              <span>SHELFWEAR / PARTY LEDGER</span>
+              <button type="button" onClick={() => void copyPartyLink()}>
+                <CuteIcon name="share" className="button-icon" />{partyShareCopied ? "Link copied" : "Share party"}
+              </button>
+            </div>
+
+            <div className="party-people" aria-label="Party Shelf players">
+              {partyResult.libraries.map((library) => <SteamPerson key={library.steamid} library={library} />)}
+            </div>
+
+            <div className="party-metrics">
+              <div><small>Unique games in group</small><b>{partyResult.result.unionCount}</b></div>
+              <div><small>Owned by everyone</small><b>{partyResult.result.ownedByAllCount}</b></div>
+              <div><small>Played by everyone</small><b>{partyResult.result.playedByAllCount}</b></div>
+            </div>
+
+            <div className="party-tonight">
+              <div>
+                <p className="eyebrow">Tonight&apos;s draw</p>
+                {partyDraw ? (
+                  <>
+                    <h3>{partyDraw.name ?? `app ${partyDraw.appid}`}</h3>
+                    <p>Drawn only from {partyDrawPool.length} game{partyDrawPool.length === 1 ? "" : "s"} owned by every shelf in this group.</p>
+                  </>
+                ) : (
+                  <>
+                    <h3>No all-owned game to draw from</h3>
+                    <p>The current public libraries do not share a title across every profile.</p>
+                  </>
+                )}
+              </div>
+              {partyDraw && (
+                <div className="party-tonight-actions">
+                  <PartyGameArt game={partyDraw} />
+                  {partyDrawPool.length > 1 && (
+                    <button type="button" onClick={() => setPartyDrawIndex((current) => (current + 1) % partyDrawPool.length)}>Draw another</button>
+                  )}
+                </div>
+              )}
+            </div>
+
+            <div className="party-corners" aria-label="Games unique to each party shelf">
+              {partyResult.result.uniqueCorners.map((corner) => (
+                <span key={corner.steamid}><small>Only on {corner.name}&apos;s shelf</small><b>{corner.count}</b></span>
+              ))}
+            </div>
+
+            {partyResult.result.handoffs.length > 0 && (
+              <div className="party-section">
+                <div className="shared-games-heading">
+                  <div>
+                    <p className="eyebrow">Pass the controller</p>
+                    <h3>Everyone owns these, but not everyone has played them</h3>
+                    <p>Recorded playtime is present on some shelves and 0h on the others.</p>
+                  </div>
+                </div>
+                <div className="party-game-grid">
+                  {partyResult.result.handoffs.slice(0, 6).map((game) => (
+                    <PartyGameRow key={game.appid} game={game} libraries={partyResult.libraries} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {partyResult.result.ownedByMost.length > 0 && (
+              <div className="party-section">
+                <div className="shared-games-heading">
+                  <div>
+                    <p className="eyebrow">Almost shared</p>
+                    <h3>Most of the group owns these</h3>
+                    <p>Shown with the exact owner count rather than a recommendation score.</p>
+                  </div>
+                </div>
+                <div className="party-game-grid">
+                  {partyResult.result.ownedByMost.slice(0, 6).map((game) => (
+                    <PartyGameRow key={game.appid} game={game} libraries={partyResult.libraries} />
+                  ))}
                 </div>
               </div>
             )}
@@ -2296,6 +2426,36 @@ function ComparisonGameRow({ game, leftName, rightName }: { game: SharedGame; le
       <div className="shared-game-copy">
         <b>{game.name ?? `app ${game.appid}`}</b>
         <span>{leftName} {hours(game.leftMinutes)}h · {rightName} {hours(game.rightMinutes)}h</span>
+      </div>
+    </div>
+  );
+}
+
+function PartyGameArt({ game }: { game: PartyGame }) {
+  const name = game.name ?? `app ${game.appid}`;
+  return (
+    <span className="compare-game-art party-game-art" aria-hidden="true">
+      <span>{name.trim().charAt(0).toUpperCase() || "♡"}</span>
+      <img
+        src={proxiedSteamCover(game.appid, game.iconHash)}
+        alt=""
+        loading="lazy"
+        decoding="async"
+        onError={(event) => { event.currentTarget.hidden = true; }}
+      />
+    </span>
+  );
+}
+
+function PartyGameRow({ game, libraries }: { game: PartyGame; libraries: PublicSteamLibrary[] }) {
+  const owners = libraries.filter((library) => Object.prototype.hasOwnProperty.call(game.minutesBySteamId, library.steamid));
+  const played = owners.filter((library) => (game.minutesBySteamId[library.steamid] ?? 0) > 0);
+  return (
+    <div className="party-game-row">
+      <PartyGameArt game={game} />
+      <div>
+        <b>{game.name ?? `app ${game.appid}`}</b>
+        <span>{owners.length} of {libraries.length} own · {played.length} have recorded playtime</span>
       </div>
     </div>
   );
