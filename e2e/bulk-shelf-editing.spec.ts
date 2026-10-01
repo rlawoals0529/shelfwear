@@ -33,7 +33,8 @@ test("bulk edit moves selected games as a stable block without losing notes", as
   await page.getByRole("checkbox", { name: "Select Game 2 for bulk editing" }).check();
   await page.getByRole("checkbox", { name: "Select Game 4 for bulk editing" }).check();
 
-  await expect(page.locator(".custom-shelf-bulk-count")).toContainText("2 selected");
+  await expect(page.locator(".custom-shelf-bulk-count")).toContainText("2 of 5 selected");
+  await expect(page.locator(".custom-shelf-bulk-count")).toContainText("Game 2 · Game 4");
   await page.getByRole("button", { name: "Move to top" }).click();
 
   expect(await shelfOrder(page)).toEqual(["Game 2", "Game 4", "Game 1", "Game 3", "Game 5"]);
