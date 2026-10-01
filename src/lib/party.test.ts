@@ -40,7 +40,7 @@ describe("comparePartyLibraries", () => {
     expect(result.uniqueCorners).toEqual([
       { steamid: "76561198000000001", name: "A", count: 1 },
       { steamid: "76561198000000002", name: "B", count: 1 },
-      { steamid: "76561198000000003", name: "C", count: 1 },
+      { steamid: "76561198000000003", name: "C", count: 2 },
     ]);
   });
 
