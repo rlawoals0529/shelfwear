@@ -42,6 +42,15 @@ test("downloads the sample top-nine card as a real PNG without network data", as
 
 
 test("downloads a hand-picked top-games scrapbook card", async ({ page }) => {
+  await page.addInitScript(() => {
+    const seen: string[] = [];
+    (window as unknown as { __scrapbookFillText: string[] }).__scrapbookFillText = seen;
+    const original = CanvasRenderingContext2D.prototype.fillText;
+    CanvasRenderingContext2D.prototype.fillText = function (...args) {
+      seen.push(String(args[0]));
+      return original.apply(this, args as Parameters<CanvasRenderingContext2D["fillText"]>);
+    };
+  });
   const pixel = Buffer.from(
     "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
     "base64",
@@ -68,6 +77,13 @@ test("downloads a hand-picked top-games scrapbook card", async ({ page }) => {
   expect(bytes.subarray(0, 8)).toEqual(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]));
   expect(bytes.readUInt32BE(16)).toBe(1080);
   expect(bytes.readUInt32BE(20)).toBe(1350);
+
+  const drawnText = await page.evaluate(() =>
+    (window as unknown as { __scrapbookFillText: string[] }).__scrapbookFillText,
+  );
+  expect(drawnText).toContain("SHELFWEAR / SHELF STORY");
+  expect(drawnText).toContain("01 PICKS · HAND-PICKED");
+  expect(drawnText).toContain("ARCHIVE COPY");
 });
 
 
