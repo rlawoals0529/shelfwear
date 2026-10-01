@@ -338,10 +338,9 @@ test("custom shelves persist locally and hand off cleanly into Shelf Stories", a
   await page.getByRole("button", { name: /Fixture Never Launched/ }).click();
   await expect(page.locator(".custom-shelf-game")).toHaveCount(2);
 
-  const stored = await expect.poll(async () =>
+  await expect.poll(async () =>
     page.evaluate(() => localStorage.getItem("shelfwear:custom-shelves:v1") ?? "")
   ).toContain("rainy-night favorite");
-  expect(stored).toBeUndefined();
 
   const raw = await page.evaluate(() => localStorage.getItem("shelfwear:custom-shelves:v1") ?? "");
   expect(raw).toContain("Fixture Alpha");
