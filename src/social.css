@@ -729,8 +729,8 @@
   padding: 5px 8px;
   border: 2px dashed color-mix(in srgb, var(--accent) 52%, var(--edge));
   border-radius: 5px;
-  color: color-mix(in srgb, var(--accent) 72%, var(--fg));
-  font-size: 7px;
+  color: var(--fg);
+  font-size: 8px;
   font-weight: 900;
   letter-spacing: .14em;
   transform: rotate(-2deg);
