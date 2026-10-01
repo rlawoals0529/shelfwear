@@ -1,0 +1,61 @@
+.receipt-callout {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  margin-top: 18px;
+  padding: 14px 16px 14px 19px;
+  border: 1px dashed color-mix(in srgb, var(--accent) 42%, var(--edge));
+  border-radius: 8px 16px 15px 9px;
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--accent) 10%, var(--panel)) 0 5px, transparent 5px),
+    repeating-linear-gradient(0deg, transparent 0 27px, color-mix(in srgb, var(--edge) 14%, transparent) 27px 28px),
+    color-mix(in srgb, var(--panel) 98%, var(--raised));
+}
+
+.receipt-callout-copy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.receipt-callout .eyebrow {
+  margin: 0;
+}
+
+.receipt-callout-copy > b {
+  font-family: var(--font-round);
+  font-size: 14px;
+}
+
+.receipt-callout-copy > span {
+  max-width: 64ch;
+  color: var(--dim);
+  font-size: 10px;
+  line-height: 1.45;
+}
+
+.receipt-callout button {
+  flex: none;
+  min-height: 40px;
+  padding: 8px 11px;
+  border-radius: 11px;
+  box-shadow: none;
+  font-size: 10px;
+  white-space: nowrap;
+}
+
+.receipt-callout + .err {
+  margin-top: 8px;
+}
+
+@media (max-width: 620px) {
+  .receipt-callout {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .receipt-callout button {
+    width: 100%;
+  }
+}
