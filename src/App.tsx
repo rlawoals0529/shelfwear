@@ -39,6 +39,7 @@ import {
   customShelfGamesFromLibrary,
   moveSelectedCustomShelfGames,
   removeSelectedCustomShelfGames,
+  transferSelectedCustomShelfGames,
   customShelvesBackupFilename,
   customShelvesBackupText,
   customShelfShareText,
@@ -983,6 +984,16 @@ export default function App() {
     setCustomShelves(next);
     setActiveShelfId(next[0]?.id ?? null);
     setDrawerShelfId(next[0]?.id ?? "");
+  }, []);
+
+  const replaceCustomShelves = useCallback((next: CustomShelf[]) => {
+    setCustomShelves(next);
+    setActiveShelfId((current) =>
+      current && next.some((shelf) => shelf.id === current) ? current : next[0]?.id ?? null
+    );
+    setDrawerShelfId((current) =>
+      current && next.some((shelf) => shelf.id === current) ? current : next[0]?.id ?? ""
+    );
   }, []);
 
   const turnShelfIntoStory = useCallback((shelf: CustomShelf) => {
@@ -2374,6 +2385,7 @@ export default function App() {
           onDelete={deleteCustomShelf}
           onDuplicate={duplicateCustomShelf}
           onRestore={restoreCustomShelves}
+          onReplace={replaceCustomShelves}
           onStory={turnShelfIntoStory}
         />
       ) : (
@@ -2397,6 +2409,7 @@ function CustomShelvesPage({
   onDelete,
   onDuplicate,
   onRestore,
+  onReplace,
   onStory,
 }: {
   shelves: CustomShelf[];
@@ -2408,6 +2421,7 @@ function CustomShelvesPage({
   onDelete: (id: string) => void;
   onDuplicate: (id: string) => string | null;
   onRestore: (shelves: CustomShelf[]) => void;
+  onReplace: (shelves: CustomShelf[]) => void;
   onStory: (shelf: CustomShelf) => void;
 }) {
   const active = shelves.find((shelf) => shelf.id === activeShelfId) ?? shelves[0] ?? null;
@@ -2421,6 +2435,13 @@ function CustomShelvesPage({
   const [bulkEditing, setBulkEditing] = useState(false);
   const [selectedAppIds, setSelectedAppIds] = useState<string[]>([]);
   const [bulkMessage, setBulkMessage] = useState<string | null>(null);
+  const [bulkTargetShelfId, setBulkTargetShelfId] = useState("");
+  const [bulkUndo, setBulkUndo] = useState<{
+    shelves: CustomShelf[];
+    activeShelfId: string;
+    selectedAppIds: string[];
+    label: string;
+  } | null>(null);
   const backupPicker = useRef<HTMLInputElement>(null);
   const activeShelfTab = useRef<HTMLButtonElement>(null);
 
@@ -2433,7 +2454,17 @@ function CustomShelvesPage({
     setBulkEditing(false);
     setSelectedAppIds([]);
     setBulkMessage(null);
+    setBulkUndo(null);
   }, [active?.id]);
+
+  useEffect(() => {
+    const firstOther = shelves.find((shelf) => shelf.id !== active?.id)?.id ?? "";
+    setBulkTargetShelfId((current) =>
+      current && current !== active?.id && shelves.some((shelf) => shelf.id === current)
+        ? current
+        : firstOther
+    );
+  }, [active?.id, shelves]);
 
   useEffect(() => {
     activeShelfTab.current?.scrollIntoView({ block: "nearest", inline: "nearest" });
@@ -2443,6 +2474,24 @@ function CustomShelvesPage({
   const selectedGameCount = active
     ? active.games.reduce((count, game) => count + (selectedAppIdSet.has(game.appid) ? 1 : 0), 0)
     : 0;
+
+  const selectedGames = active
+    ? active.games.filter((game) => selectedAppIdSet.has(game.appid))
+    : [];
+  const selectedGameSummary = selectedGames.length <= 3
+    ? selectedGames.map((game) => game.name).join(" · ")
+    : `${selectedGames.slice(0, 3).map((game) => game.name).join(" · ")} +${selectedGames.length - 3} more`;
+  const bulkTargetShelf = shelves.find((shelf) => shelf.id === bulkTargetShelfId) ?? null;
+  const bulkTransferPreview = useMemo(() => {
+    if (!active || !bulkTargetShelf || selectedGameCount === 0) return null;
+    return transferSelectedCustomShelfGames(
+      shelves,
+      active.id,
+      bulkTargetShelf.id,
+      selectedAppIds,
+      "copy",
+    );
+  }, [active, bulkTargetShelf, selectedAppIds, selectedGameCount, shelves]);
 
   const suggestions = useMemo(() => {
     if (!active) return [];
@@ -2520,15 +2569,30 @@ function CustomShelvesPage({
     }));
   };
 
+  const snapshotShelvesForUndo = (label: string) => {
+    if (!active) return;
+    setBulkUndo({
+      shelves: shelves.map((shelf) => ({
+        ...shelf,
+        games: shelf.games.map((game) => ({ ...game })),
+      })),
+      activeShelfId: active.id,
+      selectedAppIds: [...selectedAppIds],
+      label,
+    });
+  };
+
   const toggleBulkEditing = () => {
     if (bulkEditing) {
       setBulkEditing(false);
       setSelectedAppIds([]);
       setBulkMessage(null);
+      setBulkUndo(null);
       return;
     }
     setBulkEditing(true);
     setBulkMessage(null);
+    setBulkUndo(null);
   };
 
   const toggleBulkGame = (appid: string) => {
@@ -2537,23 +2601,21 @@ function CustomShelvesPage({
         ? current.filter((value) => value !== appid)
         : [...current, appid]
     );
-    setBulkMessage(null);
   };
 
   const selectAllShelfGames = () => {
     if (!active) return;
     setSelectedAppIds(active.games.map((game) => game.appid));
-    setBulkMessage(null);
   };
 
   const clearBulkSelection = () => {
     setSelectedAppIds([]);
-    setBulkMessage(null);
   };
 
   const moveBulkSelection = (placement: "top" | "bottom") => {
     if (!active || selectedGameCount === 0) return;
     const count = selectedGameCount;
+    snapshotShelvesForUndo(`Move ${count} selected ${count === 1 ? "game" : "games"} to the ${placement}`);
     onUpdate(active.id, (shelf) => ({
       ...shelf,
       games: moveSelectedCustomShelfGames(shelf.games, selectedAppIds, placement),
@@ -2570,6 +2632,7 @@ function CustomShelvesPage({
       `Remove ${count} selected ${count === 1 ? "game" : "games"} from “${active.name}”? Private notes on those shelf entries will also be removed. Your Steam library is not affected.`,
     );
     if (!confirmed) return;
+    snapshotShelvesForUndo(`Remove ${count} selected ${count === 1 ? "game" : "games"}`);
     onUpdate(active.id, (shelf) => ({
       ...shelf,
       games: removeSelectedCustomShelfGames(shelf.games, selectedAppIds),
@@ -2577,6 +2640,61 @@ function CustomShelvesPage({
     setSelectedAppIds([]);
     if (count === active.games.length) setBulkEditing(false);
     setBulkMessage(`Removed ${count} selected ${count === 1 ? "game" : "games"} from “${active.name}”.`);
+  };
+
+  const transferBulkSelection = (mode: "copy" | "move") => {
+    if (!active || !bulkTargetShelf || selectedGameCount === 0) return;
+    const result = transferSelectedCustomShelfGames(
+      shelves,
+      active.id,
+      bulkTargetShelf.id,
+      selectedAppIds,
+      mode,
+    );
+    if (!result.addedAppIds.length) {
+      const reason = result.duplicateAppIds.length
+        ? `Every selected game is already on “${bulkTargetShelf.name}”.`
+        : result.capacityBlockedAppIds.length
+          ? `“${bulkTargetShelf.name}” is already at the ${MAX_CUSTOM_SHELF_GAMES}-game limit.`
+          : "Nothing could be transferred.";
+      setBulkMessage(reason);
+      setBulkUndo(null);
+      return;
+    }
+
+    const count = result.addedAppIds.length;
+    snapshotShelvesForUndo(`${mode === "copy" ? "Copy" : "Move"} ${count} ${count === 1 ? "game" : "games"} to “${bulkTargetShelf.name}”`);
+
+    const now = Date.now();
+    const changedIds = new Set([bulkTargetShelf.id, ...(mode === "move" ? [active.id] : [])]);
+    onReplace(result.shelves.map((shelf) =>
+      changedIds.has(shelf.id) ? { ...shelf, updatedAt: now } : shelf
+    ));
+
+    const unresolved = [...result.duplicateAppIds, ...result.capacityBlockedAppIds];
+    setSelectedAppIds(unresolved);
+
+    const notes = [
+      result.duplicateAppIds.length
+        ? `${result.duplicateAppIds.length} already ${result.duplicateAppIds.length === 1 ? "was" : "were"} there`
+        : "",
+      result.capacityBlockedAppIds.length
+        ? `${result.capacityBlockedAppIds.length} blocked by the ${MAX_CUSTOM_SHELF_GAMES}-game limit`
+        : "",
+    ].filter(Boolean);
+    setBulkMessage(
+      `${mode === "copy" ? "Copied" : "Moved"} ${count} selected ${count === 1 ? "game" : "games"} to “${bulkTargetShelf.name}”${notes.length ? `; ${notes.join("; ")}` : ""}.`,
+    );
+  };
+
+  const undoBulkAction = () => {
+    if (!bulkUndo) return;
+    onReplace(bulkUndo.shelves);
+    onSelect(bulkUndo.activeShelfId);
+    setBulkEditing(true);
+    setSelectedAppIds(bulkUndo.selectedAppIds);
+    setBulkMessage(`Undid: ${bulkUndo.label}.`);
+    setBulkUndo(null);
   };
 
   const duplicateActiveShelf = () => {
@@ -2864,37 +2982,88 @@ function CustomShelvesPage({
               </div>
 
               {bulkEditing && active.games.length > 0 && (
-                <div className="custom-shelf-bulk-toolbar" aria-label="Bulk edit shelf games">
-                  <div className="custom-shelf-bulk-count">
-                    <b>{selectedGameCount}</b> selected
-                    <span>Select games below, then move them as a stable block or remove them from this browser-local shelf.</span>
+                <>
+                  <div className="custom-shelf-bulk-toolbar" aria-label="Bulk edit shelf games">
+                    <div className="custom-shelf-bulk-count">
+                      <b>{selectedGameCount}</b> of {active.games.length} selected
+                      <span>
+                        {selectedGameCount
+                          ? selectedGameSummary
+                          : "Select games below, then reorder, transfer, or remove them as a group."}
+                      </span>
+                    </div>
+                    <div className="custom-shelf-bulk-select-actions">
+                      <button
+                        type="button"
+                        onClick={selectAllShelfGames}
+                        disabled={selectedGameCount === active.games.length}
+                      >
+                        Select all
+                      </button>
+                      <button type="button" onClick={clearBulkSelection} disabled={selectedGameCount === 0}>
+                        Clear
+                      </button>
+                    </div>
+                    <div className="custom-shelf-bulk-actions">
+                      <button type="button" onClick={() => moveBulkSelection("top")} disabled={selectedGameCount === 0}>
+                        Move to top
+                      </button>
+                      <button type="button" onClick={() => moveBulkSelection("bottom")} disabled={selectedGameCount === 0}>
+                        Move to bottom
+                      </button>
+                      <button type="button" className="danger-subtle" onClick={removeBulkSelection} disabled={selectedGameCount === 0}>
+                        Remove selected
+                      </button>
+                    </div>
                   </div>
-                  <div className="custom-shelf-bulk-select-actions">
-                    <button
-                      type="button"
-                      onClick={selectAllShelfGames}
-                      disabled={selectedGameCount === active.games.length}
-                    >
-                      Select all
-                    </button>
-                    <button type="button" onClick={clearBulkSelection} disabled={selectedGameCount === 0}>
-                      Clear
-                    </button>
-                  </div>
-                  <div className="custom-shelf-bulk-actions">
-                    <button type="button" onClick={() => moveBulkSelection("top")} disabled={selectedGameCount === 0}>
-                      Move to top
-                    </button>
-                    <button type="button" onClick={() => moveBulkSelection("bottom")} disabled={selectedGameCount === 0}>
-                      Move to bottom
-                    </button>
-                    <button type="button" className="danger-subtle" onClick={removeBulkSelection} disabled={selectedGameCount === 0}>
-                      Remove selected
-                    </button>
-                  </div>
+
+                  {shelves.length > 1 && (
+                    <div className="custom-shelf-bulk-transfer">
+                      <label>
+                        <span>Destination shelf</span>
+                        <select
+                          value={bulkTargetShelfId}
+                          onChange={(event) => setBulkTargetShelfId(event.target.value)}
+                          aria-label="Destination shelf for selected games"
+                        >
+                          {shelves.filter((shelf) => shelf.id !== active.id).map((shelf) => (
+                            <option key={shelf.id} value={shelf.id}>
+                              {shelf.name} · {shelf.games.length}/{MAX_CUSTOM_SHELF_GAMES}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <p>
+                        {bulkTransferPreview && selectedGameCount
+                          ? `${bulkTransferPreview.addedAppIds.length} can be added${bulkTransferPreview.duplicateAppIds.length ? ` · ${bulkTransferPreview.duplicateAppIds.length} already there` : ""}${bulkTransferPreview.capacityBlockedAppIds.length ? ` · ${bulkTransferPreview.capacityBlockedAppIds.length} blocked by limit` : ""}`
+                          : "Choose games above to preview the transfer."}
+                      </p>
+                      <div className="custom-shelf-bulk-transfer-actions">
+                        <button
+                          type="button"
+                          disabled={!bulkTransferPreview?.addedAppIds.length}
+                          onClick={() => transferBulkSelection("copy")}
+                        >
+                          Copy to shelf
+                        </button>
+                        <button
+                          type="button"
+                          disabled={!bulkTransferPreview?.addedAppIds.length}
+                          onClick={() => transferBulkSelection("move")}
+                        >
+                          Move to shelf
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+              {(bulkMessage || bulkUndo) && (
+                <div className="custom-shelf-bulk-status" role="status">
+                  <span>{bulkMessage ?? "The last bulk action can be undone."}</span>
+                  {bulkUndo && <button type="button" onClick={undoBulkAction}>Undo</button>}
                 </div>
               )}
-              {bulkMessage && <p className="custom-shelf-bulk-status" role="status">{bulkMessage}</p>}
 
               {active.games.length === 0 ? (
                 <div className="custom-shelf-empty-state">
