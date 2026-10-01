@@ -1495,6 +1495,17 @@ export default function App() {
 
               {shelfHistoryDelta ? (
                 <div className="history-delta">
+                  <div className="history-delta-heading">
+                    <div>
+                      <small>Since previous saved state</small>
+                      <b>
+                        {new Date(shelfHistoryDelta.fromAt).toLocaleString()}
+                        {" → "}
+                        {new Date(shelfHistoryDelta.toAt).toLocaleString()}
+                      </b>
+                    </div>
+                    <span>Observed by Shelfwear</span>
+                  </div>
                   <div className="history-delta-metrics">
                     <span><small>Recorded hours</small><b>{shelfHistoryDelta.minutesDelta > 0 ? "+" : ""}{hours(shelfHistoryDelta.minutesDelta)}h</b></span>
                     <span><small>Library count</small><b>{shelfHistoryDelta.gamesDelta > 0 ? "+" : ""}{shelfHistoryDelta.gamesDelta}</b></span>
@@ -1504,6 +1515,22 @@ export default function App() {
                   {shelfHistoryDelta.changed ? (
                     <>
                       <div className="history-events">
+                      {shelfHistoryDelta.recordedTimeChanges.length > 0 && (
+                        <div>
+                          <small>Recorded lifetime time changed</small>
+                          <p className="history-recorded-changes">
+                            {shelfHistoryDelta.recordedTimeChanges.slice(0, 5).map((entry) => {
+                              const deltaHours = hours(entry.deltaMinutes);
+                              const deltaLabel = `${deltaHours > 0 ? "+" : ""}${deltaHours}h`;
+                              return `${historyNameByAppId.get(entry.appid) ?? `app ${entry.appid}`} ${deltaLabel}`;
+                            }).join(" · ")}
+                            {shelfHistoryDelta.recordedTimeChanges.length > 5
+                              ? ` · +${shelfHistoryDelta.recordedTimeChanges.length - 5} more`
+                              : ""}
+                          </p>
+                          <span className="history-event-boundary">Compared only between these two saved Shelfwear states.</span>
+                        </div>
+                      )}
                       {shelfHistoryDelta.newlyOwned.length > 0 && (
                         <div>
                           <small>New to the saved shelf</small>
