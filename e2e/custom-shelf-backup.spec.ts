@@ -55,7 +55,7 @@ test("restores a validated backup and replaces current browser-local shelves", a
   });
 
   await expect(page.getByRole("status")).toContainText("Restored 1 shelf");
-  await expect(page.getByRole("button", { name: /Restored favorites/ })).toBeVisible();
+  await expect(page.locator(".custom-shelf-tabs button").filter({ hasText: "Restored favorites" })).toBeVisible();
   await expect(page.getByLabel("Rename active shelf")).toHaveValue("Restored favorites");
   await expect(page.locator(".custom-shelf-game")).toContainText("Counter-Strike");
   await expect(page.getByLabel("Note for Counter-Strike on Restored favorites")).toHaveValue("old favorite");
