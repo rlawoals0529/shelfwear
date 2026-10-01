@@ -101,7 +101,7 @@ export function libraryExportFilename(
   const subject = context.kind === "steam"
     ? slug(context.profileName ?? "public-steam")
     : context.kind === "local"
-      ? "local-library"
+      ? "local"
       : "sample-demo";
   return `shelfwear-${subject}-library.${format}`;
 }
