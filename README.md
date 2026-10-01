@@ -71,7 +71,7 @@ For a loaded **public Steam profile**, Shelfwear can opt into **Shelf History on
 
 A newly seen game is never backfilled with historical milestones because Shelfwear did not observe its earlier state. Snapshot timestamps mean only **“Shelfwear saw this library state then.”** They are not play-session timestamps.
 
-History is bounded to the most recent **8 changed states** per SteamID. Re-loading an unchanged library updates the local last-check time without adding a duplicate snapshot. **Clear local history** removes that SteamID's history record from the browser.
+History is bounded to **8 saved states** per SteamID while preserving the original opt-in baseline and the most recent changed states. Re-loading an unchanged library updates the local last-check time without adding a duplicate snapshot. Once there are multiple real observations, Shelfwear shows a **Since history began** net-change summary and a small recorded-hours sparkline whose dots are saved observations only; connecting lines do not reconstruct when play happened. Older records whose original baseline had already rolled off are labeled from the **earliest retained state** instead. **Clear local history** removes that SteamID's history record from the browser.
 
 When an already-saved game crosses a **2h**, **10h**, **50h**, or **100h** threshold between two snapshots, that observed crossing can export a 1080×1350 **Milestone Slip**. The card includes the previous and current saved totals plus both snapshot dates. It explicitly says that Shelfwear observed the crossing **between** saved states and does not know the exact moment it happened. Newly seen games do not receive backfilled milestone slips because their earlier state was never observed.
 
