@@ -305,6 +305,28 @@
   max-width: 520px;
 }
 
+.custom-shelf-head-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 7px;
+}
+
+.custom-shelf-head-actions button {
+  min-height: 38px;
+  padding: 7px 10px;
+  border-radius: 9px;
+  box-shadow: none;
+  font-size: 9px;
+  white-space: nowrap;
+}
+
+.custom-shelf-share-status {
+  margin: 8px 0 0;
+  color: var(--fg);
+  font-size: 9px;
+}
+
 .custom-shelf-head input {
   min-height: 44px;
   font-family: var(--font-round);
@@ -502,9 +524,17 @@
     justify-content: flex-start;
   }
 
-  .custom-shelf-head > button,
   .custom-shelf-create > button {
     width: 100%;
+  }
+
+  .custom-shelf-head-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .custom-shelf-head-actions button {
+    flex: 1 1 auto;
   }
 
   .custom-shelf-game {
@@ -563,6 +593,15 @@
 
   .custom-shelf-sheet {
     padding: 12px 11px 13px 17px;
+  }
+
+  .custom-shelf-head-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .custom-shelf-head-actions button {
+    width: 100%;
   }
 
   .custom-shelf-game {
