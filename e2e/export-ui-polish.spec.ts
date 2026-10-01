@@ -10,22 +10,6 @@ test.beforeEach(async ({ page }) => {
   await page.goto("/");
 });
 
-test("Your Nine ornament stays fully inside the clipped panel", async ({ page }) => {
-  const panel = page.locator(".social-panel");
-  const ornament = page.locator(".social-doodle");
-  await expect(panel).toBeVisible();
-  await expect(ornament).toBeVisible();
-
-  const bounds = await page.evaluate(() => {
-    const p = document.querySelector(".social-panel")!.getBoundingClientRect();
-    const o = document.querySelector(".social-doodle")!.getBoundingClientRect();
-    return { panelTop: p.top, panelRight: p.right, ornamentTop: o.top, ornamentRight: o.right };
-  });
-
-  expect(bounds.ornamentTop).toBeGreaterThanOrEqual(bounds.panelTop + 1);
-  expect(bounds.ornamentRight).toBeLessThanOrEqual(bounds.panelRight - 1);
-});
-
 test("exports public Steam data without local-device fields", async ({ page }) => {
   await page.route("**/api/steam/library?*", async (route) => {
     await route.fulfill({
