@@ -2,7 +2,7 @@
    The builder keeps the scrapbook feeling while using ordinary controls and a stateless URL. */
 
 .view-tabs {
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 
 .curated-page {
@@ -919,9 +919,9 @@
   }
 
   .view-tabs button {
-    flex: 1 1 calc(33.333% - 6px);
+    flex: 1 1 calc(25% - 6px);
     min-width: 0;
-    padding-inline: 9px;
+    padding-inline: 7px;
   }
 
   .curated-story-lead,
@@ -951,6 +951,7 @@
 @media (max-width: 520px) {
   .view-tabs {
     position: static;
+    flex-wrap: wrap;
   }
 
   .story-presets {

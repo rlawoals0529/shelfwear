@@ -262,6 +262,7 @@ test("whole-shelf rows open a factual local catalog record without fetching artw
   });
 
   await page.locator('input[type="file"]').setInputFiles(ALL);
+  artworkRequests.length = 0;
   await page.getByRole("button", { name: "Open details for Fixture Alpha" }).click();
 
   const drawer = page.getByRole("complementary", { name: "Details for Fixture Alpha" });
@@ -311,4 +312,55 @@ test("empty shelf searches have a clear reset instead of a blank list", async ({
   await page.getByRole("button", { name: "Clear filters" }).click();
   await expect(page.locator(".library-rows .row")).toHaveCount(3);
   await expect(page.getByLabel("Search games in the whole shelf")).toHaveValue("");
+});
+
+
+test("custom shelves persist locally and hand off cleanly into Shelf Stories", async ({ page }) => {
+  await page.getByRole("button", { name: "My shelves" }).click();
+  await page.getByRole("button", { name: "Comfort games" }).click();
+
+  await page.getByRole("button", { name: "Shelf", exact: true }).click();
+  await page.locator('input[type="file"]').setInputFiles(ALL);
+  await page.getByRole("button", { name: "Open details for Fixture Alpha" }).click();
+
+  const drawer = page.getByRole("complementary", { name: "Details for Fixture Alpha" });
+  await drawer.getByRole("button", { name: "Add to shelf" }).click();
+  await expect(drawer.getByRole("button", { name: "Already filed" })).toBeDisabled();
+
+  await page.getByRole("button", { name: "My shelves" }).click();
+  await expect(page.locator(".custom-shelf-tabs button.active")).toContainText("Comfort games");
+  await expect(page.locator(".custom-shelf-game")).toHaveCount(1);
+  await expect(page.locator(".custom-shelf-game")).toContainText("Fixture Alpha");
+
+  const note = page.getByLabel("Note for Fixture Alpha on Comfort games");
+  await note.fill("rainy-night favorite");
+
+  await page.getByLabel("Search games to add to active shelf").fill("Never");
+  await page.getByRole("button", { name: /Fixture Never Launched/ }).click();
+  await expect(page.locator(".custom-shelf-game")).toHaveCount(2);
+
+  await expect.poll(async () =>
+    page.evaluate(() => localStorage.getItem("shelfwear:custom-shelves:v1") ?? "")
+  ).toContain("rainy-night favorite");
+
+  const raw = await page.evaluate(() => localStorage.getItem("shelfwear:custom-shelves:v1") ?? "");
+  expect(raw).toContain("Fixture Alpha");
+  expect(raw).toContain("rainy-night favorite");
+  expect(raw).not.toContain('"minutes"');
+  expect(raw).not.toContain('"bytes"');
+  expect(raw).not.toContain("6000");
+
+  await page.reload();
+  await page.getByRole("button", { name: "My shelves" }).click();
+  await expect(page.locator(".custom-shelf-game")).toHaveCount(2);
+  await expect(page.getByLabel("Note for Fixture Alpha on Comfort games")).toHaveValue("rainy-night favorite");
+
+  await page.getByRole("button", { name: "Turn into Shelf Story" }).click();
+  await expect(page.getByRole("heading", { name: "Shelf stories" })).toBeVisible();
+  await expect(page.getByLabel("Shelf story card title")).toHaveValue("Comfort games");
+  await expect(page.getByLabel("Why Fixture Alpha belongs in this story")).toHaveValue("rainy-night favorite");
+
+  await page.setViewportSize({ width: 390, height: 844 });
+  const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(overflow).toBeLessThanOrEqual(1);
 });
