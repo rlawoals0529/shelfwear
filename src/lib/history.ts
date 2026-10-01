@@ -137,9 +137,13 @@ export function recordShelfHistoryVisit(
   const previous = record.snapshots[record.snapshots.length - 1]
     ?? makeShelfHistorySnapshot([], record.enabledAt);
   const delta = diffShelfHistory(previous, current);
-  const snapshots = delta.changed
-    ? [...record.snapshots, current].slice(-MAX_SHELF_HISTORY_SNAPSHOTS)
-    : record.snapshots;
+  const candidates = delta.changed ? [...record.snapshots, current] : record.snapshots;
+  // Keep the opt-in baseline as long as the record exists, then bound only the
+  // changed states after it. Without the baseline, "since history began" would
+  // eventually become an invented claim once older snapshots rolled off.
+  const snapshots = candidates.length <= MAX_SHELF_HISTORY_SNAPSHOTS
+    ? candidates
+    : [candidates[0]!, ...candidates.slice(-(MAX_SHELF_HISTORY_SNAPSHOTS - 1))];
 
   return {
     record: {
@@ -183,19 +187,95 @@ export function normaliseShelfHistory(value: unknown, steamid: string): ShelfHis
   const input = value as Record<string, unknown>;
   if (input.steamid !== steamid) return null;
 
-  const snapshots = Array.isArray(input.snapshots)
+  const allSnapshots = Array.isArray(input.snapshots)
     ? input.snapshots
       .map(normaliseSnapshot)
       .filter((snapshot): snapshot is ShelfHistorySnapshot => Boolean(snapshot))
       .sort((a, b) => a.at - b.at)
-      .slice(-MAX_SHELF_HISTORY_SNAPSHOTS)
     : [];
+  const snapshots = allSnapshots.length <= MAX_SHELF_HISTORY_SNAPSHOTS
+    ? allSnapshots
+    : [allSnapshots[0]!, ...allSnapshots.slice(-(MAX_SHELF_HISTORY_SNAPSHOTS - 1))];
   if (!snapshots.length) return null;
 
   const enabledAt = cleanTime(input.enabledAt) || snapshots[0]!.at;
   const lastCheckedAt = Math.max(cleanTime(input.lastCheckedAt), snapshots[snapshots.length - 1]!.at);
 
   return { steamid, enabledAt, lastCheckedAt, snapshots };
+}
+
+export interface ShelfHistoryObservation {
+  at: number;
+  totalMinutes: number;
+  gameCount: number;
+  playedCount: number;
+}
+
+export interface ShelfHistoryOverview {
+  fromAt: number;
+  toAt: number;
+  minutesDelta: number;
+  gamesDelta: number;
+  playedDelta: number;
+  baselineRetained: boolean;
+  observations: ShelfHistoryObservation[];
+}
+
+export interface ShelfHistorySparkPoint extends ShelfHistoryObservation {
+  x: number;
+  y: number;
+}
+
+export function shelfHistoryOverview(
+  record: ShelfHistoryRecord,
+  currentGames: Game[],
+  at = record.lastCheckedAt,
+): ShelfHistoryOverview | null {
+  const first = record.snapshots[0];
+  if (!first) return null;
+  const current = makeShelfHistorySnapshot(currentGames, at);
+  return {
+    fromAt: first.at,
+    toAt: current.at,
+    minutesDelta: current.totalMinutes - first.totalMinutes,
+    gamesDelta: current.gameCount - first.gameCount,
+    playedDelta: current.playedCount - first.playedCount,
+    baselineRetained: first.at === record.enabledAt,
+    observations: record.snapshots.map((snapshot) => ({
+      at: snapshot.at,
+      totalMinutes: snapshot.totalMinutes,
+      gameCount: snapshot.gameCount,
+      playedCount: snapshot.playedCount,
+    })),
+  };
+}
+
+export function shelfHistorySparklinePoints(
+  observations: readonly ShelfHistoryObservation[],
+  width = 240,
+  height = 56,
+  padding = 5,
+): ShelfHistorySparkPoint[] {
+  if (!observations.length) return [];
+  const safeWidth = Math.max(1, width);
+  const safeHeight = Math.max(1, height);
+  const safePadding = Math.max(0, Math.min(padding, safeWidth / 2, safeHeight / 2));
+  const values = observations.map((point) => point.totalMinutes);
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = max - min;
+  const usableWidth = Math.max(0, safeWidth - safePadding * 2);
+  const usableHeight = Math.max(0, safeHeight - safePadding * 2);
+
+  return observations.map((point, index) => ({
+    ...point,
+    x: observations.length === 1
+      ? safeWidth / 2
+      : safePadding + (index / (observations.length - 1)) * usableWidth,
+    y: range === 0
+      ? safeHeight / 2
+      : safePadding + ((max - point.totalMinutes) / range) * usableHeight,
+  }));
 }
 
 export function readShelfHistory(steamid: string): ShelfHistoryRecord | null {
