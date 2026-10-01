@@ -64,10 +64,10 @@ describe("Shelf History", () => {
       changed: true,
     });
     expect(delta.thresholds).toEqual([
-      { appid: "10", hours: 2 },
-      { appid: "30", hours: 10 },
-      { appid: "40", hours: 50 },
-      { appid: "50", hours: 100 },
+      { appid: "10", hours: 2, fromMinutes: 110, toMinutes: 125 },
+      { appid: "30", hours: 10, fromMinutes: 590, toMinutes: 610 },
+      { appid: "40", hours: 50, fromMinutes: 2990, toMinutes: 3010 },
+      { appid: "50", hours: 100, fromMinutes: 5990, toMinutes: 6010 },
     ]);
     expect(delta.thresholds.some((entry) => entry.appid === "60")).toBe(false);
   });
