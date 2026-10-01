@@ -1033,7 +1033,8 @@ export default function App() {
                   </div>
 
                   {shelfHistoryDelta.changed ? (
-                    <div className="history-events">
+                    <>
+                      <div className="history-events">
                       {shelfHistoryDelta.newlyOwned.length > 0 && (
                         <div>
                           <small>New to the saved shelf</small>
@@ -1072,8 +1073,9 @@ export default function App() {
                           </div>
                         </div>
                       )}
-                    </div>
-                    {historyMilestoneError && <p className="err">{historyMilestoneError}</p>}
+                      </div>
+                      {historyMilestoneError && <p className="err">{historyMilestoneError}</p>}
+                    </>
                   ) : (
                     <p className="note history-no-change">No recorded library or lifetime-playtime changes since the last saved state.</p>
                   )}
