@@ -256,3 +256,66 @@
     gap: 3px;
   }
 }
+
+
+.history-milestone-block {
+  gap: 7px !important;
+}
+
+.history-milestones {
+  display: grid;
+  gap: 7px;
+}
+
+.history-milestone-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 10px;
+  border: 1px dashed color-mix(in srgb, var(--accent) 46%, var(--edge));
+  border-radius: 7px 10px 7px 9px;
+  background: color-mix(in srgb, var(--accent) 5%, var(--panel));
+}
+
+.history-milestone-row > span {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.history-milestone-row > span b {
+  overflow: hidden;
+  color: var(--fg);
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.history-milestone-row > span small {
+  color: var(--dim);
+  font-size: 8px;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.history-milestone-row > button {
+  flex: none;
+  min-height: 32px;
+  padding: 6px 8px;
+  border-radius: 7px;
+  box-shadow: none;
+  font-size: 8px;
+}
+
+@media (max-width: 600px) {
+  .history-milestone-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .history-milestone-row > button {
+    width: 100%;
+  }
+}
