@@ -3,6 +3,7 @@ import {
   curatedFromSearch,
   curatedShareUrl,
   decodeCuratedTopGames,
+  SHELF_STORY_FINISHES,
   SHELF_STORY_PRESETS,
   encodeCuratedTopGames,
   normaliseCuratedTopGames,
@@ -40,6 +41,7 @@ describe("curated top games", () => {
     const encoded = encodeCuratedTopGames({
       ...list,
       style: "poster",
+      finish: "doodles",
       games: [
         { ...list.games[0]!, note: "the game that got me into ranked FPS" },
         { ...list.games[1]!, note: "tiny game, huge memory" },
@@ -47,6 +49,7 @@ describe("curated top games", () => {
     });
     expect(decodeCuratedTopGames(encoded)).toMatchObject({
       style: "poster",
+      finish: "doodles",
       games: [
         { name: "Counter-Strike 2", note: "the game that got me into ranked FPS" },
         { name: "A custom indie", note: "tiny game, huge memory" },
@@ -78,6 +81,12 @@ describe("curated top games", () => {
       "first-time",
     ]);
     expect(new Set(SHELF_STORY_PRESETS.map((preset) => preset.title)).size).toBe(SHELF_STORY_PRESETS.length);
+  });
+
+  it("keeps finishing choices constrained to Shelfwear-owned treatments", () => {
+    expect(SHELF_STORY_FINISHES.map((finish) => finish.id)).toEqual(["archive", "doodles", "clean"]);
+    expect(normaliseCuratedTopGames({ ...list, finish: "clean" }).finish).toBe("clean");
+    expect(normaliseCuratedTopGames({ ...list, finish: "anything" as never }).finish).toBeUndefined();
   });
 
   it("trims authored notes instead of letting share links grow without bounds", () => {
