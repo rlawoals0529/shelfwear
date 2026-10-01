@@ -78,6 +78,24 @@ const LIBRARY_SORT_KEY = "shelfwear:library-sort";
 const LIBRARY_DENSITY_KEY = "shelfwear:library-density";
 const LIBRARY_SORT_VALUES: LibrarySort[] = ["most-played", "least-played", "name-az", "name-za", "recent", "largest"];
 const LIBRARY_DENSITY_VALUES: LibraryDensity[] = ["cozy", "compact"];
+
+const LIBRARY_SORT_LABELS: Record<LibrarySort, string> = {
+  "most-played": "Most played",
+  "least-played": "Least played",
+  "name-az": "A–Z",
+  "name-za": "Z–A",
+  recent: "Recently played on this PC",
+  largest: "Largest installed",
+};
+
+const LIBRARY_FILTER_LABELS: Record<LibraryFilter, string> = {
+  all: "All games",
+  played: "Played",
+  unplayed: "Never played",
+  "hundred-plus": "100h+",
+  "under-two": "Under 2h played",
+  installed: "Installed on this PC",
+};
 const LIBRARY_RENDER_BATCH = 100;
 
 function readLocalPreference<T extends string>(key: string, allowed: readonly T[], fallback: T): T {
@@ -808,6 +826,26 @@ export default function App() {
     () => visibleGames.slice(0, libraryVisibleLimit),
     [libraryVisibleLimit, visibleGames],
   );
+
+  const libraryViewSummary = useMemo(() => {
+    const parts: string[] = [];
+    const query = libraryQuery.trim();
+    if (query) parts.push(`“${query}”`);
+    if (effectiveLibraryFilter !== "all") parts.push(LIBRARY_FILTER_LABELS[effectiveLibraryFilter]);
+    if (effectiveLibrarySort !== "most-played") parts.push(LIBRARY_SORT_LABELS[effectiveLibrarySort]);
+    return parts;
+  }, [effectiveLibraryFilter, effectiveLibrarySort, libraryQuery]);
+
+  const resetLibraryView = () => {
+    setLibraryQuery("");
+    setLibraryFilter("all");
+    setLibrarySort("most-played");
+    setSelectedLibraryGameAppId(null);
+    setLibraryRandomMessage(null);
+    setLibraryShelfComposerOpen(false);
+    setLibraryShelfDraft("");
+    setLibraryShelfStatus(null);
+  };
 
   useEffect(() => {
     setLibraryRandomMessage(null);
@@ -2151,6 +2189,15 @@ export default function App() {
             </div>
           </div>
         </div>
+
+        {libraryViewSummary.length > 0 && (
+          <div className="library-view-summary" role="status">
+            <span>
+              <b>Current view:</b> {libraryViewSummary.join(" · ")}
+            </span>
+            <button type="button" onClick={resetLibraryView}>Reset view</button>
+          </div>
+        )}
 
         <p className={`library-data-note ${loaded.kind}`}>
           {loaded.kind === "local"
