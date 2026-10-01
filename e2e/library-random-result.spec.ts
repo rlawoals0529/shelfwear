@@ -12,7 +12,7 @@ test("random result draws only from the current Shelf Index search results", asy
   await page.getByRole("button", { name: "Open one random current Shelf Index result" }).click();
 
   await expect(page.getByRole("complementary", { name: /Details for Hades/ })).toBeVisible();
-  await expect(page.getByRole("status")).toContainText("Randomly opened 1 of 1 current Shelf Index result");
+  await expect(page.locator(".library-random-status")).toContainText("Randomly opened 1 of 1 current Shelf Index result");
 });
 
 test("random result respects factual filters instead of the full library", async ({ page }) => {
@@ -30,7 +30,7 @@ test("random result respects factual filters instead of the full library", async
 
   const openedHours = await drawer.locator(".library-catalog-facts span").first().locator("b").innerText();
   expect(Number(openedHours.replace("h", ""))).toBeGreaterThanOrEqual(100);
-  await expect(page.getByRole("status")).toContainText(`1 of ${eligible} current Shelf Index`);
+  await expect(page.locator(".library-random-status")).toContainText(`1 of ${eligible} current Shelf Index`);
 });
 
 test("random-result action fits with export controls on a phone", async ({ page }) => {
