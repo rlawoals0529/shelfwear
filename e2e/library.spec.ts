@@ -255,7 +255,7 @@ test("whole-shelf rows open a factual local catalog record without fetching artw
   await page.locator('input[type="file"]').setInputFiles(ALL);
   await page.getByRole("button", { name: "Open details for Fixture Alpha" }).click();
 
-  const drawer = page.getByLabel("Details for Fixture Alpha");
+  const drawer = page.getByRole("complementary", { name: "Details for Fixture Alpha" });
   await expect(drawer).toBeVisible();
   await expect(drawer).toContainText("SHELF INDEX / APP");
   await expect(drawer).toContainText("Recorded playtime");
