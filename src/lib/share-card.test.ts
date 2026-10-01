@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { comparisonCardFilename, familiarCardFilename, proxiedSteamCover, shareCardFilename } from "./share-card.js";
+import { achievementCabinetFilename, comparisonCardFilename, familiarCardFilename, proxiedSteamCover, shareCardFilename } from "./share-card.js";
 
 describe("shareCardFilename", () => {
   it("creates a filesystem-safe PNG name from a public profile name", () => {
@@ -23,6 +23,13 @@ describe("comparisonCardFilename", () => {
   it("keeps both public profile names in a filesystem-safe comparison filename", () => {
     expect(comparisonCardFilename("Jaemin's Shelf", "Cozy Friend"))
       .toBe("shelfwear-jaemin-s-shelf-x-cozy-friend-comparison.png");
+  });
+});
+
+describe("achievementCabinetFilename", () => {
+  it("creates a filesystem-safe Trophy Cabinet filename", () => {
+    expect(achievementCabinetFilename("NieR:Automata™"))
+      .toBe("shelfwear-nier-automata-trophy-cabinet.png");
   });
 });
 
