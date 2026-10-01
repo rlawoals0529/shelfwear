@@ -21,4 +21,5 @@ import "./achievement-cabinet.css";
 import "./history.css";
 import "./pick.css";
 import "./receipt.css";
+import "./shelf-map.css";
 createRoot(document.getElementById("root")!).render(<StrictMode><App /></StrictMode>);
