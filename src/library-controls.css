@@ -27,7 +27,8 @@
   gap: 6px;
 }
 
-.library-export-actions button {
+.library-export-actions button,
+.library-random-action {
   min-height: 32px;
   padding: 5px 8px;
   border-radius: 9px;
@@ -36,9 +37,25 @@
   white-space: nowrap;
 }
 
-.library-export-actions .button-icon {
+.library-export-actions .button-icon,
+.library-random-action .button-icon {
   width: 13px;
   height: 13px;
+}
+
+.library-random-action {
+  border-style: dashed;
+  background: color-mix(in srgb, var(--accent) 6%, var(--panel));
+}
+
+.library-random-status {
+  margin: 0 0 12px;
+  padding: 7px 10px;
+  border-left: 3px solid color-mix(in srgb, var(--accent-2) 50%, var(--edge));
+  border-radius: 0 9px 9px 0;
+  color: var(--fg);
+  background: color-mix(in srgb, var(--accent-2) 6%, transparent);
+  font-size: 9px;
 }
 
 .library-result-count {
@@ -654,6 +671,10 @@
 
   .library-result-count {
     align-self: flex-start;
+  }
+
+  .library-random-action {
+    width: 100%;
   }
 
   .library-export-actions {
