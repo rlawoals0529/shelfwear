@@ -123,6 +123,80 @@
   text-overflow: ellipsis;
 }
 
+.history-observation-overview {
+  display: grid;
+  grid-template-columns: minmax(0, .86fr) minmax(230px, 1.14fr);
+  gap: 12px;
+  align-items: center;
+  margin-top: 12px;
+  padding: 11px 12px;
+  border: 1px dashed color-mix(in srgb, var(--accent) 38%, var(--edge));
+  border-radius: 9px 12px 9px 10px;
+  background: color-mix(in srgb, var(--accent) 4%, var(--panel));
+}
+
+.history-observation-copy {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.history-observation-copy small {
+  color: var(--accent-text);
+  font-size: 8px;
+  font-weight: 900;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+}
+
+.history-observation-copy b {
+  overflow-wrap: anywhere;
+  color: var(--fg);
+  font-family: var(--font-round);
+  font-size: 14px;
+  line-height: 1.25;
+}
+
+.history-observation-copy span {
+  color: var(--dim);
+  font-size: 8px;
+}
+
+.history-observation-chart {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+
+.history-observation-chart svg {
+  display: block;
+  width: 100%;
+  height: 56px;
+  overflow: visible;
+}
+
+.history-observation-line {
+  fill: none;
+  stroke: var(--accent-text);
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+
+.history-observation-dot {
+  fill: var(--panel);
+  stroke: var(--accent-text);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+
+.history-observation-chart small {
+  color: var(--dim);
+  font-size: 8px;
+  line-height: 1.4;
+}
+
 .history-delta {
   margin-top: 14px;
   padding-top: 13px;
@@ -240,7 +314,8 @@
   }
 
   .history-current,
-  .history-delta-metrics {
+  .history-delta-metrics,
+  .history-observation-overview {
     grid-template-columns: 1fr;
   }
 }

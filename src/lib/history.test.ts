@@ -6,6 +6,8 @@ import {
   makeShelfHistorySnapshot,
   normaliseShelfHistory,
   recordShelfHistoryVisit,
+  shelfHistoryOverview,
+  shelfHistorySparklinePoints,
   startShelfHistory,
 } from "./history.js";
 
@@ -86,6 +88,7 @@ describe("Shelf History", () => {
       record = recordShelfHistoryVisit(record, [game("10", index * 60)], 1000 + index).record;
     }
     expect(record.snapshots).toHaveLength(MAX_SHELF_HISTORY_SNAPSHOTS);
+    expect(record.snapshots[0]).toMatchObject({ at: 1000, totalMinutes: 0 });
     expect(record.snapshots.at(-1)?.totalMinutes).toBe((MAX_SHELF_HISTORY_SNAPSHOTS + 3) * 60);
   });
 
@@ -93,5 +96,41 @@ describe("Shelf History", () => {
     const record = startShelfHistory("76561198000000000", [game("10", 60)], 1000);
     expect(normaliseShelfHistory(record, "76561198000000000")).not.toBeNull();
     expect(normaliseShelfHistory(record, "76561198000000001")).toBeNull();
+  });
+
+  it("summarizes net change only from the retained observed baseline", () => {
+    let record = startShelfHistory("76561198000000000", [game("10", 60), game("20", 0)], 1000);
+    record = recordShelfHistoryVisit(record, [game("10", 180), game("20", 30), game("30", 60)], 2000).record;
+
+    const overview = shelfHistoryOverview(record, [game("10", 240), game("20", 30), game("30", 60)], 3000);
+    expect(overview).toMatchObject({
+      fromAt: 1000,
+      toAt: 3000,
+      minutesDelta: 270,
+      gamesDelta: 1,
+      playedDelta: 2,
+      baselineRetained: true,
+    });
+    expect(overview?.observations).toHaveLength(2);
+  });
+
+  it("plots only saved observations and handles flat histories", () => {
+    const observations = [
+      { at: 1000, totalMinutes: 60, gameCount: 1, playedCount: 1 },
+      { at: 2000, totalMinutes: 120, gameCount: 1, playedCount: 1 },
+      { at: 3000, totalMinutes: 180, gameCount: 1, playedCount: 1 },
+    ];
+    const points = shelfHistorySparklinePoints(observations, 100, 40, 5);
+    expect(points.map((point) => point.x)).toEqual([5, 50, 95]);
+    expect(points[0]!.y).toBe(35);
+    expect(points[2]!.y).toBe(5);
+
+    const flat = shelfHistorySparklinePoints(
+      observations.map((point) => ({ ...point, totalMinutes: 60 })),
+      100,
+      40,
+      5,
+    );
+    expect(flat.every((point) => point.y === 20)).toBe(true);
   });
 });
