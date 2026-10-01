@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { readLocalConfig, readManifest, buildLibrary, summarise, shelve, hours, gb, type Game, type Spine, type Stats } from "./lib/library.js";
 import { analyticsFor, type LibraryAnalytics } from "./lib/analytics.js";
 import { familiarFor, steamCover, steamHeader, steamIcon, topNine } from "./lib/profile.js";
@@ -881,7 +881,7 @@ export default function App() {
     }));
   }, []);
 
-  const createShelfFromCurrentResults = (event: React.FormEvent<HTMLFormElement>) => {
+  const createShelfFromCurrentResults = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const name = cleanShelfName(libraryShelfDraft);
     if (!name || !visibleGames.length || customShelves.length >= MAX_CUSTOM_SHELVES) return;
