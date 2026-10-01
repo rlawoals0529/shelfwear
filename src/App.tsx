@@ -73,6 +73,7 @@ const LIBRARY_SORT_KEY = "shelfwear:library-sort";
 const LIBRARY_DENSITY_KEY = "shelfwear:library-density";
 const LIBRARY_SORT_VALUES: LibrarySort[] = ["most-played", "least-played", "name-az", "name-za", "recent", "largest"];
 const LIBRARY_DENSITY_VALUES: LibraryDensity[] = ["cozy", "compact"];
+const LIBRARY_RENDER_BATCH = 100;
 
 function readLocalPreference<T extends string>(key: string, allowed: readonly T[], fallback: T): T {
   try {
@@ -372,6 +373,7 @@ export default function App() {
   const [libraryDensity, setLibraryDensity] = useState<LibraryDensity>(() =>
     readLocalPreference(LIBRARY_DENSITY_KEY, LIBRARY_DENSITY_VALUES, "cozy"),
   );
+  const [libraryVisibleLimit, setLibraryVisibleLimit] = useState(LIBRARY_RENDER_BATCH);
   const [selectedLibraryGameAppId, setSelectedLibraryGameAppId] = useState<string | null>(null);
   const [customShelves, setCustomShelves] = useState<CustomShelf[]>(() => readCustomShelves());
   const [activeShelfId, setActiveShelfId] = useState<string | null>(() => readCustomShelves()[0]?.id ?? null);
@@ -742,6 +744,15 @@ export default function App() {
       }
     });
   }, [effectiveLibraryFilter, effectiveLibrarySort, libraryQuery, loaded.games]);
+
+  useEffect(() => {
+    setLibraryVisibleLimit(LIBRARY_RENDER_BATCH);
+  }, [effectiveLibraryFilter, effectiveLibrarySort, libraryQuery, loaded.games]);
+
+  const renderedLibraryGames = useMemo(
+    () => visibleGames.slice(0, libraryVisibleLimit),
+    [libraryVisibleLimit, visibleGames],
+  );
 
   const selectedLibraryGame = useMemo(
     () => loaded.games.find((game) => game.appid === selectedLibraryGameAppId) ?? null,
@@ -1866,7 +1877,11 @@ export default function App() {
           <SectionTitle icon="list" eyebrow="The whole shelf">Everything ({loaded.games.length})</SectionTitle>
           <div className="library-heading-meta">
             <span className="library-result-count">
-              showing <b>{visibleGames.length}</b>{visibleGames.length !== loaded.games.length ? ` of ${loaded.games.length}` : ""}
+              {renderedLibraryGames.length < visibleGames.length ? (
+                <>showing <b>{renderedLibraryGames.length}</b> of {visibleGames.length} matches</>
+              ) : (
+                <>showing <b>{visibleGames.length}</b>{visibleGames.length !== loaded.games.length ? ` of ${loaded.games.length}` : ""}</>
+              )}
             </span>
             <div className="library-export-actions" aria-label="Export the currently loaded library">
               <button type="button" onClick={() => downloadLibraryExport("csv")}>
@@ -2059,7 +2074,7 @@ export default function App() {
 
         {visibleGames.length > 0 ? (
           <div className={`rows library-rows ${libraryDensity}`}>
-            {visibleGames.map((g) => (
+            {renderedLibraryGames.map((g) => (
               <div className={g.minutes === 0 ? "row cold library-row" : "row library-row"} key={g.appid}>
                 <span className="hrs">{hours(g.minutes)}h</span>
                 <span className="name">{g.name ?? <em>app {g.appid}</em>}</span>
@@ -2086,6 +2101,20 @@ export default function App() {
             <span aria-hidden="true">♡</span>
             <b>No games match this little corner of the shelf.</b>
             <button type="button" onClick={() => { setLibraryQuery(""); setLibraryFilter("all"); setLibrarySort("most-played"); }}>Clear filters</button>
+          </div>
+        )}
+
+        {visibleGames.length > renderedLibraryGames.length && (
+          <div className="library-show-more" aria-live="polite">
+            <span>
+              {renderedLibraryGames.length} shown · {visibleGames.length - renderedLibraryGames.length} more matching
+            </span>
+            <button
+              type="button"
+              onClick={() => setLibraryVisibleLimit((current) => current + LIBRARY_RENDER_BATCH)}
+            >
+              Show {Math.min(LIBRARY_RENDER_BATCH, visibleGames.length - renderedLibraryGames.length)} more
+            </button>
           </div>
         )}
       </section>
