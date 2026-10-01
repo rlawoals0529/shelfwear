@@ -1,0 +1,229 @@
+.pick-panel {
+  position: relative;
+  overflow: hidden;
+}
+
+.pick-panel::after {
+  content: "";
+  position: absolute;
+  inset: 12px;
+  border: 1px dashed color-mix(in srgb, var(--fg) 16%, transparent);
+  border-radius: calc(var(--radius) - 4px);
+  pointer-events: none;
+}
+
+.pick-heading,
+.pick-controls,
+.pick-ticket,
+.pick-pool-note,
+.pick-reset {
+  position: relative;
+  z-index: 1;
+}
+
+.pick-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.pick-heading h2 {
+  margin: 0.1rem 0 0.25rem;
+}
+
+.pick-stamp {
+  flex: 0 0 auto;
+  margin-top: 0.2rem;
+  padding: 0.45rem 0.65rem;
+  border: 2px solid currentColor;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  transform: rotate(2deg);
+  opacity: 0.72;
+}
+
+.pick-controls {
+  display: grid;
+  grid-template-columns: minmax(170px, 1fr) minmax(170px, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+  margin-top: 1.15rem;
+}
+
+.pick-controls label {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.pick-controls label > span {
+  font-size: 0.76rem;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.72;
+}
+
+.pick-controls select {
+  width: 100%;
+  min-width: 0;
+}
+
+.pick-pool-note {
+  margin: 0.9rem 0 0;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  color: var(--dim);
+}
+
+.pick-ticket {
+  margin-top: 0.9rem;
+  padding: 18px;
+  border: 1px solid color-mix(in srgb, var(--fg) 18%, transparent);
+  border-radius: 10px;
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 30px,
+      color-mix(in srgb, var(--fg) 7%, transparent) 30px,
+      color-mix(in srgb, var(--fg) 7%, transparent) 31px
+    ),
+    color-mix(in srgb, var(--panel) 88%, white 12%);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--fg) 7%, transparent);
+}
+
+.pick-ticket-meta {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 9px;
+  border-bottom: 1px solid color-mix(in srgb, var(--fg) 20%, transparent);
+  font-size: 0.67rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  opacity: 0.7;
+}
+
+.pick-ticket-main {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 16px;
+  align-items: center;
+  padding: 22px 4px 16px;
+}
+
+.pick-number {
+  display: grid;
+  place-items: center;
+  min-width: 78px;
+  aspect-ratio: 1;
+  border: 2px solid color-mix(in srgb, var(--fg) 35%, transparent);
+  border-radius: 50%;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  transform: rotate(-3deg);
+}
+
+.pick-ticket-main small {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  opacity: 0.62;
+}
+
+.pick-ticket-main h3 {
+  margin: 0;
+  font-size: clamp(1.25rem, 3vw, 2rem);
+  overflow-wrap: anywhere;
+}
+
+.pick-ticket-main p,
+.pick-proof,
+.pick-empty p {
+  margin: 0.35rem 0 0;
+  color: var(--fg);
+}
+
+.pick-proof {
+  padding-top: 12px;
+  border-top: 1px dashed color-mix(in srgb, var(--fg) 20%, transparent);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.pick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.pick-actions .secondary,
+.pick-reset {
+  background: transparent;
+}
+
+.pick-empty {
+  min-height: 120px;
+  display: grid;
+  align-content: center;
+  gap: 2px;
+}
+
+.pick-reset {
+  margin-top: 10px;
+}
+
+@media (max-width: 720px) {
+  .pick-heading {
+    align-items: stretch;
+  }
+
+  .pick-stamp {
+    align-self: flex-start;
+    font-size: 0.62rem;
+  }
+
+  .pick-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .pick-controls button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 460px) {
+  .pick-heading {
+    display: grid;
+  }
+
+  .pick-ticket {
+    padding: 14px;
+  }
+
+  .pick-ticket-main {
+    grid-template-columns: 1fr;
+  }
+
+  .pick-number {
+    min-width: 0;
+    width: 62px;
+  }
+
+  .pick-ticket-meta {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .pick-actions > * {
+    width: 100%;
+  }
+}
