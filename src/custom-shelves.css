@@ -102,6 +102,63 @@
   outline-offset: 1px;
 }
 
+.custom-shelf-backup {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 18px;
+  align-items: center;
+  max-width: 860px;
+  margin-top: 18px;
+  padding: 13px 14px;
+  border: 1px dashed color-mix(in srgb, var(--accent-2) 38%, var(--edge));
+  border-radius: 10px 15px 11px 13px;
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--accent-2) 7%, var(--panel)), transparent 48%),
+    color-mix(in srgb, var(--raised) 24%, var(--panel));
+}
+
+.custom-shelf-backup > div:first-child {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.custom-shelf-backup b {
+  color: var(--fg);
+  font-family: var(--font-round);
+  font-size: 13px;
+}
+
+.custom-shelf-backup p {
+  max-width: 66ch;
+  margin: 0;
+  color: var(--dim);
+  font-size: 9px;
+  line-height: 1.5;
+}
+
+.custom-shelf-backup-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 7px;
+}
+
+.custom-shelf-backup-actions button {
+  min-height: 36px;
+  padding: 7px 10px;
+  border-radius: 9px;
+  box-shadow: none;
+  font-size: 9px;
+  white-space: nowrap;
+}
+
+.custom-shelf-backup-status {
+  max-width: 860px;
+  margin: 8px 0 0;
+  font-size: 9px;
+}
+
 .custom-shelves-empty {
   display: grid;
   justify-items: center;
@@ -414,8 +471,13 @@
 
 @media (max-width: 720px) {
   .custom-shelf-create,
-  .custom-shelf-head {
+  .custom-shelf-head,
+  .custom-shelf-backup {
     grid-template-columns: 1fr;
+  }
+
+  .custom-shelf-backup-actions {
+    justify-content: flex-start;
   }
 
   .custom-shelf-head > button,
@@ -433,6 +495,19 @@
 }
 
 @media (max-width: 480px) {
+  .custom-shelf-backup {
+    padding: 11px;
+  }
+
+  .custom-shelf-backup-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .custom-shelf-backup-actions button {
+    width: 100%;
+  }
+
   .custom-shelves-catalog-meta,
   .custom-shelf-sheet-meta {
     align-items: flex-start;
