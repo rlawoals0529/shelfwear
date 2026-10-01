@@ -68,10 +68,39 @@ test("local CSV export carries real local provenance and device fields", async (
 test("library header actions do not overflow a narrow viewport", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 900 });
   const panel = page.locator(".library-panel");
+  const heading = panel.locator(".library-heading");
   await expect(panel).toBeVisible();
 
-  const overflow = await panel.evaluate((element) => element.scrollWidth - element.clientWidth);
-  expect(overflow).toBeLessThanOrEqual(1);
+  const layout = await heading.evaluate((element) => {
+    const headingRect = element.getBoundingClientRect();
+    const panelRect = element.closest(".library-panel")!.getBoundingClientRect();
+    const buttons = [...element.querySelectorAll<HTMLButtonElement>(".library-export-actions button")]
+      .map((button) => {
+        const rect = button.getBoundingClientRect();
+        return { left: rect.left, right: rect.right, width: rect.width };
+      });
+    return {
+      headingOverflow: element.scrollWidth - element.clientWidth,
+      panelLeft: panelRect.left,
+      panelRight: panelRect.right,
+      headingLeft: headingRect.left,
+      headingRight: headingRect.right,
+      buttons,
+    };
+  });
+
+  expect(layout.headingOverflow).toBeLessThanOrEqual(1);
+  expect(layout.headingLeft).toBeGreaterThanOrEqual(layout.panelLeft);
+  expect(layout.headingRight).toBeLessThanOrEqual(layout.panelRight);
+  expect(layout.buttons).toHaveLength(2);
+  for (const button of layout.buttons) {
+    expect(button.left).toBeGreaterThanOrEqual(layout.panelLeft);
+    expect(button.right).toBeLessThanOrEqual(layout.panelRight);
+    expect(button.width).toBeGreaterThan(0);
+  }
+
+  const pageOverflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+  expect(pageOverflow).toBeLessThanOrEqual(1);
   await expect(page.getByRole("button", { name: "Export CSV" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Export JSON" })).toBeVisible();
 });
