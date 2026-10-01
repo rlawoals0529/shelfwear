@@ -47,6 +47,7 @@ test("J and K browse an open Shelf Index card but never steal typing", async ({ 
   await steamInput.fill("");
   await steamInput.focus();
   await page.keyboard.type("jk");
+  await page.keyboard.press("ArrowDown");
   await expect(steamInput).toHaveValue("jk");
   await expect(page.getByRole("complementary", { name: "Details for Fixture Alpha" })).toBeVisible();
 });
