@@ -7,6 +7,7 @@ import { comparePartyLibraries, type PartyComparison, type PartyGame } from "./l
 import { comparisonCardFilename, curatedCardFilename, downloadBlob, familiarCardFilename, historyMilestoneFilename, proxiedSteamCover, renderComparisonCard, renderCuratedCard, renderFamiliarCard, renderHistoryMilestoneCard, renderShareCard, shareCardFilename } from "./lib/share-card.js";
 import { libraryExportCsv, libraryExportFilename, libraryExportJson, type LibraryExportFormat } from "./lib/export.js";
 import { fillResolvedProfileSlot, findResolvedProfileSlot } from "./lib/profile-slots.js";
+import { shareOrCopyLink, type ShareOutcome } from "./lib/share.js";
 import { renderShelfReceipt, shelfReceiptFilename } from "./lib/receipt-card.js";
 import {
   comparisonShareUrl,
@@ -338,7 +339,7 @@ export default function App() {
   const [steamProfile, setSteamProfile] = useState(shared.steam ?? "");
   const [importing, setImporting] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [shareCopied, setShareCopied] = useState(false);
+  const [shelfShareOutcome, setShelfShareOutcome] = useState<ShareOutcome | null>(null);
   const [cardRendering, setCardRendering] = useState(false);
   const [cardError, setCardError] = useState<string | null>(null);
   const [receiptRendering, setReceiptRendering] = useState(false);
@@ -351,7 +352,7 @@ export default function App() {
   const [comparing, setComparing] = useState(false);
   const [compareError, setCompareError] = useState<string | null>(null);
   const [comparison, setComparison] = useState<Compared | null>(null);
-  const [compareCopied, setCompareCopied] = useState(false);
+  const [comparisonShareOutcome, setComparisonShareOutcome] = useState<ShareOutcome | null>(null);
   const [inviteCopied, setInviteCopied] = useState(false);
   const [inviteMessageCopied, setInviteMessageCopied] = useState(false);
   const [compareCardRendering, setCompareCardRendering] = useState(false);
@@ -362,7 +363,7 @@ export default function App() {
   const [partying, setPartying] = useState(false);
   const [partyError, setPartyError] = useState<string | null>(null);
   const [partyResult, setPartyResult] = useState<Partied | null>(null);
-  const [partyShareCopied, setPartyShareCopied] = useState(false);
+  const [partyShareOutcome, setPartyShareOutcome] = useState<ShareOutcome | null>(null);
   const [partyDrawIndex, setPartyDrawIndex] = useState(0);
   const [view, setView] = useState<"shelf" | "analytics" | "shelves" | "top">(shared.top ? "top" : "shelf");
   const [libraryQuery, setLibraryQuery] = useState("");
@@ -614,11 +615,16 @@ export default function App() {
     setPartyProfiles((current) => current.length <= 3 ? current : current.filter((_, i) => i !== index));
   }, []);
 
-  const copyPartyLink = useCallback(async () => {
+  const sharePartyLink = useCallback(async () => {
     if (!partyResult) return;
-    await navigator.clipboard.writeText(partyShareUrl(window.location.href, partyResult.libraries.map((library) => library.steamid)));
-    setPartyShareCopied(true);
-    window.setTimeout(() => setPartyShareCopied(false), 1600);
+    const outcome = await shareOrCopyLink({
+      title: `Shelfwear Party Shelf · ${partyResult.libraries.length} players`,
+      text: "Open this public Steam Party Shelf on Shelfwear.",
+      url: partyShareUrl(window.location.href, partyResult.libraries.map((library) => library.steamid)),
+    });
+    if (outcome === "cancelled") return;
+    setPartyShareOutcome(outcome);
+    window.setTimeout(() => setPartyShareOutcome(null), 1600);
   }, [partyResult]);
 
   const partyDrawPool = partyResult?.result.ownedByAll ?? [];
@@ -936,12 +942,18 @@ export default function App() {
     window.setTimeout(() => setFamiliarCopied(false), 1600);
   }, [familiar]);
 
-  const copyShelfLink = useCallback(async () => {
+  const shareShelfLink = useCallback(async () => {
     if (!loaded.steamid) return;
-    await navigator.clipboard.writeText(steamShareUrl(window.location.href, loaded.steamid));
-    setShareCopied(true);
-    window.setTimeout(() => setShareCopied(false), 1600);
-  }, [loaded.steamid]);
+    const profileName = loaded.profile?.name ?? "Public Steam shelf";
+    const outcome = await shareOrCopyLink({
+      title: `${profileName} · Shelfwear`,
+      text: "See this public Steam shelf on Shelfwear.",
+      url: steamShareUrl(window.location.href, loaded.steamid),
+    });
+    if (outcome === "cancelled") return;
+    setShelfShareOutcome(outcome);
+    window.setTimeout(() => setShelfShareOutcome(null), 1600);
+  }, [loaded.profile?.name, loaded.steamid]);
 
   const downloadLibraryExport = useCallback((format: LibraryExportFormat) => {
     const context = {
@@ -960,11 +972,18 @@ export default function App() {
     downloadBlob(new Blob([body], { type }), libraryExportFilename(format, context));
   }, [loaded]);
 
-  const copyComparisonLink = useCallback(async () => {
+  const shareComparisonLink = useCallback(async () => {
     if (!comparison) return;
-    await navigator.clipboard.writeText(comparisonShareUrl(window.location.href, comparison.left.steamid, comparison.right.steamid));
-    setCompareCopied(true);
-    window.setTimeout(() => setCompareCopied(false), 1600);
+    const leftName = displayName(comparison.left);
+    const rightName = displayName(comparison.right);
+    const outcome = await shareOrCopyLink({
+      title: `${leftName} × ${rightName} · Shelfwear`,
+      text: "Compare these public Steam shelves on Shelfwear.",
+      url: comparisonShareUrl(window.location.href, comparison.left.steamid, comparison.right.steamid),
+    });
+    if (outcome === "cancelled") return;
+    setComparisonShareOutcome(outcome);
+    window.setTimeout(() => setComparisonShareOutcome(null), 1600);
   }, [comparison]);
 
   const copyInviteLink = useCallback(async () => {
@@ -1428,7 +1447,7 @@ export default function App() {
               <button className="primary" disabled={cardRendering} onClick={() => void downloadCard()}><CuteIcon name="download" className="button-icon" />{cardRendering ? "Making card…" : "Download card"}</button>
               <button onClick={() => void copyNine()}><CuteIcon name="copy" className="button-icon" />{copied ? "Copied" : "Copy summary"}</button>
               {loaded.kind === "steam" && loaded.steamid && (
-                <button onClick={() => void copyShelfLink()}><CuteIcon name="share" className="button-icon" />{shareCopied ? "Link copied" : "Share shelf"}</button>
+                <button onClick={() => void shareShelfLink()}><CuteIcon name="share" className="button-icon" />{shelfShareOutcome === "shared" ? "Shared" : shelfShareOutcome === "copied" ? "Link copied" : "Share shelf"}</button>
               )}
             </div>
           </div>
@@ -1602,7 +1621,7 @@ export default function App() {
                     <CuteIcon name="download" className="button-icon" />
                     {compareCardRendering ? "Making card…" : "Download library card"}
                   </button>
-                  <button onClick={() => void copyComparisonLink()}><CuteIcon name="share" className="button-icon" />{compareCopied ? "Link copied" : "Share comparison"}</button>
+                  <button onClick={() => void shareComparisonLink()}><CuteIcon name="share" className="button-icon" />{comparisonShareOutcome === "shared" ? "Shared" : comparisonShareOutcome === "copied" ? "Link copied" : "Share comparison"}</button>
                 </div>
               </div>
             </div>
@@ -1754,8 +1773,8 @@ export default function App() {
           <div className="party-result">
             <div className="party-ledger-meta">
               <span>SHELFWEAR / PARTY LEDGER</span>
-              <button type="button" onClick={() => void copyPartyLink()}>
-                <CuteIcon name="share" className="button-icon" />{partyShareCopied ? "Link copied" : "Share party"}
+              <button type="button" onClick={() => void sharePartyLink()}>
+                <CuteIcon name="share" className="button-icon" />{partyShareOutcome === "shared" ? "Shared" : partyShareOutcome === "copied" ? "Link copied" : "Share party"}
               </button>
             </div>
 
