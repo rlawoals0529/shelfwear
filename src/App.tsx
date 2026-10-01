@@ -38,6 +38,15 @@ import {
   type CustomShelfGame,
 } from "./lib/custom-shelves.js";
 import AchievementCabinet from "./AchievementCabinet.js";
+import {
+  clearShelfHistory,
+  readShelfHistory,
+  recordShelfHistoryVisit,
+  startShelfHistory,
+  writeShelfHistory,
+  type ShelfHistoryDelta,
+  type ShelfHistoryRecord,
+} from "./lib/history.js";
 import { Ticker, stagger } from "./lib/motion.js";
 import { Palette } from "./lib/palette.js";
 import palettes from "./theme/palettes.json";
@@ -358,6 +367,8 @@ export default function App() {
   const [recentActivity, setRecentActivity] = useState<SteamRecentActivity | null>(null);
   const [recentLoading, setRecentLoading] = useState(false);
   const [recentError, setRecentError] = useState<string | null>(null);
+  const [shelfHistory, setShelfHistory] = useState<ShelfHistoryRecord | null>(null);
+  const [shelfHistoryDelta, setShelfHistoryDelta] = useState<ShelfHistoryDelta | null>(null);
   const picker = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -407,6 +418,8 @@ export default function App() {
     setSteamError(null);
     setRecentActivity(null);
     setRecentError(null);
+    setShelfHistory(null);
+    setShelfHistoryDelta(null);
     setImporting(true);
     try {
       const data = await fetchPublicSteamLibrary(steamProfile);
@@ -418,6 +431,15 @@ export default function App() {
         profile: data.profile,
         games: data.games,
       });
+
+      const savedHistory = readShelfHistory(data.steamid);
+      if (savedHistory) {
+        const visit = recordShelfHistoryVisit(savedHistory, data.games, Date.now());
+        writeShelfHistory(visit.record);
+        setShelfHistory(visit.record);
+        setShelfHistoryDelta(visit.delta);
+      }
+
       if (shared.invite && !hasSteamProfileInput(compareRight)) {
         setCompareRight(data.steamid);
       }
@@ -439,6 +461,21 @@ export default function App() {
     } finally {
       setRecentLoading(false);
     }
+  }, [loaded.kind, loaded.steamid]);
+
+  const startHistory = useCallback(() => {
+    if (loaded.kind !== "steam" || !loaded.steamid) return;
+    const record = startShelfHistory(loaded.steamid, loaded.games, Date.now());
+    writeShelfHistory(record);
+    setShelfHistory(record);
+    setShelfHistoryDelta(null);
+  }, [loaded.games, loaded.kind, loaded.steamid]);
+
+  const clearHistory = useCallback(() => {
+    if (loaded.kind !== "steam" || !loaded.steamid) return;
+    clearShelfHistory(loaded.steamid);
+    setShelfHistory(null);
+    setShelfHistoryDelta(null);
   }, [loaded.kind, loaded.steamid]);
 
   const runComparison = useCallback(async () => {
@@ -521,6 +558,10 @@ export default function App() {
   const nine = useMemo(() => topNine(loaded.games), [loaded]);
   const familiar = useMemo(() => familiarFor(loaded.games), [loaded]);
   const analytics = useMemo(() => analyticsFor(loaded.games), [loaded]);
+  const historyNameByAppId = useMemo(
+    () => new Map(loaded.games.map((game) => [game.appid, game.name ?? `app ${game.appid}`])),
+    [loaded.games],
+  );
 
   // Installation, disk size, and local recency are only trustworthy after the
   // visitor explicitly loads files from this PC. The sample contains synthetic
@@ -899,6 +940,108 @@ export default function App() {
             ) : (
               <p className="note">Steam returned no recently played games for this public profile.</p>
             )
+          )}
+        </section>
+      )}
+
+      {loaded.kind === "steam" && loaded.steamid && (
+        <section className="panel history-panel">
+          <div className="history-heading">
+            <SectionTitle
+              icon="archive"
+              eyebrow="This browser only"
+              note="Snapshots begin only after you turn history on."
+            >
+              Shelf history
+            </SectionTitle>
+            {shelfHistory ? (
+              <button type="button" className="history-clear" onClick={clearHistory}>Clear local history</button>
+            ) : (
+              <button type="button" onClick={startHistory}>Start history on this browser</button>
+            )}
+          </div>
+
+          {!shelfHistory ? (
+            <div className="history-empty">
+              <b>No saved baseline yet.</b>
+              <p>
+                Turn history on to save today&apos;s AppIDs and lifetime playtime locally in this browser.
+                Future public-profile loads can then compare against that real saved state.
+              </p>
+              <small>Nothing before the baseline can be reconstructed.</small>
+            </div>
+          ) : (
+            <div className="history-ledger">
+              <div className="history-ledger-meta">
+                <span>SHELFWEAR / LOCAL HISTORY</span>
+                <span>{shelfHistory.snapshots.length} SAVED {shelfHistory.snapshots.length === 1 ? "STATE" : "STATES"}</span>
+              </div>
+
+              <div className="history-current">
+                <div>
+                  <small>Last checked in Shelfwear</small>
+                  <b>{new Date(shelfHistory.lastCheckedAt).toLocaleString()}</b>
+                </div>
+                <div>
+                  <small>Current public shelf</small>
+                  <b>{loaded.games.length} games · {hours(loaded.games.reduce((sum, game) => sum + game.minutes, 0))}h</b>
+                </div>
+              </div>
+
+              {shelfHistoryDelta ? (
+                <div className="history-delta">
+                  <div className="history-delta-metrics">
+                    <span><small>Recorded hours</small><b>{shelfHistoryDelta.minutesDelta > 0 ? "+" : ""}{hours(shelfHistoryDelta.minutesDelta)}h</b></span>
+                    <span><small>Library count</small><b>{shelfHistoryDelta.gamesDelta > 0 ? "+" : ""}{shelfHistoryDelta.gamesDelta}</b></span>
+                    <span><small>Now newly played</small><b>{shelfHistoryDelta.newlyPlayed.length}</b></span>
+                  </div>
+
+                  {shelfHistoryDelta.changed ? (
+                    <div className="history-events">
+                      {shelfHistoryDelta.newlyOwned.length > 0 && (
+                        <div>
+                          <small>New to the saved shelf</small>
+                          <p>{shelfHistoryDelta.newlyOwned.slice(0, 5).map((appid) => historyNameByAppId.get(appid) ?? `app ${appid}`).join(" · ")}</p>
+                        </div>
+                      )}
+                      {shelfHistoryDelta.newlyPlayed.length > 0 && (
+                        <div>
+                          <small>Now has recorded playtime</small>
+                          <p>{shelfHistoryDelta.newlyPlayed.slice(0, 5).map((appid) => historyNameByAppId.get(appid) ?? `app ${appid}`).join(" · ")}</p>
+                        </div>
+                      )}
+                      {shelfHistoryDelta.thresholds.length > 0 && (
+                        <div>
+                          <small>Hour milestones crossed between saved states</small>
+                          <p>{shelfHistoryDelta.thresholds.slice(0, 6).map((entry) => `${historyNameByAppId.get(entry.appid) ?? `app ${entry.appid}`} · ${entry.hours}h`).join(" · ")}</p>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <p className="note history-no-change">No recorded library or lifetime-playtime changes since the last saved state.</p>
+                  )}
+                </div>
+              ) : (
+                <p className="note history-baseline">Baseline saved. Shelfwear can compare future loads of this public SteamID against it.</p>
+              )}
+
+              <div className="history-timeline" aria-label="Saved Shelfwear history states">
+                {shelfHistory.snapshots.slice().reverse().map((snapshot, index) => (
+                  <div className="history-snapshot" key={snapshot.at}>
+                    <span>{String(shelfHistory.snapshots.length - index).padStart(2, "0")}</span>
+                    <div>
+                      <b>{new Date(snapshot.at).toLocaleString()}</b>
+                      <small>{snapshot.gameCount} games · {snapshot.playedCount} played · {hours(snapshot.totalMinutes)}h recorded</small>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <p className="note history-boundary">
+                Saved locally under this resolved SteamID. Each state stores AppIDs and lifetime-minute totals, not a server-side library copy.
+                Snapshot times mean “Shelfwear saw this state then,” not “you played then.”
+              </p>
+            </div>
           )}
         </section>
       )}
