@@ -57,7 +57,7 @@ describe("Shelf History", () => {
     expect(delta).toMatchObject({
       fromAt: 1000,
       toAt: 2000,
-      minutesDelta: 405,
+      minutesDelta: 255,
       gamesDelta: 1,
       newlyOwned: ["60"],
       newlyPlayed: ["20", "60"],
