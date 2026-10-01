@@ -518,14 +518,104 @@
   color: var(--fg);
 }
 
-.custom-shelf-bulk-status {
-  margin: 7px 0 0;
+.custom-shelf-bulk-transfer {
+  display: grid;
+  grid-template-columns: minmax(190px, 280px) minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: end;
+  margin-top: 7px;
+  padding: 10px 11px;
+  border: 1px solid color-mix(in srgb, var(--edge) 62%, transparent);
+  border-radius: 10px 12px 11px 13px;
+  background: color-mix(in srgb, var(--panel) 88%, var(--raised));
+}
+
+.custom-shelf-bulk-transfer label {
+  min-width: 0;
+  display: grid;
+  gap: 5px;
+}
+
+.custom-shelf-bulk-transfer label > span {
+  color: var(--dim);
+  font-size: 8px;
+  font-weight: 850;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.custom-shelf-bulk-transfer select {
+  width: 100%;
+  min-width: 0;
+  min-height: 36px;
   padding: 7px 9px;
+  border: 1px solid color-mix(in srgb, var(--edge) 76%, transparent);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--panel) 94%, var(--raised));
+  color: var(--fg);
+  font: inherit;
+  font-size: 9px;
+}
+
+.custom-shelf-bulk-transfer select:focus {
+  outline: 2px solid color-mix(in srgb, var(--accent) 45%, transparent);
+  outline-offset: 1px;
+}
+
+.custom-shelf-bulk-transfer p {
+  min-width: 0;
+  margin: 0;
+  padding-bottom: 7px;
+  color: var(--dim);
+  font-size: 8px;
+  line-height: 1.45;
+}
+
+.custom-shelf-bulk-transfer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 5px;
+}
+
+.custom-shelf-bulk-transfer-actions button {
+  min-height: 36px;
+  padding: 6px 9px;
+  border-radius: 8px;
+  box-shadow: none;
+  font-size: 8px;
+  white-space: nowrap;
+}
+
+.custom-shelf-bulk-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 7px 0 0;
+  padding: 7px 8px 7px 9px;
   border-left: 3px solid color-mix(in srgb, var(--accent-2) 52%, var(--edge));
   border-radius: 0 9px 9px 0;
   color: var(--fg);
   background: color-mix(in srgb, var(--accent-2) 6%, transparent);
   font-size: 9px;
+  line-height: 1.45;
+}
+
+.custom-shelf-bulk-status > span {
+  min-width: 0;
+}
+
+.custom-shelf-bulk-status button {
+  flex: 0 0 auto;
+  min-height: 30px;
+  padding: 5px 9px;
+  border-color: color-mix(in srgb, var(--accent-2) 44%, var(--edge));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--accent-2) 8%, var(--panel));
+  box-shadow: none;
+  font-size: 8px;
+  font-weight: 850;
 }
 
 .custom-shelf-games {
@@ -553,6 +643,11 @@
   border-color: color-mix(in srgb, var(--accent-2) 52%, var(--edge));
   background: color-mix(in srgb, var(--accent-2) 7%, var(--panel));
   box-shadow: inset 3px 0 0 color-mix(in srgb, var(--accent-2) 62%, transparent);
+}
+
+.custom-shelf-game.selected .custom-shelf-rank {
+  border-color: color-mix(in srgb, var(--accent-2) 52%, var(--edge));
+  background: color-mix(in srgb, var(--accent-2) 10%, var(--panel));
 }
 
 .custom-shelf-game-select {
@@ -666,6 +761,19 @@
 }
 
 @media (max-width: 720px) {
+  .custom-shelf-bulk-transfer {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .custom-shelf-bulk-transfer p {
+    padding-bottom: 0;
+  }
+
+  .custom-shelf-bulk-transfer-actions {
+    justify-content: flex-start;
+  }
+
   .custom-shelf-bulk-toolbar {
     grid-template-columns: 1fr;
     align-items: stretch;
@@ -726,6 +834,24 @@
 }
 
 @media (max-width: 480px) {
+  .custom-shelf-bulk-transfer-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .custom-shelf-bulk-transfer-actions button {
+    width: 100%;
+  }
+
+  .custom-shelf-bulk-status {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .custom-shelf-bulk-status button {
+    width: 100%;
+  }
+
   .custom-shelf-bulk-select-actions,
   .custom-shelf-bulk-actions {
     display: grid;
