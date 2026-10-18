@@ -1,3 +1,4 @@
+import { fileURLToPath } from "node:url";
 import { expect, test } from "@playwright/test";
 
 test("recent activity is on-demand and keeps Steam recent data separate from local recency", async ({ page }) => {
@@ -89,9 +90,9 @@ test("recent activity is on-demand and keeps Steam recent data separate from loc
 
 test("recent activity is not offered for local-file mode", async ({ page }) => {
   const fixtures = [
-    new URL("./fixtures/localconfig.vdf", import.meta.url).pathname,
-    new URL("./fixtures/appmanifest_700.acf", import.meta.url).pathname,
-    new URL("./fixtures/appmanifest_900.acf", import.meta.url).pathname,
+    fileURLToPath(new URL("./fixtures/localconfig.vdf", import.meta.url)),
+    fileURLToPath(new URL("./fixtures/appmanifest_700.acf", import.meta.url)),
+    fileURLToPath(new URL("./fixtures/appmanifest_900.acf", import.meta.url)),
   ];
 
   await page.goto("/");

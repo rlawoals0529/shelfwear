@@ -461,9 +461,10 @@ export async function renderCuratedCard(input: CuratedTopGames): Promise<Blob> {
   ctx.fillText(String(input.games.length).padStart(2, "0") + " PICKS · HAND-PICKED", WIDTH - PAD, 58);
   ctx.textAlign = "left";
 
+  let headerBottom = 85;
   if (style === "scrapbook") {
     ctx.save();
-    ctx.translate(PAD + 115, 85);
+    ctx.translate(PAD + 115, headerBottom);
     ctx.rotate(finish === "clean" ? 0 : -.045);
     ctx.fillStyle = theme.raised;
     ctx.strokeStyle = theme.edge;
@@ -475,21 +476,28 @@ export async function renderCuratedCard(input: CuratedTopGames): Promise<Blob> {
     ctx.font = "900 10px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
     ctx.fillText(finish === "archive" ? "HAND-PICKED ♡" : finish === "doodles" ? "LITTLE STORY ✦" : "SHELF STORY", 15, 20);
     ctx.restore();
+    headerBottom += 30;
   }
 
   ctx.fillStyle = theme.fg;
   ctx.font = "800 50px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
-  const heading = wrapByMeasure(ctx, input.title || "shelf story", WIDTH - PAD * 2 - 100, 1)[0] ?? "shelf story";
-  ctx.fillText(heading, PAD, 134);
+  const headingLines = wrapByMeasure(ctx, input.title || "shelf story", WIDTH - PAD * 2 - 100, 2);
+  // Place each block after the previous one; canvas baselines are not text tops.
+  const headingTop = headerBottom + 16;
+  const headingAscent = ctx.measureText("Mg").fontBoundingBoxAscent;
+  headingLines.forEach((line, index) => ctx.fillText(line, PAD, headingTop + headingAscent + index * 56));
+  headerBottom = headingTop + headingLines.length * 56;
 
   ctx.fillStyle = theme.dim;
   ctx.font = "500 19px system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
   const caption = input.caption || "a little collection from my shelf";
   const captionLines = wrapByMeasure(ctx, caption, WIDTH - PAD * 2, 2);
-  captionLines.forEach((line, index) => ctx.fillText(line, PAD, 168 + index * 24));
+  const captionTop = headerBottom + 7;
+  const captionAscent = ctx.measureText("Mg").fontBoundingBoxAscent;
+  captionLines.forEach((line, index) => ctx.fillText(line, PAD, captionTop + captionAscent + index * 24));
 
-  const gridTop = captionLines.length > 1 ? 218 : 200;
-  const gridSize = WIDTH - PAD * 2;
+  const gridTop = captionTop + captionLines.length * 24 + 24;
+  const gridSize = Math.min(WIDTH - PAD * 2, HEIGHT - gridTop - 140);
   const tile = (gridSize - GRID_GAP * 2) / 3;
   const tileRadius = style === "poster" ? 6 : style === "polaroid" ? 10 : 8;
   const images = await Promise.all(
