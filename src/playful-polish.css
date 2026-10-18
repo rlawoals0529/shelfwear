@@ -94,7 +94,7 @@
 }
 
 .curated-doodle {
-  position: absolute;
+  position: relative;
   z-index: 3;
   display: grid;
   place-items: center;
@@ -108,14 +108,14 @@
 }
 
 .curated-doodle-star {
-  right: 12px;
-  top: 10px;
+  grid-column: 3;
+  grid-row: 1;
   transform: rotate(8deg);
 }
 
 .curated-doodle-heart {
-  right: 42px;
-  top: 34px;
+  grid-column: 2;
+  grid-row: 1;
   opacity: .72;
   transform: rotate(-8deg);
 }

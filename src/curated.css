@@ -308,6 +308,7 @@
   width: min(100%, 660px);
   margin-inline: auto;
   padding: clamp(18px, 2.8vw, 26px);
+  padding-top: 28px;
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--edge) 78%, transparent);
   border-radius: 24px 20px 27px 19px;
@@ -460,7 +461,10 @@
 
 .curated-preview-heading {
   position: relative;
-  min-height: 95px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px 8px;
   padding: 14px 3px 16px;
 }
 
@@ -481,7 +485,8 @@
   display: inline-flex;
   align-items: center;
   width: fit-content;
-  margin-bottom: 8px;
+  justify-self: start;
+  margin-left: 8px;
   padding: 5px 8px;
   border: 1px solid var(--cute-ring);
   border-radius: 999px;
@@ -494,6 +499,8 @@
 }
 
 .curated-preview-heading h3 {
+  grid-column: 1 / -1;
+  overflow-wrap: anywhere;
   margin: 0;
   font-family: var(--font-round);
   font-size: clamp(27px, 4vw, 38px);
@@ -503,7 +510,9 @@
 
 .curated-preview-heading p {
   max-width: 58ch;
-  margin: 7px 0 0;
+  grid-column: 1 / -1;
+  overflow-wrap: anywhere;
+  margin: 0;
   color: var(--dim);
   font-size: 12px;
   line-height: 1.45;
@@ -968,12 +977,11 @@
   }
 
   .curated-card-preview {
-    padding: 16px 12px 13px;
+    padding: 28px 12px 13px;
     border-radius: 22px 18px 23px 17px;
   }
 
   .curated-preview-heading {
-    min-height: 84px;
     padding-inline: 2px;
   }
 
